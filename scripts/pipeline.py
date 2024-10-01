@@ -187,34 +187,37 @@ def preprocess_for_output(df):
     return df
 
 
-def process_data_pipeline(input_file):
+# Modify process_data_pipeline to handle DataFrames instead of files
+def process_data_pipeline(input_df):
     """
-    Main pipeline function to process the data.
+    Main pipeline function to handle the following:
+    1. Perform automated QA on the input DataFrame.
+    2. Generate a QA report.
+    3. Preprocess the data for output.
 
     Parameters
     ----------
-    input_file : str
-        Path to the input CSV file.
+    input_df : pd.DataFrame
+        The input DataFrame to be processed.
 
     Returns
     -------
-    pd.DataFrame, str
-        The preprocessed DataFrame and QA report as a formatted string.
+    processed_df : pd.DataFrame
+        The preprocessed DataFrame, ready for analysis.
+    qa_report : str
+        A string representation of the QA report.
     """
-    # Step 1: Load raw data
-    print(f"Loading data from {input_file}...")
-    df = pd.read_csv(input_file)
+    # Step 1: Handle missing values (optional)
+    df = handle_missing_values(input_df)
 
-    # Step 2: Handle missing values
-    df = handle_missing_values(df)
-
-    # Step 3: Generate QA report
+    # Step 2: Run automated QA and generate QA report
     qa_report = generate_qa_report(df)
 
-    # Step 4: Preprocess the data
+    # Step 3: Preprocess the data for output
     processed_df = preprocess_for_output(df)
 
-    return processed_df, qa_report
+    return processed_df, str(qa_report)  # Return the processed DataFrame and QA report string
+
 
 
 if __name__ == "__main__":
