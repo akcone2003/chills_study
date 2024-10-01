@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
-from scripts.pipeline import process_data_pipeline
-
+from scripts.pipeline import process_data_pipeline  # Updated import
 
 def save_dataframe_to_csv(df, file_name):
     """Save a DataFrame to a CSV and provide a download link."""

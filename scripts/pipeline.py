@@ -187,60 +187,34 @@ def preprocess_for_output(df):
     return df
 
 
-def process_data_pipeline(input_file, output_file, qa_report_file):
+def process_data_pipeline(input_file):
     """
-    Main pipeline function to handle the following:
-    1. Load raw data
-    2. Perform automated QA
-    3. Generate a QA report
-    4. Preprocess data for output
-    5. Save the preprocessed data
+    Main pipeline function to process the data.
 
     Parameters
     ----------
     input_file : str
-        The path to the input CSV file.
-    output_file : str
-        The path to the output CSV file to save the preprocessed data.
-    qa_report_file : str
-        The path to the file to save the QA report.
+        Path to the input CSV file.
 
-    Description
-    -----------
-    This is the main pipeline function that automates the following steps:
-    - Loading raw data from a CSV file.
-    - Handling missing values and generating a QA report (missing values and outliers).
-    - Preprocessing the data for output by simplifying gender categories,
-      converting categorical columns to numeric, and normalizing numerical columns.
-    - Saving the preprocessed data to a new CSV file and writing the QA report to a text file.
+    Returns
+    -------
+    pd.DataFrame, str
+        The preprocessed DataFrame and QA report as a formatted string.
     """
     # Step 1: Load raw data
     print(f"Loading data from {input_file}...")
     df = pd.read_csv(input_file)
 
-    # # Step 2: Handle missing values
-    # print("Handling missing values...")
-    # df = handle_missing_values(df)
-    # TODO - Check with Leo what we want to do with missing values
+    # Step 2: Handle missing values
+    df = handle_missing_values(df)
 
-    # Step 3: Run automated QA and generate QA report
-    print("Generating quality assurance report...")
+    # Step 3: Generate QA report
     qa_report = generate_qa_report(df)
 
-    # Step 4: Save the QA report
-    print(f"Saving QA report to {qa_report_file}...")
-    with open(qa_report_file, 'w') as f:
-        f.write(str(qa_report))
-
-    # Step 5: Preprocess the data for output
-    print("Preprocessing data for statistical analysis...")
+    # Step 4: Preprocess the data
     processed_df = preprocess_for_output(df)
 
-    # Step 6: Output the preprocessed data to a CSV
-    print(f"Saving preprocessed data to {output_file}...")
-    processed_df.to_csv(output_file, index=False)
-
-    print("Data pipeline complete.")
+    return processed_df, qa_report
 
 
 if __name__ == "__main__":
