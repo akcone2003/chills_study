@@ -18,7 +18,7 @@ Functions
 
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from pipeline import process_data_pipeline  # Importing the main pipeline function from data_pipeline.py
+from pipeline import process_data_pipeline  # Importing the main pipeline function from pipeline.py
 
 
 def open_file_dialog():
