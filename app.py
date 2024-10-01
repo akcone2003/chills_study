@@ -26,27 +26,34 @@ if input_file is not None:
         st.success("Data pipeline completed successfully!")
 
         # Display the processed DataFrame
-        st.write("Processed Data Preview:")
-        st.dataframe(processed_df.head())
+        if processed_df is not None:
+            st.write("Processed Data Preview:")
+            st.dataframe(processed_df.head())
+        else:
+            st.warning("Processed data is empty or not generated.")
 
-        # Download processed data
-        st.download_button(
-            label="Download Processed CSV",
-            data=save_dataframe_to_csv(processed_df, "processed_data.csv"),
-            file_name="processed_data.csv",
-            mime='text/csv'
-        )
+        # Download processed data if available
+        if processed_df is not None:
+            st.download_button(
+                label="Download Processed CSV",
+                data=save_dataframe_to_csv(processed_df, "processed_data.csv"),
+                file_name="processed_data.csv",
+                mime='text/csv'
+            )
 
-        # Display and Download QA report
-        st.write("Quality Assurance Report:")
-        st.text(qa_report)
+        # Display and Download QA report if available
+        if qa_report:
+            st.write("Quality Assurance Report:")
+            st.text(qa_report)
 
-        st.download_button(
-            label="Download QA Report",
-            data=qa_report.encode('utf-8'),
-            file_name="qa_report.txt",
-            mime='text/plain'
-        )
+            st.download_button(
+                label="Download QA Report",
+                data=qa_report.encode('utf-8'),
+                file_name="qa_report.txt",
+                mime='text/plain'
+            )
+        else:
+            st.warning("QA Report is empty or not generated.")
 
     except Exception as e:
         st.error(f"An error occurred: {e}")
