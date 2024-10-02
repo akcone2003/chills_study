@@ -3,28 +3,27 @@ import pandas as pd
 import numpy as np
 from unittest.mock import patch, mock_open
 import sys
-from scripts.pipeline import handle_missing_values, detect_outliers, generate_qa_report, preprocess_for_output, \
-    simplify_gender, process_data_pipeline
+from scripts.pipeline import (
+    handle_missing_values, detect_outliers, generate_qa_report, preprocess_for_output,
+    process_data_pipeline, detect_column_types
+)
 
 
 class TestDataPipeline(unittest.TestCase):
 
-    # setUp method is run before each test to set up a sample DataFrame
     def setUp(self):
-        """Set up a sample dataframe similar to the structure provided."""
+        """Set up a sample dataframe similar to a survey structure."""
         self.df = pd.DataFrame({
             'Age': [40, 45, np.nan, 30],  # Numerical with a missing value
-            'Gender': ['Female', 'Male', 'Female', 'Female'],  # Categorical
-            'Commitment': ['I will provide my best answers'] * 4,  # Categorical
+            'Gender': ['Female', 'Male', 'Female', 'Trans-Male'],  # Categorical
+            'Commitment': ['I will provide my best answers'] * 4,  # Free text
             'Experience_Meditation': [2, 1, 3, 2],  # Numerical
-            'Vivid_Image_Face': ['Realistically vivid', 'Moderately vivid', 'Perfectly realistic',
-                                 'Perfectly realistic'],  # Categorical
+            'Frequency_Exercise': ['Sometimes', 'Never', 'Often', 'Rarely'],  # Ordinal
             'Moved_By_Language': ['Sometimes', 'Never', 'Sometimes', 'Rarely'],  # Categorical
             'Political_Orientation': [3, 2, 2, 5],  # Numerical (Likert scale)
             'Often_Feel_Awe': [2, 4, 5, np.nan]  # Numerical with a missing value
         })
 
-    # Test the handle_missing_values function
     def test_handle_missing_values(self):
         """Test that missing values are correctly handled."""
         df_result = handle_missing_values(self.df.copy())
@@ -35,20 +34,26 @@ class TestDataPipeline(unittest.TestCase):
 
         # Check categorical columns are filled with 'Missing'
         self.assertEqual(df_result['Gender'].iloc[2], 'Female')  # No missing value in Gender here, so no change
-        # No categorical columns have missing values in this sample, so no further check here
+        self.assertEqual(df_result['Moved_By_Language'].iloc[3], 'Rarely')  # No missing in Moved_By_Language
 
-    # Test the detect_outliers function
+    def test_detect_column_types(self):
+        """Test automatic column type detection (nominal, ordinal, free text)."""
+        column_types = detect_column_types(self.df)
+
+        # Check that the detected columns match expected types
+        self.assertIn('Gender', column_types['nominal'])
+        self.assertIn('Frequency_Exercise', column_types['ordinal'])
+        self.assertIn('Commitment', column_types['free_text'])
+        self.assertNotIn('Age', column_types['nominal'])  # Age should not be a nominal category
+
     def test_detect_outliers(self):
         """Test outlier detection in numerical columns."""
-        # Test with column 'Experience_Meditation', where there should be no outliers
         outliers_count = detect_outliers(self.df, 'Experience_Meditation')
         self.assertEqual(outliers_count, 0)
 
-        # Test with column 'Political_Orientation', no obvious outliers
         outliers_count_political = detect_outliers(self.df, 'Political_Orientation')
         self.assertEqual(outliers_count_political, 0)
 
-    # Test the generate_qa_report function
     def test_generate_qa_report(self):
         """Test generation of QA report for missing values and outliers."""
         qa_report = generate_qa_report(self.df.copy())
@@ -58,36 +63,24 @@ class TestDataPipeline(unittest.TestCase):
         self.assertIn('Often_Feel_Awe', qa_report['missing_values'])
 
         # Check outliers report
-        self.assertNotIn('Experience_Meditation', qa_report['outliers'])  # No outliers in this column
-        self.assertNotIn('Political_Orientation', qa_report['outliers'])  # No outliers in this column
+        self.assertNotIn('Experience_Meditation', qa_report['outliers'])
+        self.assertNotIn('Political_Orientation', qa_report['outliers'])
 
-    # Test the preprocess_for_output function
+        # Check for rows with 3 or more missing values
+        self.assertIn('rows_with_3_or_more_missing_values', qa_report)
+        self.assertEqual(qa_report['rows_with_3_or_more_missing_values']['count'], 0)
+
     def test_preprocess_for_output(self):
         """Test the preprocessing of dataframe for statistical output."""
-        # Process the dataframe, but check gender categories before encoding
-        processed_df = self.df.copy()
+        processed_df = preprocess_for_output(self.df.copy())
 
-        # Simplify gender categories (before encoding)
-        processed_df['Gender'] = processed_df['Gender'].apply(simplify_gender)
+        # Check that ordinal and nominal columns are correctly converted
+        self.assertTrue(pd.api.types.is_integer_dtype(processed_df['Gender']))  # Nominal column
+        self.assertTrue(pd.api.types.is_integer_dtype(processed_df['Frequency_Exercise']))  # Ordinal column
 
-        # Check the actual gender categories after simplification
-        gender_mapping = processed_df['Gender'].unique()  # Get unique gender categories
-        print(
-            f"Actual gender categories after simplification: {gender_mapping}")  # This should print the simplified categories
+        # Check that free text columns are not modified
+        self.assertEqual(processed_df['Commitment'].iloc[0], 'I will provide my best answers')
 
-        # Define possible gender categories
-        possible_categories = ['Female', 'Male', 'Non-Binary', 'Other']
-
-        # Assert that the actual categories are a subset of the possible categories
-        self.assertTrue(set(gender_mapping).issubset(possible_categories))
-
-        # Now run the full preprocessing
-        processed_df = preprocess_for_output(processed_df)
-
-        # Check that 'Gender' column is now numeric after encoding
-        self.assertTrue(pd.api.types.is_numeric_dtype(processed_df['Gender']))
-
-    # Test the full data pipeline by mocking file I/O
     @patch('builtins.open', new_callable=mock_open)
     @patch('pandas.read_csv')
     @patch('pandas.DataFrame.to_csv')
@@ -96,16 +89,17 @@ class TestDataPipeline(unittest.TestCase):
         mock_read_csv.return_value = self.df  # Mock the read_csv function to return the sample DataFrame
 
         # Set up the mock command-line arguments
-        test_args = ['data_pipeline.py', 'input.csv', 'output.csv', 'qa_report.txt']
+        test_args = ['pipeline.py', 'input.csv']
         with patch.object(sys, 'argv', test_args):
-            process_data_pipeline('input.csv', 'output.csv', 'qa_report.txt')
+            processed_df, qa_report = process_data_pipeline(self.df)
 
-            # Check that files were opened and written to
-            mock_read_csv.assert_called_once_with('input.csv')
-            mock_to_csv.assert_called_once_with('output.csv', index=False)
+            # Check the processed DataFrame is correct
+            self.assertIsNotNone(processed_df)
+            self.assertIn('Gender', processed_df.columns)
+            self.assertIn('Frequency_Exercise', processed_df.columns)
 
-            # Check that the QA report was written to the correct file
-            mock_file.assert_called_with('qa_report.txt', 'w')
+            # Check that the QA report is not empty
+            self.assertTrue(len(qa_report) > 0)
 
 
 # Run the tests if this script is executed directly

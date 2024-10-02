@@ -237,7 +237,7 @@ def detect_column_types(df):
         else:
             # Determine if a categorical column is ordinal based on ordered keywords
             ordered_keywords = ['never', 'rarely', 'sometimes', 'often', 'always',
-                                'poor', 'fair', 'good', 'very good', 'excellent',
+                                'poor', 'fair', 'good', 'agree', 'strongly',
                                 'low', 'medium', 'high', 'none', 'basic', 'advanced']
 
             if any(keyword in [str(val).lower() for val in df[col].unique()] for keyword in ordered_keywords):
@@ -338,3 +338,4 @@ if __name__ == "__main__":
         print(f"Processed data saved to: {processed_output_file}")
         print(f"QA report saved to: {qa_report_file}")
 
+# TODO - figure out a way to automate converting the questionnaire scales
