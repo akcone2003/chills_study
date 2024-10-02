@@ -51,8 +51,9 @@ def handle_missing_values(df):
 
     cat_cols = df.select_dtypes(include='object')
     df[cat_cols.columns] = cat_cols.fillna('Missing')
-    # TODO - Check with Leo if we just want to straight up drop these rows
-    # There are a lot of rows with missing values with dataset so prob not drop them
+    # if that is the only missing value
+    # TODO - Add a check if subjects have 3 or missing values then flag in QA report
+
 
     return df
 
@@ -79,7 +80,6 @@ def detect_outliers(df, column_name, threshold=3):
     outliers_count = (np.abs(z_scores) > threshold).sum()
 
     return int(outliers_count)  # Return as an integer
-    # TODO - Check with Leo what we want to do with outliers
 
 
 
@@ -150,7 +150,7 @@ def simplify_gender(gender):
         return 'Non-Binary'
     else:
         return 'Other'
-    # TODO - Verify this is how we want to handle gender
+    # TODO - code trans-female and trans-male into 'Trans'
 
 
 def preprocess_for_output(df):
@@ -182,12 +182,13 @@ def preprocess_for_output(df):
     # cat_cols = df.select_dtypes(include='object')
     # df[cat_cols.columns] = cat_cols.apply(lambda col: col.astype('category').cat.codes)
 
-    # Standardize/normalize numerical columns
-    scaler = StandardScaler()
-    # scaler = MinMaxScaler()
+    # TODO - double check KMF
+
+    # Normalize numerical columns
+    scaler = MinMaxScaler()
     num_cols = df.select_dtypes(include=np.number)
     df[num_cols.columns] = scaler.fit_transform(df[num_cols.columns])
-    # TODO - Standardize or normalize?
+    # TODO - Check chills binary coding
 
     return df
 
