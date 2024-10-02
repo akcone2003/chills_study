@@ -22,7 +22,7 @@ Functions
 
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 import sys
 
 
@@ -52,6 +52,7 @@ def handle_missing_values(df):
     cat_cols = df.select_dtypes(include='object')
     df[cat_cols.columns] = cat_cols.fillna('Missing')
     # TODO - Check with Leo if we just want to straight up drop these rows
+    # There are a lot of rows with missing values with dataset so prob not drop them
 
     return df
 
@@ -79,6 +80,7 @@ def detect_outliers(df, column_name, threshold=3):
 
     return int(outliers_count)  # Return as an integer
     # TODO - Check with Leo what we want to do with outliers
+
 
 
 def generate_qa_report(df):
@@ -176,13 +178,16 @@ def preprocess_for_output(df):
         df['Gender'] = df['Gender'].apply(simplify_gender)
 
 
-    # Handle categorical columns by converting to numeric codes
-    cat_cols = df.select_dtypes(include='object')
-    df[cat_cols.columns] = cat_cols.apply(lambda col: col.astype('category').cat.codes)
+    # # Handle categorical columns by converting to numeric codes
+    # cat_cols = df.select_dtypes(include='object')
+    # df[cat_cols.columns] = cat_cols.apply(lambda col: col.astype('category').cat.codes)
 
-    # Normalize numerical columns
+    # Standardize/normalize numerical columns
+    scaler = StandardScaler()
+    # scaler = MinMaxScaler()
     num_cols = df.select_dtypes(include=np.number)
-    df[num_cols.columns] = (df[num_cols.columns] - df[num_cols.columns].mean()) / df[num_cols.columns].std()
+    df[num_cols.columns] = scaler.fit_transform(df[num_cols.columns])
+    # TODO - Standardize or normalize?
 
     return df
 
@@ -207,7 +212,7 @@ def process_data_pipeline(input_df):
     qa_report : str
         A string representation of the QA report.
     """
-    # Step 1: Handle missing values (optional)
+    # Step 1: Handle missing values
     df = handle_missing_values(input_df)
 
     # Step 2: Run automated QA and generate QA report
