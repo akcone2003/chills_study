@@ -22,7 +22,7 @@ Functions
 
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 import sys
 
 
@@ -139,9 +139,65 @@ def simplify_gender(gender):
     # TODO - code trans-female and trans-male into 'Trans'
 
 
+def detect_column_types(df):
+    """
+    Detect column types and classify them as nominal, ordinal, or free text.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input DataFrame to analyze.
+
+    Returns
+    -------
+    dict
+        A dictionary containing detected column types:
+        {
+            'nominal': list of nominal columns,
+            'ordinal': list of ordinal columns,
+            'free_text': list of free text columns,
+            'timestamp': list of timestamp columns
+        }
+    """
+    column_types = {
+        'nominal': [],
+        'ordinal': [],
+        'free_text': [],
+        'timestamp': []
+    }
+
+    cat_cols = df.select_dtypes(include='object')
+
+    for col in cat_cols.columns:
+        unique_values = df[col].nunique()
+        total_rows = len(df)
+
+        # Detect if a column is a timestamp
+        if pd.to_datetime(df[col], errors='coerce').notna().sum() > 0.9 * len(df):
+            column_types['timestamp'].append(col)
+            continue
+
+        # Heuristic for free text columns (many unique values compared to the number of rows)
+        if unique_values / total_rows > 0.3:
+            column_types['free_text'].append(col)
+        else:
+            # Determine if a categorical column is ordinal based on ordered keywords
+            ordered_keywords = ['never', 'rarely', 'sometimes', 'often', 'always',
+                                'poor', 'fair', 'good', 'very good', 'excellent',
+                                'low', 'medium', 'high', 'none', 'basic', 'advanced']
+
+            if any(keyword in [str(val).lower() for val in df[col].unique()] for keyword in ordered_keywords):
+                column_types['ordinal'].append(col)
+            else:
+                column_types['nominal'].append(col)
+
+    return column_types
+
+
 def preprocess_for_output(df):
     """
-    Preprocess the DataFrame for output to statistical software.
+    Preprocess the DataFrame by handling categorical columns dynamically
+    based on detected types. Skip scaling for categorical and free text columns.
 
     Parameters
     ----------
@@ -151,40 +207,26 @@ def preprocess_for_output(df):
     Returns
     -------
     pd.DataFrame
-        The preprocessed DataFrame, with categorical columns converted to
-        numeric codes and numerical columns normalized. Free text columns
-        are left unmodified.
-
-    Description
-    -----------
-    This function simplifies the 'Gender' column using the `simplify_gender`
-    function, converts standard categorical columns (non-free-text) into numeric codes,
-    and normalizes the numerical columns by subtracting the mean and dividing by the standard deviation.
-    Free text columns are left as-is.
+        The preprocessed DataFrame, ready for statistical analysis.
     """
-    # Step 1: Simplify the 'Gender' column if present
-    if 'Gender' in df.columns:
-        df['Gender'] = df['Gender'].apply(simplify_gender)
 
-    # TODO - gender and age are being converted
+    # Step 1: Detect column types automatically
+    column_types = detect_column_types(df)
 
-    # Step 2: Identify free text columns (e.g., long descriptions)
-    # We'll assume free text columns have a high number of unique values compared to the number of rows
-    text_cols = df.select_dtypes(include='object')
-    free_text_cols = [col for col in text_cols.columns if df[col].nunique() > (0.3 * len(df))]
+    # Step 2: Handle ordinal columns by using OrdinalEncoder to preserve order
+    ordinal_encoder = OrdinalEncoder()
+    if column_types['ordinal']:
+        df[column_types['ordinal']] = ordinal_encoder.fit_transform(df[column_types['ordinal']])
 
-    # Step 3: Handle other categorical columns (excluding free text columns) by converting to numeric codes
-    cat_cols = text_cols.drop(columns=free_text_cols)  # Exclude free text columns
-    df[cat_cols.columns] = cat_cols.apply(lambda col: col.astype('category').cat.codes)
+    # Step 3: Handle nominal columns by converting to numeric codes
+    for col in column_types['nominal']:
+        df[col] = df[col].astype('category').cat.codes
 
-    # Step 4: Normalize numerical columns
-    scaler = MinMaxScaler()
-    num_cols = df.select_dtypes(include=np.number)
-    df[num_cols.columns] = scaler.fit_transform(df[num_cols.columns])
-
+    # Step 4: Free text and timestamp columns are left unchanged
     return df
 
-# Modify process_data_pipeline to handle DataFrames instead of files
+
+# Full pipeline
 def process_data_pipeline(input_df):
     """
     Main pipeline function to handle the following:
