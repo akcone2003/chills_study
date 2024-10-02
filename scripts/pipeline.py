@@ -161,36 +161,36 @@ def generate_qa_report(df):
 
     return report
 
-
-def simplify_gender(gender):
-    """
-    Simplify gender categories into broader groups.
-
-    Parameters
-    ----------
-    gender : str
-        A string representing the gender category from the input data.
-
-    Returns
-    -------
-    str
-        The simplified gender category as 'Female', 'Male', 'Non-Binary', or 'Other'.
-
-    Description
-    -----------
-    This function simplifies gender values by grouping them into broader categories:
-    'Female', 'Male', 'Non-Binary', and 'Other'. It detects specific keywords within
-    the input string to assign the category.
-    """
-    if 'Female' in gender:
-        return 'Female'
-    elif 'Male' in gender:
-        return 'Male'
-    elif 'Non-Binary' in gender or 'genderqueer' in gender:
-        return 'Non-Binary'
-    else:
-        return 'Other'
-    # TODO - code trans-female and trans-male into 'Trans'
+# Will revisit simplifying gender if we need to
+# Currently not being accounted for and genders are being coded nominally
+# def simplify_gender(gender):
+#     """
+#     Simplify gender categories into broader groups.
+#
+#     Parameters
+#     ----------
+#     gender : str
+#         A string representing the gender category from the input data.
+#
+#     Returns
+#     -------
+#     str
+#         The simplified gender category as 'Female', 'Male', 'Non-Binary', or 'Other'.
+#
+#     Description
+#     -----------
+#     This function simplifies gender values by grouping them into broader categories:
+#     'Female', 'Male', 'Non-Binary', and 'Other'. It detects specific keywords within
+#     the input string to assign the category.
+#     """
+#     if 'Female' in gender:
+#         return 'Female'
+#     elif 'Male' in gender:
+#         return 'Male'
+#     elif 'Non-Binary' in gender or 'genderqueer' in gender:
+#         return 'Non-Binary'
+#     else:
+#         return 'Other'
 
 
 def detect_column_types(df):
