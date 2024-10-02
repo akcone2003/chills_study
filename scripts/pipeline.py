@@ -27,6 +27,34 @@ import sys
 
 
 def handle_missing_values(df):
+    """
+    Handle missing values in the dataframe using appropriate imputation methods.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input DataFrame with potential missing values in numerical and categorical columns.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with missing numerical values filled with their respective column means
+        and missing categorical values filled with the placeholder 'Missing'.
+
+    Description
+    -----------
+    This function addresses missing values separately for numerical and categorical columns:
+
+    - For numerical columns: Missing values are replaced with the mean of the respective column.
+
+    - For categorical columns: Missing values are filled with a placeholder string 'Missing'. Additionally,
+      if a column has more than 50% of its values missing, a warning message is printed indicating the high percentage
+      of missing values.
+
+    This approach ensures that no data is dropped and maintains the integrity of both numerical and categorical columns
+    for further processing.
+    """
+
     num_cols = df.select_dtypes(include=np.number)
     df[num_cols.columns] = num_cols.fillna(num_cols.mean())
 
@@ -42,13 +70,39 @@ def handle_missing_values(df):
 
 def detect_outliers(df, column_name, threshold=3):
     """
-    Detect outliers in a numerical column using StandardScaler from scikit-learn for Z-score calculation.
+    Detect outliers in a numerical column using Z-score calculations.
 
-    :param df: Pandas DataFrame containing the data
-    :param column_name: The name of the column to detect outliers in
-    :param threshold: The number of standard deviations from the mean to consider as an outlier
-    :return: Count of outliers in the specified column
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input DataFrame containing the column to be analyzed.
+    column_name : str
+        The name of the numerical column in which to detect outliers.
+    threshold : int, optional, default=3
+        The number of standard deviations from the mean to consider as an outlier.
+        Values with Z-scores greater than this threshold will be flagged as outliers.
+
+    Returns
+    -------
+    int
+        The count of outliers in the specified column based on the given threshold.
+
+    Description
+    -----------
+    This function identifies outliers in a numerical column by calculating Z-scores using
+    `StandardScaler` from the `scikit-learn` library. It performs the following steps:
+
+    - Drops any `NaN` values from the column to ensure accurate calculations.
+
+    - Checks if the column has zero variance (i.e., no variation), in which case outlier detection is skipped.
+
+    - Computes the Z-scores for each value in the column.
+
+    - Counts the number of values with absolute Z-scores exceeding the specified threshold, indicating outliers.
+
+    If the column has zero variance, the function returns 0, since no outliers can be detected in a constant column.
     """
+
     col_data = df[[column_name]].dropna()
 
     # Check if the column has zero variance to avoid issues with scaling
