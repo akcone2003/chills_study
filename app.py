@@ -15,6 +15,9 @@ st.title("Data Pipeline Web Application")
 # Step 1: File Upload for Input CSV
 input_file = st.file_uploader("Upload your Input CSV File", type=["csv"])
 
+# Global variable to store flagged rows
+flagged_rows = {}
+
 # Step 2: Run the Pipeline if a file is uploaded
 if input_file is not None:
     try:
@@ -26,14 +29,45 @@ if input_file is not None:
 
         st.success("Data pipeline completed successfully!")
 
-        # Display the processed DataFrame preview
+        # Step 3: Display the processed DataFrame preview
         st.write("Processed Data Preview:")
         st.dataframe(processed_df.head())
 
-        # Convert processed DataFrame to CSV format for download
-        csv_data = save_dataframe_to_csv(processed_df)
+        # Step 4: Display text columns for review and flagging
+        st.write("Review Text Responses and Flag Rows if Necessary:")
 
-        # Download button for the processed CSV
+        # Identify text columns (excluding columns previously processed or handled)
+        text_columns = processed_df.select_dtypes(include='object').columns
+
+        if text_columns.any():
+            # Create a multiselect to allow users to choose which columns they want to review
+            text_col_selection = st.multiselect(
+                "Select text columns to review:", options=text_columns, default=list(text_columns)
+            )
+
+            # Display only selected text columns
+            for col in text_col_selection:
+                st.write(f"### Review Responses for Column: {col}")
+
+                # Create a list to capture flags for each row
+                flag_list = []
+
+                for idx, value in processed_df[col].items():
+                    # Create an expander for each row of text response
+                    with st.expander(f"Row {idx + 1}: {value[:50]}..."):
+                        st.write(f"Full Response: {value}")
+                        # Checkbox to flag this row
+                        flag = st.checkbox(f"Flag this row in '{col}'", key=f"{col}_{idx}")
+                        if flag:
+                            reason = st.text_input(f"Reason for flagging row {idx + 1}:", key=f"reason_{col}_{idx}")
+                            flag_list.append((idx, reason))
+
+                # Store the flags for this column
+                if flag_list:
+                    flagged_rows[col] = flag_list
+
+        # Step 5: Download processed data
+        csv_data = save_dataframe_to_csv(processed_df)
         st.download_button(
             label="Download Processed CSV",
             data=csv_data,
@@ -41,11 +75,20 @@ if input_file is not None:
             mime='text/csv'
         )
 
-        # Display and Download QA report
+        # Step 6: Modify QA report to include flagged information
+        if flagged_rows:
+            flagged_info = "Flagged Rows Information:\n\n"
+            for col, flags in flagged_rows.items():
+                flagged_info += f"Column: {col}\n"
+                for idx, reason in flags:
+                    flagged_info += f" - Row {idx + 1}: {reason}\n"
+            qa_report += "\n\n" + flagged_info
+
+        # Display the QA report
         st.write("Quality Assurance Report:")
         st.text(qa_report)
 
-        # Download button for the QA report
+        # Step 7: Download button for the QA report
         st.download_button(
             label="Download QA Report",
             data=qa_report,
@@ -55,5 +98,3 @@ if input_file is not None:
 
     except Exception as e:
         st.error(f"An error occurred: {e}")
-
-# TODO - Add step where people can look through text responses to chills responses and flag the responses they want
