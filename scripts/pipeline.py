@@ -27,33 +27,15 @@ import sys
 
 
 def handle_missing_values(df):
-    """
-    Handle missing values in the dataframe.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Input DataFrame with missing values.
-
-    Returns
-    -------
-    pd.DataFrame
-        DataFrame with missing numerical values filled with their column means
-        and missing categorical values filled with the placeholder 'Missing'.
-
-    Description
-    -----------
-    This function fills in missing numerical values with the column mean,
-    and missing categorical (object) values with the placeholder string 'Missing'.
-    """
     num_cols = df.select_dtypes(include=np.number)
     df[num_cols.columns] = num_cols.fillna(num_cols.mean())
 
+    # Fill missing values in categorical columns with 'Missing' only if they are sparse.
     cat_cols = df.select_dtypes(include='object')
-    df[cat_cols.columns] = cat_cols.fillna('Missing')
-    # if that is the only missing value
-    # TODO - Add a check if subjects have 3 or missing values then flag in QA report
-
+    for col in cat_cols:
+        if df[col].isnull().mean() > 0.5:  # Flag columns with more than 50% missing
+            print(f"Warning: Column '{col}' has a high percentage of missing values.")
+        df[col] = df[col].fillna('Missing')
 
     return df
 
@@ -67,20 +49,17 @@ def detect_outliers(df, column_name, threshold=3):
     :param threshold: The number of standard deviations from the mean to consider as an outlier
     :return: Count of outliers in the specified column
     """
-    # Extract the column data and reshape it for the scaler (required by StandardScaler)
     col_data = df[[column_name]].dropna()
 
-    # Initialize the StandardScaler
-    scaler = StandardScaler()
+    # Check if the column has zero variance to avoid issues with scaling
+    if col_data.std().iloc[0] == 0:
+        return 0  # No outliers if there is no variation
 
-    # Fit and transform the data to calculate Z-scores
+    scaler = StandardScaler()
     z_scores = scaler.fit_transform(col_data)
 
-    # Count the values where the absolute Z-score exceeds the threshold
     outliers_count = (np.abs(z_scores) > threshold).sum()
-
-    return int(outliers_count)  # Return as an integer
-
+    return int(outliers_count)
 
 
 def generate_qa_report(df):
@@ -106,11 +85,11 @@ def generate_qa_report(df):
     """
     report = {}
 
-    # Missing values report
+    # 1. Missing values report
     missing_values_report = df.isnull().sum()
     report['missing_values'] = missing_values_report[missing_values_report > 0].to_dict()
 
-    # Outlier detection report (on numerical columns)
+    # 2. Outlier detection report (on numerical columns)
     outliers_report = {}
     num_cols = df.select_dtypes(include=np.number)
     for col in num_cols.columns:
@@ -118,6 +97,13 @@ def generate_qa_report(df):
         if outliers_count > 0:
             outliers_report[col] = outliers_count
     report['outliers'] = outliers_report
+
+    # 3. Rows with 3 or more missing values
+    rows_with_excessive_missing = df[df.isnull().sum(axis=1) >= 3]
+    report['rows_with_3_or_more_missing_values'] = {
+        'count': rows_with_excessive_missing.shape[0],
+        'row_indices': rows_with_excessive_missing.index.tolist()
+    }
 
     return report
 
@@ -166,32 +152,37 @@ def preprocess_for_output(df):
     -------
     pd.DataFrame
         The preprocessed DataFrame, with categorical columns converted to
-        numeric codes and numerical columns normalized.
+        numeric codes and numerical columns normalized. Free text columns
+        are left unmodified.
 
     Description
     -----------
     This function simplifies the 'Gender' column using the `simplify_gender`
-    function, converts all categorical columns into numeric codes, and normalizes
-    the numerical columns by subtracting the mean and dividing by the standard deviation.
+    function, converts standard categorical columns (non-free-text) into numeric codes,
+    and normalizes the numerical columns by subtracting the mean and dividing by the standard deviation.
+    Free text columns are left as-is.
     """
+    # Step 1: Simplify the 'Gender' column if present
     if 'Gender' in df.columns:
         df['Gender'] = df['Gender'].apply(simplify_gender)
 
+    # TODO - gender and age are being converted
 
-    # # Handle categorical columns by converting to numeric codes
-    # cat_cols = df.select_dtypes(include='object')
-    # df[cat_cols.columns] = cat_cols.apply(lambda col: col.astype('category').cat.codes)
+    # Step 2: Identify free text columns (e.g., long descriptions)
+    # We'll assume free text columns have a high number of unique values compared to the number of rows
+    text_cols = df.select_dtypes(include='object')
+    free_text_cols = [col for col in text_cols.columns if df[col].nunique() > (0.3 * len(df))]
 
-    # TODO - double check KMF
+    # Step 3: Handle other categorical columns (excluding free text columns) by converting to numeric codes
+    cat_cols = text_cols.drop(columns=free_text_cols)  # Exclude free text columns
+    df[cat_cols.columns] = cat_cols.apply(lambda col: col.astype('category').cat.codes)
 
-    # Normalize numerical columns
+    # Step 4: Normalize numerical columns
     scaler = MinMaxScaler()
     num_cols = df.select_dtypes(include=np.number)
     df[num_cols.columns] = scaler.fit_transform(df[num_cols.columns])
-    # TODO - Check chills binary coding
 
     return df
-
 
 # Modify process_data_pipeline to handle DataFrames instead of files
 def process_data_pipeline(input_df):
@@ -225,12 +216,29 @@ def process_data_pipeline(input_df):
     return processed_df, str(qa_report)  # Return the processed DataFrame and QA report string
 
 
-
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
-        print("Usage: python data_pipeline.py <input_file> <output_file> <qa_report_file>")
+    # Check if the correct number of arguments is provided (input and output file paths)
+    if len(sys.argv) != 2:
+        print("Usage: python pipeline.py <input_file>")
     else:
+        # Read the input CSV file from the command-line arguments
         input_file = sys.argv[1]
-        output_file = sys.argv[2]
-        qa_report_file = sys.argv[3]
-        process_data_pipeline(input_file, output_file, qa_report_file)
+
+        # Load the CSV file into a DataFrame
+        input_df = pd.read_csv(input_file)
+
+        # Process the DataFrame using the pipeline
+        processed_df, qa_report = process_data_pipeline(input_df)
+
+        # Save the results back to a file
+        processed_output_file = input_file.replace(".csv", "_processed.csv")
+        qa_report_file = input_file.replace(".csv", "_qa_report.txt")
+
+        # Save the processed data and QA report to respective files
+        processed_df.to_csv(processed_output_file, index=False)
+        with open(qa_report_file, 'w') as f:
+            f.write(qa_report)
+
+        print(f"Processed data saved to: {processed_output_file}")
+        print(f"QA report saved to: {qa_report_file}")
+
