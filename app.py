@@ -23,17 +23,30 @@ if input_file is not None:
         # Read the uploaded file into a temporary dataframe
         input_df = pd.read_csv(input_file)
 
-        # Run the pipeline and capture the outputs
+        # Step 3: Let the user select columns they want to drop before processing
+        st.write("### Select Columns to Drop Before Processing")
+        drop_columns = st.multiselect(
+            "Select columns you want to exclude from the analysis:",
+            options=input_df.columns.tolist(),
+            help="These columns will be removed before running the pipeline."
+        )
+
+        # If there are columns to drop, apply it to the DataFrame
+        if drop_columns:
+            input_df = input_df.drop(columns=drop_columns)
+            st.success(f"Dropped columns: {drop_columns}")
+
+        # Step 4: Run the pipeline and capture the outputs
         processed_df, qa_report = process_data_pipeline(input_df)
 
         st.success("Data pipeline completed successfully!")
 
-        # Step 3: Display the processed DataFrame preview
+        # Step 5: Display the processed DataFrame preview
         st.write("Processed Data Preview:")
         st.dataframe(processed_df.head())
 
-        # Step 4: Let the user select columns they want to review
-        st.write("### Step 4: Select Columns for Review and Flagging")
+        # Step 6: Let the user select columns for review and flagging
+        st.write("### Select Columns for Review and Flagging")
 
         # Identify all categorical (text) columns
         text_columns = processed_df.select_dtypes(include='object').columns.tolist()
@@ -46,9 +59,9 @@ if input_file is not None:
                 default=[]
             )
 
-            # Step 5: If the user selects any columns, display rows for review
+            # Step 7: If the user selects any columns, display rows for review
             if selected_columns:
-                st.write("### Step 5: Review and Flag Text Responses")
+                st.write("### Review and Flag Text Responses")
                 for col in selected_columns:
                     st.write(f"**Column**: `{col}`")
 
@@ -69,7 +82,7 @@ if input_file is not None:
                     if flag_list:
                         flagged_rows[col] = flag_list
 
-        # Step 6: Download processed data
+        # Step 8: Download processed data
         csv_data = save_dataframe_to_csv(processed_df)
         st.download_button(
             label="Download Processed CSV",
@@ -78,7 +91,7 @@ if input_file is not None:
             mime='text/csv'
         )
 
-        # Step 7: Modify QA report to include flagged information
+        # Step 9: Modify QA report to include flagged information
         if flagged_rows:
             flagged_info = "Flagged Rows Information:\n\n"
             for col, flags in flagged_rows.items():
@@ -91,7 +104,7 @@ if input_file is not None:
         st.write("Quality Assurance Report:")
         st.text(qa_report)
 
-        # Step 8: Download button for the QA report
+        # Step 10: Download button for the QA report
         st.download_button(
             label="Download QA Report",
             data=qa_report,
