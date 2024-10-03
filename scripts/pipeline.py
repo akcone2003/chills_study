@@ -339,3 +339,4 @@ if __name__ == "__main__":
         print(f"QA report saved to: {qa_report_file}")
 
 # TODO - figure out a way to automate converting the questionnaire scales
+# TODO - recheck that free text is being correctly classified because the tests are saying it is not?

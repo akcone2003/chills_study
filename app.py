@@ -23,12 +23,12 @@ if input_file is not None:
         # Read the uploaded file into a temporary dataframe
         input_df = pd.read_csv(input_file)
 
-        # Step 3: Let the user select columns they want to drop before processing
-        st.write("### Select Columns to Drop Before Processing")
+        # Step 3: Let the user select columns they want to drop
+        st.write("### Select Columns to Drop Before Downloading")
         drop_columns = st.multiselect(
             "Select columns you want to exclude from the analysis:",
             options=input_df.columns.tolist(),
-            help="These columns will be removed before running the pipeline."
+            help="These columns will be removed before you download the processed dataset."
         )
 
         # If there are columns to drop, apply it to the DataFrame
