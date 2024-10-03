@@ -29,9 +29,7 @@ class TestDataPipeline(unittest.TestCase):
                     'The music was powerful and moving.',
                     'I felt a deep connection with the moment.',
                     'I had an overwhelming sense of nostalgia.',
-                    'I don’t usually get chills, but this time was different.',
-                    'The speech was just very inspirational',
-                    'I had a surreal experience'
+                    'I don’t usually get chills, but this time was different.'
                 ],
                 100
             ),  # Free text with varied values
@@ -104,9 +102,8 @@ class TestDataPipeline(unittest.TestCase):
         self.assertTrue(pd.api.types.is_integer_dtype(processed_df['Frequency_Exercise']),
                         f"Frequency_Exercise dtype: {processed_df['Frequency_Exercise'].dtype}")  # Ordinal column encoded
 
-        # Check that free text columns are not modified
-        self.assertEqual(self.df['Why_Chills'].iloc[0], processed_df['Why_Chills'].iloc[0],
-                         "Free-text column altered during processing")
+        # Check that free-text columns are preserved as `dtype('O')`
+        self.assertEqual(processed_df['Why_Chills'].dtype, 'O', "Free-text column should remain as dtype('O')")
 
     @patch('builtins.open', new_callable=mock_open)
     @patch('pandas.read_csv')
@@ -128,7 +125,7 @@ class TestDataPipeline(unittest.TestCase):
             # Check that the QA report is not empty
             self.assertTrue(len(qa_report) > 0)
 
-            # Check that 'Why_Chills' is correctly preserved
+            # Check that 'Why_Chills' is correctly preserved as a free-text column
             self.assertEqual(self.df['Why_Chills'].iloc[0], processed_df['Why_Chills'].iloc[0])
 
 

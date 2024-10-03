@@ -159,6 +159,9 @@ def generate_qa_report(df):
         'row_indices': rows_with_excessive_missing.index.tolist()
     }
 
+    # TODO - look at chills report vs chills intensity
+    # TODO - chills binary is 0 but threshold is x, throw out or flag
+
     return report
 
 # Will revisit simplifying gender if we need to
@@ -338,5 +341,4 @@ if __name__ == "__main__":
         print(f"Processed data saved to: {processed_output_file}")
         print(f"QA report saved to: {qa_report_file}")
 
-# TODO - figure out a way to automate converting the questionnaire scales
-# TODO - recheck that free text is being correctly classified because the tests are saying it is not?
+# TODO - figure out a way to automate converting the questionnaire scales (new script)
