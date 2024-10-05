@@ -159,9 +159,6 @@ def generate_qa_report(df):
         'row_indices': rows_with_excessive_missing.index.tolist()
     }
 
-    # TODO - look at chills report vs chills intensity
-    # TODO - chills binary is 0 but threshold is x, throw out or flag
-
     return report
 
 # Will revisit simplifying gender if we need to
