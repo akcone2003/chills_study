@@ -1,0 +1,2 @@
+# TODO - adding scoring the behavioral measures into pipeline for users to dynamically aggregate the survey data
+# idea - maybe make a function for each measure that has the algorithm for aggregating the data?

@@ -387,4 +387,3 @@ if __name__ == "__main__":
         print(f"Processed data saved to: {processed_output_file}")
         print(f"QA report saved to: {qa_report_file}")
 
-# TODO - figure out a way to automate converting the questionnaire scales (new script)
