@@ -283,18 +283,63 @@ def preprocess_for_output(df):
     return df
 
 
+def sanity_check_chills(df, chills_column, chills_intensity_column, intensity_threshold=0, mode='flag'):
+    """
+    Perform a sanity check for inconsistencies between 'chills_column' and 'chills_intensity_column'.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The input DataFrame containing the chills response columns.
+    chills_column : str
+        The name of the column representing whether chills were experienced (0 or 1).
+    chills_intensity_column : str
+        The name of the column representing the intensity of chills.
+    intensity_threshold : int, optional
+        The threshold value above which intensity is considered non-trivial.
+    mode : str, optional, default='flag'
+        The mode of handling inconsistent rows. Options:
+        - 'flag': Mark inconsistent rows with a new column 'Sanity_Flag' as True.
+        - 'drop': Remove the inconsistent rows from the DataFrame.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with the inconsistencies handled based on the specified mode.
+    """
+    # Identify rows where Chills is 0 but Chills_Intensity exceeds the threshold
+    inconsistent_rows = (df[chills_column] == 0) & (df[chills_intensity_column] > intensity_threshold)
+
+    if mode == 'flag':
+        # Create a new column 'Sanity_Flag' to mark these rows
+        df['Sanity_Flag'] = inconsistent_rows
+    elif mode == 'drop':
+        # Drop these rows from the DataFrame
+        df = df[~inconsistent_rows]
+
+    return df
+
 # Full pipeline
-def process_data_pipeline(input_df):
+def process_data_pipeline(input_df, chills_column, chills_intensity_column, intensity_threshold=0, mode='flag'):
     """
     Main pipeline function to handle the following:
     1. Perform automated QA on the input DataFrame.
     2. Generate a QA report.
-    3. Preprocess the data for output.
+    3. Perform sanity checks for chills response.
+    4. Preprocess the data for output.
 
     Parameters
     ----------
     input_df : pd.DataFrame
         The input DataFrame to be processed.
+    chills_column : str
+        The column representing chills response (0 or 1).
+    chills_intensity_column : str
+        The column representing the intensity of chills.
+    intensity_threshold : int, optional
+        The threshold for flagging/removing inconsistent rows.
+    mode : str, optional, default='flag'
+        The mode of handling inconsistent rows ('flag' or 'drop').
 
     Returns
     -------
@@ -309,10 +354,14 @@ def process_data_pipeline(input_df):
     # Step 2: Run automated QA and generate QA report
     qa_report = generate_qa_report(df)
 
-    # Step 3: Preprocess the data for output
+    # Step 3: Perform sanity check for chills response using dynamic columns
+    df = sanity_check_chills(df, chills_column, chills_intensity_column, intensity_threshold, mode)
+
+    # Step 4: Preprocess the data for output
     processed_df = preprocess_for_output(df)
 
     return processed_df, str(qa_report)  # Return the processed DataFrame and QA report string
+
 
 
 if __name__ == "__main__":
