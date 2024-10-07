@@ -24,6 +24,7 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 import sys
+from scripts.scoring_functions import calculate_all_scales
 
 
 def handle_missing_values(df):
@@ -356,6 +357,9 @@ def process_data_pipeline(input_df, chills_column, chills_intensity_column, inte
 
     # Step 4: Preprocess the data for output
     processed_df = preprocess_for_output(df)
+
+    # Step 5. Aggregate the behavioral scales
+    processed_df = calculate_all_scales(processed_df)
 
     return processed_df, str(qa_report)  # Return the processed DataFrame and QA report string
 
