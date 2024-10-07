@@ -360,6 +360,7 @@ def process_data_pipeline(input_df, chills_column, chills_intensity_column, inte
     return processed_df, str(qa_report)  # Return the processed DataFrame and QA report string
 
 
+
 if __name__ == "__main__":
     # Check if the correct number of arguments is provided (input and output file paths)
     if len(sys.argv) != 2:
@@ -386,4 +387,3 @@ if __name__ == "__main__":
         print(f"Processed data saved to: {processed_output_file}")
         print(f"QA report saved to: {qa_report_file}")
 
-# TODO - figure out a way to automate converting the questionnaire scales
