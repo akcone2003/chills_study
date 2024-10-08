@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from scripts.pipeline import process_data_pipeline
-from scripts.helpers import get_scale_questions
+
 
 def save_dataframe_to_csv(df):
     """Convert a DataFrame to CSV format in-memory and return as a string."""
@@ -55,7 +55,6 @@ if input_file is not None:
         # For each selected scale, let the user select the columns for that scale
         for scale in selected_scales:
             st.write(f"### Select Columns for {scale}")
-            scale_questions = get_scale_questions(scale)  # Get the list of questions for the scale
 
             # Multiselect to let the user select all the relevant columns for this scale at once
             selected_columns = st.multiselect(
@@ -67,8 +66,8 @@ if input_file is not None:
 
             # Store the mapping only if valid columns are selected
             if selected_columns:
-                # Map each scale question to the selected columns
-                user_column_mappings[scale] = {question: selected_columns[i] for i, question in enumerate(scale_questions) if i < len(selected_columns)}
+                # Simply store the scale and the selected columns
+                user_column_mappings[scale] = {f"Question {i + 1}": col for i, col in enumerate(selected_columns)}
 
         # Step 4: Let the user select columns for the sanity check
         st.write("### Sanity Check Configuration")
@@ -101,28 +100,8 @@ if input_file is not None:
             help="'flag' will add a column indicating the inconsistent rows, while 'drop' will remove these rows from the dataset."
         )
 
-        # Step 5: Preview Inconsistent Rows Before Making Changes
-        preview_flag = False
-        if st.button("Preview Inconsistent Rows"):
-            # Find rows where the Chills Response is 0 but Intensity > threshold
-            inconsistent_rows = input_df[
-                (input_df[chills_column] == 0) & (input_df[chills_intensity_column] > intensity_threshold)
-            ]
-            st.write("### Inconsistent Rows Preview")
-            st.write(inconsistent_rows)
-            preview_flag = True
-
-        # Confirm row drops if 'drop' mode is selected
-        if mode == 'drop' and preview_flag:
-            confirm_drop = st.checkbox("I confirm I want to drop these rows before finalizing.")
-        else:
-            confirm_drop = True  # No confirmation needed if just flagging
-
-        if preview_flag and not confirm_drop:
-            st.warning("Please confirm you want to drop the rows or switch to 'flag' mode to proceed.")
-
         # Step 6: Run the pipeline with the selected configuration and capture the outputs
-        if confirm_drop:
+        if st.button("Run Pipeline"):
             processed_df, qa_report = process_data_pipeline(
                 input_df,
                 chills_column=chills_column if chills_column else None,
@@ -132,58 +111,11 @@ if input_file is not None:
                 user_column_mappings=user_column_mappings  # Pass user-selected column mappings here
             )
 
-            # Check the columns present DEBUG
-            st.write("Columns after pipeline processing:", processed_df.columns.tolist())
-
             st.success("Data pipeline completed successfully!")
 
             # Step 7: Display the processed DataFrame preview
             st.write("Processed Data Preview:")
             st.dataframe(processed_df.head())
-
-            # Step 8: Let the user select columns for review and flagging
-            st.write("### Select Columns for Review and Flagging")
-
-            # Identify all categorical (text) columns
-            text_columns = processed_df.select_dtypes(include='object').columns.tolist()
-
-            if text_columns:
-                # Display a multi-select widget for the user to choose columns
-                selected_columns = st.multiselect(
-                    "Select text columns to review (choose one or more):",
-                    options=text_columns,
-                    default=[]
-                )
-
-                # Step 9: If the user selects any columns, display rows for review
-                if selected_columns:
-                    st.write("### Review and Flag Text Responses")
-                    for col in selected_columns:
-                        st.write(f"**Column**: `{col}`")
-
-                        # Create a list to capture flags for each row in the selected column
-                        flag_list = []
-
-                        for idx, value in processed_df[col].items():
-                            # Create an expander for each row of text response
-                            with st.expander(f"Row {idx + 1}: {value[:50]}..."):
-                                st.write(f"Full Response: {value}")
-                                # Checkbox to flag this row
-                                flag = st.checkbox(f"Flag this row in '{col}'", key=f"{col}_{idx}")
-                                if flag:
-                                    reason = st.text_input(f"Reason for flagging row {idx + 1}:", key=f"reason_{col}_{idx}")
-                                    flag_list.append((idx, reason))
-
-                        # Store the flags for this column if any rows are flagged
-                        if flag_list:
-                            flagged_rows[col] = flag_list
-
-            # Step 10: Add an option to remove flagged rows
-            if flagged_rows:
-                if st.checkbox("Drop all flagged rows before download?"):
-                    flagged_indices = [idx for col_flags in flagged_rows.values() for idx, _ in col_flags]
-                    processed_df = processed_df.drop(flagged_indices)
-                    st.success("Flagged rows have been dropped from the final dataset.")
 
             # Step 11: Download processed data
             csv_data = save_dataframe_to_csv(processed_df)
@@ -192,27 +124,6 @@ if input_file is not None:
                 data=csv_data,
                 file_name="processed_data.csv",
                 mime='text/csv'
-            )
-
-            # Step 12: Modify QA report to include flagged information
-            if flagged_rows:
-                flagged_info = "Flagged Rows Information:\n\n"
-                for col, flags in flagged_rows.items():
-                    flagged_info += f"Column: {col}\n"
-                    for idx, reason in flags:
-                        flagged_info += f" - Row {idx + 1}: {reason}\n"
-                qa_report += "\n\n" + flagged_info
-
-            # Display the QA report
-            st.write("Quality Assurance Report:")
-            st.text(qa_report)
-
-            # Step 13: Download button for the QA report
-            st.download_button(
-                label="Download QA Report",
-                data=qa_report,
-                file_name="qa_report.txt",
-                mime='text/plain'
             )
 
     except Exception as e:

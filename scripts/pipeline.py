@@ -49,7 +49,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 import sys
 from scripts.scoring_functions import calculate_all_scales
-from scripts.helpers import normalize_column_names
+from scripts.helpers import normalize_column_name
 
 
 def handle_missing_values(df):
@@ -272,7 +272,7 @@ def preprocess_for_output(df):
         df[col] = df[col].astype('category').cat.codes
 
     # Step 4: Normalize dataframe columns
-    df = normalize_column_names(df)
+    df = normalize_column_name(df)
 
     return df
 
