@@ -25,6 +25,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 import sys
 from scripts.scoring_functions import calculate_all_scales
+from scripts.helpers import normalize_column_names
 
 
 def handle_missing_values(df):
@@ -277,7 +278,9 @@ def preprocess_for_output(df):
     for col in column_types['nominal']:
         df[col] = df[col].astype('category').cat.codes
 
-    # Step 4: Free text and timestamp columns are left unchanged
+    # Step 4: Normalize dataframe columns
+    df = normalize_column_names(df)
+
     return df
 
 
@@ -318,13 +321,14 @@ def sanity_check_chills(df, chills_column, chills_intensity_column, intensity_th
     return df
 
 # Full pipeline
-def process_data_pipeline(input_df, chills_column, chills_intensity_column, intensity_threshold=0, mode='flag'):
+def process_data_pipeline(input_df, chills_column, chills_intensity_column, intensity_threshold=0, mode='flag', user_column_mappings=None):
     """
     Main pipeline function to handle the following:
     1. Perform automated QA on the input DataFrame.
     2. Generate a QA report.
     3. Perform sanity checks for chills response.
     4. Preprocess the data for output.
+    5. Calculate and aggregate scale scores based on user-provided mappings.
 
     Parameters
     ----------
@@ -338,6 +342,8 @@ def process_data_pipeline(input_df, chills_column, chills_intensity_column, inte
         The threshold for flagging/removing inconsistent rows.
     mode : str, optional, default='flag'
         The mode of handling inconsistent rows ('flag' or 'drop').
+    user_column_mappings : dict, optional
+        A dictionary containing user-provided mappings for scale questions to DataFrame columns.
 
     Returns
     -------
@@ -358,10 +364,12 @@ def process_data_pipeline(input_df, chills_column, chills_intensity_column, inte
     # Step 4: Preprocess the data for output
     processed_df = preprocess_for_output(df)
 
-    # Step 5. Aggregate the behavioral scales
-    processed_df = calculate_all_scales(processed_df)
+    # Step 5: Calculate and aggregate the behavioral scales using user mappings
+    if user_column_mappings is not None:
+        processed_df = calculate_all_scales(processed_df, user_column_mappings)
 
     return processed_df, str(qa_report)  # Return the processed DataFrame and QA report string
+
 
 
 

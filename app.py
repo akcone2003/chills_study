@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from scripts.pipeline import process_data_pipeline
+from scales.scale_mappings import get_scale_questions
 
 
 def save_dataframe_to_csv(df):
@@ -36,18 +37,57 @@ if input_file is not None:
             input_df = input_df.drop(columns=drop_columns)
             st.success(f"Dropped columns: {drop_columns}")
 
+        # Step 3.1: Let the user select columns for each scale
+        st.write("### Map Columns to Scale Questions")
+
+        # Initialize the mappings dictionary
+        user_column_mappings = {}
+
+        # Get the list of scales to be used
+        available_scales = ["MODTAS"]  # Extend this list as more scales are added
+
+        # User selects the scales they want to include in the analysis
+        selected_scales = st.multiselect(
+            "Select scales to include in the analysis:",
+            options=available_scales,
+            default=[]
+        )
+
+        # For each selected scale, let the user map the columns
+        for scale in selected_scales:
+            st.write(f"### Mapping for {scale}")
+            scale_questions = get_scale_questions(scale)  # Get the list of questions for the scale
+
+            # Create a dictionary to store user mappings for this scale
+            user_column_mappings[scale] = {}
+
+            # Let the user map each question to a column in the uploaded DataFrame
+            for question in scale_questions:
+                mapped_column = st.selectbox(
+                    f"Map the question: **'{question}'** to a DataFrame column:",
+                    options=[None] + input_df.columns.tolist(),  # Start with None for no initial selection
+                    format_func=lambda x: "" if x is None else x,  # Show empty string for None option
+                    key=f"{scale}_{question}"
+                )
+
+                # Only store the mapping if the user selects a valid column
+                if mapped_column:
+                    user_column_mappings[scale][question] = mapped_column
+
         # Step 4: Let the user select columns for the sanity check
         st.write("### Sanity Check Configuration")
 
         chills_column = st.selectbox(
             "Select the column representing Chills Response (0 or 1):",
-            options=input_df.columns.tolist(),
+            options=[None] + input_df.columns.tolist(),
+            format_func=lambda x: "" if x is None else x,
             help="This should be a binary column where 0 means no chills and 1 means chills were experienced."
         )
 
         chills_intensity_column = st.selectbox(
             "Select the column representing Chills Intensity:",
-            options=input_df.columns.tolist(),
+            options=[None] + input_df.columns.tolist(),
+            format_func=lambda x: "" if x is None else x,
             help="This column should represent the intensity of chills, with higher values indicating stronger chills."
         )
 
@@ -89,11 +129,15 @@ if input_file is not None:
         if confirm_drop:
             processed_df, qa_report = process_data_pipeline(
                 input_df,
-                chills_column=chills_column,
-                chills_intensity_column=chills_intensity_column,
+                chills_column=chills_column if chills_column else None,
+                chills_intensity_column=chills_intensity_column if chills_intensity_column else None,
                 intensity_threshold=intensity_threshold,
-                mode=mode
+                mode=mode,
+                user_column_mappings=user_column_mappings  # Pass user-selected column mappings here
             )
+
+            # Check the columns present DEBUG
+            st.write("Columns after pipeline processing:", processed_df.columns.tolist())
 
             st.success("Data pipeline completed successfully!")
 
