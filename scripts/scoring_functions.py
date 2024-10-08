@@ -36,6 +36,8 @@ def score_modtas(df, column_mapping):
     # Calculate the average of all MODTAS questions for each row
     return df[modtas_questions].mean(axis=1)
 
+# TODO - add more functions for scoring the other behavioral measures
+
 
 def calculate_all_scales(df, user_column_mappings):
     """
