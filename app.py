@@ -128,3 +128,6 @@ if input_file is not None:
 
     except Exception as e:
         st.error(f"An error occurred: {e}")
+
+# TODO - look at picture and make multiple CSVs
+# save CSV after encoding, with the questions, then final csv should have only behavioral measure scores

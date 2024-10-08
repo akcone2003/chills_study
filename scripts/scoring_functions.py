@@ -37,6 +37,7 @@ def score_modtas(df, column_mapping):
     return df[modtas_questions].mean(axis=1)
 
 # TODO - add more functions for scoring the other behavioral measures
+# Make sure that the sub scores are being represented
 
 
 def calculate_all_scales(df, user_column_mappings):
@@ -103,6 +104,10 @@ def calculate_all_scales(df, user_column_mappings):
     # Debug: Print the final columns after scoring
     print("Columns after scoring and dropping questions:", df_scored.columns.tolist())
     return df_scored
+
+# TODO - look into starting with string associated with behavioral measure
+# will remove need for user input, just create checks in pipeline for if a question starts with the string for behavioral measure, it will call that
+# scoring function
 
 
 
