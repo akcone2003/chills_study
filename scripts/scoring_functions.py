@@ -22,7 +22,7 @@ def score_modtas(df, column_mapping):
     # Check if the necessary questions are in the dataframe
     missing_columns = [q for q in modtas_questions if q not in df.columns]
     if missing_columns:
-        print(f"Missing columns for MODTAS scoring: {missing_columns}")
+        print(f"\n\nMissing columns for MODTAS scoring: {missing_columns}")
         return pd.Series([None] * len(df))  # Return None values for rows if columns are missing
 
     # Calculate the average of all MODTAS questions for each row
@@ -47,8 +47,6 @@ def calculate_all_scales(df, user_column_mappings):
         A DataFrame containing the original columns with additional columns for each calculated scale.
         All question columns are removed after scoring.
     """
-    # Debug: Print the columns before scoring
-    print("Columns before scoring:", df.columns.tolist())
 
     df_scored = df.copy()
     scoring_functions = {
@@ -61,32 +59,32 @@ def calculate_all_scales(df, user_column_mappings):
     # Calculate each scale score and add as a new column
     for scale_name, scoring_fn in scoring_functions.items():
         if scale_name not in user_column_mappings:
-            print(f"Skipping {scale_name} because no user mappings are provided.")
+            print(f"\n\nSkipping {scale_name} because no user mappings are provided.")
             continue
 
         try:
             # Get the user column mappings for this scale
             column_mapping = user_column_mappings[scale_name]
-            print(f"Mapping for {scale_name}: {column_mapping}")  # Debug: Show mappings
+            print(f"\n\nMapping for {scale_name}: {column_mapping}")  # Debug: Show mappings
 
             # Calculate the score using the mapped columns
             df_scored[scale_name + '_Score'] = scoring_fn(df, column_mapping)
-            print(f"Successfully scored {scale_name}")
+            print(f"\n\nSuccessfully scored {scale_name}")
 
             # Add the columns used in this scale to the drop list
             question_columns_to_drop.extend(list(column_mapping.values()))
 
         except Exception as e:
             # Debug output: Which columns are missing?
-            print(f"Skipping {scale_name} due to error: {e}")
-            print(f"DataFrame columns: {df.columns.tolist()}")  # Print current columns for debug
+            print(f"\n\nSkipping {scale_name} due to error: {e}")
+            print(f"\n\nDataFrame columns: {df.columns.tolist()}")  # Print current columns for debug
 
     # Remove the columns used for scoring
-    print(f"Columns to be dropped: {question_columns_to_drop}")  # Debug: Show columns to be dropped
+    print(f"\n\nColumns to be dropped: {question_columns_to_drop}")  # Debug: Show columns to be dropped
     df_scored = df_scored.drop(columns=question_columns_to_drop, errors='ignore')
 
     # Debug: Print the final columns after scoring
-    print("Columns after scoring and dropping questions:", df_scored.columns.tolist())
+    print("\n\nColumns after scoring and dropping questions:", df_scored.columns.tolist())
     return df_scored
 
 

@@ -1,24 +1,48 @@
 """
-data_pipeline.py
+pipeline.py
 ================
 
 This script is designed to process a CSV dataset by handling missing values,
-detecting outliers, generating a Quality Assurance (QA) report, simplifying
-gender categories, and preprocessing data for statistical analysis.
+detecting outliers, generating a Quality Assurance (QA) report, performing
+sanity checks, and preprocessing data for statistical analysis.
+
+In addition, this script includes functionality to dynamically calculate and
+aggregate scores for various behavioral scales based on user-provided mappings
+for survey questions.
 
 The main function of this script is `process_data_pipeline`, which integrates
-all individual processing steps to ensure the data is cleaned and ready for analysis.
+all individual processing steps to ensure the data is cleaned, validated, and
+ready for analysis.
 
 Functions
 ---------
 1. handle_missing_values(df)
+    - Handles missing values separately for numerical and categorical columns.
 2. detect_outliers(df, column_name, threshold=3)
+    - Detects outliers in a numerical column using Z-score calculations.
 3. generate_qa_report(df)
-4. simplify_gender(gender)
-5. preprocess_for_output(df)
-6. process_data_pipeline(input_file, output_file, qa_report_file)
+    - Generates a QA report summarizing missing values and outliers.
+4. sanity_check_chills(df, chills_column, chills_intensity_column, intensity_threshold=0, mode='flag')
+    - Checks for inconsistencies between chills response and chills intensity columns.
+5. detect_column_types(df)
+    - Automatically detects and classifies columns as nominal, ordinal, free text, or timestamp.
+6. preprocess_for_output(df)
+    - Preprocesses the DataFrame by encoding ordinal and nominal columns and normalizing column names.
+7. process_data_pipeline(input_df, chills_column, chills_intensity_column, intensity_threshold=0, mode='flag', user_column_mappings=None)
+    - Main pipeline function that:
+        1. Handles missing values.
+        2. Generates a QA report.
+        3. Performs sanity checks for specific columns.
+        4. Preprocesses the data for further analysis.
+        5. Calculates and aggregates scale scores based on user-provided mappings.
 
+---------
+Located in scripts/helpers.py
+---------
+normalize_column_names(df)
+    - Normalizes column names to remove special characters and standardize formatting.
 """
+
 
 import pandas as pd
 import numpy as np
@@ -162,37 +186,6 @@ def generate_qa_report(df):
     }
 
     return report
-
-# Will revisit simplifying gender if we need to
-# Currently not being accounted for and genders are being coded nominally
-# def simplify_gender(gender):
-#     """
-#     Simplify gender categories into broader groups.
-#
-#     Parameters
-#     ----------
-#     gender : str
-#         A string representing the gender category from the input data.
-#
-#     Returns
-#     -------
-#     str
-#         The simplified gender category as 'Female', 'Male', 'Non-Binary', or 'Other'.
-#
-#     Description
-#     -----------
-#     This function simplifies gender values by grouping them into broader categories:
-#     'Female', 'Male', 'Non-Binary', and 'Other'. It detects specific keywords within
-#     the input string to assign the category.
-#     """
-#     if 'Female' in gender:
-#         return 'Female'
-#     elif 'Male' in gender:
-#         return 'Male'
-#     elif 'Non-Binary' in gender or 'genderqueer' in gender:
-#         return 'Non-Binary'
-#     else:
-#         return 'Other'
 
 
 def detect_column_types(df):

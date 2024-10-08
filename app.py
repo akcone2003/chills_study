@@ -1,8 +1,7 @@
 import streamlit as st
 import pandas as pd
 from scripts.pipeline import process_data_pipeline
-from scales.scale_mappings import get_scale_questions
-
+from scripts.helpers import get_scale_questions
 
 def save_dataframe_to_csv(df):
     """Convert a DataFrame to CSV format in-memory and return as a string."""
@@ -37,7 +36,7 @@ if input_file is not None:
             input_df = input_df.drop(columns=drop_columns)
             st.success(f"Dropped columns: {drop_columns}")
 
-        # Step 3.1: Let the user select columns for each scale
+        # Step 3.1: Let the user select columns for each scale using a multiselect
         st.write("### Map Columns to Scale Questions")
 
         # Initialize the mappings dictionary
@@ -53,26 +52,23 @@ if input_file is not None:
             default=[]
         )
 
-        # For each selected scale, let the user map the columns
+        # For each selected scale, let the user select the columns for that scale
         for scale in selected_scales:
-            st.write(f"### Mapping for {scale}")
+            st.write(f"### Select Columns for {scale}")
             scale_questions = get_scale_questions(scale)  # Get the list of questions for the scale
 
-            # Create a dictionary to store user mappings for this scale
-            user_column_mappings[scale] = {}
+            # Multiselect to let the user select all the relevant columns for this scale at once
+            selected_columns = st.multiselect(
+                f"Select the columns that correspond to the questions for {scale}:",
+                options=input_df.columns.tolist(),
+                help=f"Select columns from your dataset that match the {scale} questions.",
+                key=f"{scale}_columns"
+            )
 
-            # Let the user map each question to a column in the uploaded DataFrame
-            for question in scale_questions:
-                mapped_column = st.selectbox(
-                    f"Map the question: **'{question}'** to a DataFrame column:",
-                    options=[None] + input_df.columns.tolist(),  # Start with None for no initial selection
-                    format_func=lambda x: "" if x is None else x,  # Show empty string for None option
-                    key=f"{scale}_{question}"
-                )
-
-                # Only store the mapping if the user selects a valid column
-                if mapped_column:
-                    user_column_mappings[scale][question] = mapped_column
+            # Store the mapping only if valid columns are selected
+            if selected_columns:
+                # Map each scale question to the selected columns
+                user_column_mappings[scale] = {question: selected_columns[i] for i, question in enumerate(scale_questions) if i < len(selected_columns)}
 
         # Step 4: Let the user select columns for the sanity check
         st.write("### Sanity Check Configuration")
