@@ -342,6 +342,10 @@ def process_data_pipeline(input_df, chills_column, chills_intensity_column, inte
     -------
     processed_df : pd.DataFrame
         The preprocessed DataFrame, ready for analysis.
+    intermediate_encoded_df : pd.DataFrame
+        Intermediate encoded DataFrame before scoring and column dropping.
+    flagged_rows_df : pd.DataFrame
+        DataFrame containing flagged rows if mode='flag'.
     qa_report : str
         A string representation of the QA report.
     """
@@ -354,41 +358,17 @@ def process_data_pipeline(input_df, chills_column, chills_intensity_column, inte
     # Step 3: Perform sanity check for chills response using dynamic columns
     df = sanity_check_chills(df, chills_column, chills_intensity_column, intensity_threshold, mode)
 
-    # Step 4: Preprocess the data for output
-    processed_df = preprocess_for_output(df)
+    # Step 4: Capture flagged rows if mode is 'flag'
+    flagged_rows_df = pd.DataFrame()
+    if mode == 'flag' and 'Sanity_Flag' in df.columns:
+        flagged_rows_df = df[df['Sanity_Flag']]
 
-    # Step 5: Calculate and aggregate the behavioral scales using user mappings
+    # Step 5: Preprocess the data for output (encoding and normalization)
+    intermediate_encoded_df = preprocess_for_output(df)
+
+    # Step 6: Calculate and aggregate the behavioral scales using user mappings
+    processed_df = intermediate_encoded_df.copy()
     if user_column_mappings is not None:
         processed_df = calculate_all_scales(processed_df, user_column_mappings)
 
-    return processed_df, str(qa_report)  # Return the processed DataFrame and QA report string
-
-
-
-
-if __name__ == "__main__":
-    # Check if the correct number of arguments is provided (input and output file paths)
-    if len(sys.argv) != 2:
-        print("Usage: python pipeline.py <input_file>")
-    else:
-        # Read the input CSV file from the command-line arguments
-        input_file = sys.argv[1]
-
-        # Load the CSV file into a DataFrame
-        input_df = pd.read_csv(input_file)
-
-        # Process the DataFrame using the pipeline
-        processed_df, qa_report = process_data_pipeline(input_df)
-
-        # Save the results back to a file
-        processed_output_file = input_file.replace(".csv", "_processed.csv")
-        qa_report_file = input_file.replace(".csv", "_qa_report.txt")
-
-        # Save the processed data and QA report to respective files
-        processed_df.to_csv(processed_output_file, index=False)
-        with open(qa_report_file, 'w') as f:
-            f.write(qa_report)
-
-        print(f"Processed data saved to: {processed_output_file}")
-        print(f"QA report saved to: {qa_report_file}")
-
+    return processed_df, intermediate_encoded_df, flagged_rows_df, str(qa_report)

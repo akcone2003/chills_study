@@ -18,10 +18,21 @@ input_file = st.file_uploader("Upload your Input CSV File", type=["csv"])
 flagged_rows = {}
 
 # Step 2: Run the Pipeline if a file is uploaded
-if input_file is not None:
+if input_file is not None or "processed_df" in st.session_state:
     try:
-        # Read the uploaded file into a temporary dataframe
-        input_df = pd.read_csv(input_file)
+        # Read the uploaded file into a temporary dataframe if not processed before
+        if "processed_df" not in st.session_state:
+            input_df = pd.read_csv(input_file)
+
+            # Store the original input DataFrame
+            st.session_state["input_df"] = input_df
+
+            # Clear session state variables if a new file is uploaded
+            st.session_state["processed_df"] = None
+            st.session_state["intermediate_encoded_df"] = None
+            st.session_state["flagged_rows_df"] = None
+
+        input_df = st.session_state["input_df"]
 
         # Step 3: Let the user select columns they want to drop
         st.write("### Select Columns to Drop Before Downloading")
@@ -101,15 +112,27 @@ if input_file is not None:
         )
 
         # Step 6: Run the pipeline with the selected configuration and capture the outputs
-        if st.button("Run Pipeline"):
-            processed_df, qa_report = process_data_pipeline(
-                input_df,
-                chills_column=chills_column if chills_column else None,
-                chills_intensity_column=chills_intensity_column if chills_intensity_column else None,
-                intensity_threshold=intensity_threshold,
-                mode=mode,
-                user_column_mappings=user_column_mappings  # Pass user-selected column mappings here
-            )
+        if st.button("Run Pipeline") or st.session_state.get("processed_df") is not None:
+            if st.session_state.get("processed_df") is None:
+                # Run the pipeline and store the results in session state
+                processed_df, intermediate_encoded_df, flagged_rows_df, qa_report = process_data_pipeline(
+                    input_df,
+                    chills_column=chills_column if chills_column else None,
+                    chills_intensity_column=chills_intensity_column if chills_intensity_column else None,
+                    intensity_threshold=intensity_threshold,
+                    mode=mode,
+                    user_column_mappings=user_column_mappings  # Pass user-selected column mappings here
+                )
+
+                # Save outputs to session state
+                st.session_state["processed_df"] = processed_df
+                st.session_state["intermediate_encoded_df"] = intermediate_encoded_df
+                st.session_state["flagged_rows_df"] = flagged_rows_df
+            else:
+                # Load from session state
+                processed_df = st.session_state["processed_df"]
+                intermediate_encoded_df = st.session_state["intermediate_encoded_df"]
+                flagged_rows_df = st.session_state["flagged_rows_df"]
 
             st.success("Data pipeline completed successfully!")
 
@@ -117,17 +140,40 @@ if input_file is not None:
             st.write("Processed Data Preview:")
             st.dataframe(processed_df.head())
 
-            # Step 11: Download processed data
+            # Step 8: Display flagged rows and let the user decide
+            if not flagged_rows_df.empty:
+                st.write("### Review Flagged Rows Individually")
+
+                # Show checkboxes for each row to allow users to individually drop rows
+                for index, row in flagged_rows_df.iterrows():
+                    if st.checkbox(f"Drop row {index}?", key=f"drop_row_{index}"):
+                        processed_df = processed_df.drop(index=index)
+
+                st.write("### Remaining Flagged Rows")
+                st.dataframe(processed_df)
+
+            # Remove Sanity_Flag column before download
+            processed_df = processed_df.drop(columns=['Sanity_Flag'], errors='ignore')
+
+            # Step 9: Download intermediate encoded CSV
+            st.write("### Download Encoded Data CSV File")
+            encoded_csv_data = save_dataframe_to_csv(intermediate_encoded_df)
+            st.download_button(
+                label="Download Encoded Data CSV",
+                data=encoded_csv_data,
+                file_name="encoded_data.csv",
+                mime='text/csv'
+            )
+
+            # Step 10: Download final processed data
+            st.write("### Download Final CSV File")
             csv_data = save_dataframe_to_csv(processed_df)
             st.download_button(
-                label="Download Processed CSV",
+                label="Download Final Processed CSV",
                 data=csv_data,
-                file_name="processed_data.csv",
+                file_name="final_processed_data.csv",
                 mime='text/csv'
             )
 
     except Exception as e:
         st.error(f"An error occurred: {e}")
-
-# TODO - look at picture and make multiple CSVs
-# save CSV after encoding, with the questions, then final csv should have only behavioral measure scores
