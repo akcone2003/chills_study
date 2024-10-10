@@ -1,53 +1,6 @@
-"""
-pipeline.py
-================
-
-This script is designed to process a CSV dataset by handling missing values,
-detecting outliers, generating a Quality Assurance (QA) report, performing
-sanity checks, and preprocessing data for statistical analysis.
-
-In addition, this script includes functionality to dynamically calculate and
-aggregate scores for various behavioral scales based on user-provided mappings
-for survey questions.
-
-The main function of this script is `process_data_pipeline`, which integrates
-all individual processing steps to ensure the data is cleaned, validated, and
-ready for analysis.
-
-Functions
----------
-1. handle_missing_values(df)
-    - Handles missing values separately for numerical and categorical columns.
-2. detect_outliers(df, column_name, threshold=3)
-    - Detects outliers in a numerical column using Z-score calculations.
-3. generate_qa_report(df)
-    - Generates a QA report summarizing missing values and outliers.
-4. sanity_check_chills(df, chills_column, chills_intensity_column, intensity_threshold=0, mode='flag')
-    - Checks for inconsistencies between chills response and chills intensity columns.
-5. detect_column_types(df)
-    - Automatically detects and classifies columns as nominal, ordinal, free text, or timestamp.
-6. preprocess_for_output(df)
-    - Preprocesses the DataFrame by encoding ordinal and nominal columns and normalizing column names.
-7. process_data_pipeline(input_df, chills_column, chills_intensity_column, intensity_threshold=0, mode='flag', user_column_mappings=None)
-    - Main pipeline function that:
-        1. Handles missing values.
-        2. Generates a QA report.
-        3. Performs sanity checks for specific columns.
-        4. Preprocesses the data for further analysis.
-        5. Calculates and aggregates scale scores based on user-provided mappings.
-
----------
-Located in scripts/helpers.py
----------
-normalize_column_names(df)
-    - Normalizes column names to remove special characters and standardize formatting.
-"""
-
-
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
-import sys
 from scripts.scoring_functions import calculate_all_scales
 from scripts.helpers import normalize_column_name
 
@@ -55,32 +8,7 @@ from scripts.helpers import normalize_column_name
 def handle_missing_values(df):
     """
     Handle missing values in the dataframe using appropriate imputation methods.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Input DataFrame with potential missing values in numerical and categorical columns.
-
-    Returns
-    -------
-    pd.DataFrame
-        DataFrame with missing numerical values filled with their respective column means
-        and missing categorical values filled with the placeholder 'Missing'.
-
-    Description
-    -----------
-    This function addresses missing values separately for numerical and categorical columns:
-
-    - For numerical columns: Missing values are replaced with the mean of the respective column.
-
-    - For categorical columns: Missing values are filled with a placeholder string 'Missing'. Additionally,
-      if a column has more than 50% of its values missing, a warning message is printed indicating the high percentage
-      of missing values.
-
-    This approach ensures that no data is dropped and maintains the integrity of both numerical and categorical columns
-    for further processing.
     """
-
     num_cols = df.select_dtypes(include=np.number)
     df[num_cols.columns] = num_cols.fillna(num_cols.mean())
 
@@ -97,38 +25,7 @@ def handle_missing_values(df):
 def detect_outliers(df, column_name, threshold=3):
     """
     Detect outliers in a numerical column using Z-score calculations.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Input DataFrame containing the column to be analyzed.
-    column_name : str
-        The name of the numerical column in which to detect outliers.
-    threshold : int, optional, default=3
-        The number of standard deviations from the mean to consider as an outlier.
-        Values with Z-scores greater than this threshold will be flagged as outliers.
-
-    Returns
-    -------
-    int
-        The count of outliers in the specified column based on the given threshold.
-
-    Description
-    -----------
-    This function identifies outliers in a numerical column by calculating Z-scores using
-    `StandardScaler` from the `scikit-learn` library. It performs the following steps:
-
-    - Drops any `NaN` values from the column to ensure accurate calculations.
-
-    - Checks if the column has zero variance (i.e., no variation), in which case outlier detection is skipped.
-
-    - Computes the Z-scores for each value in the column.
-
-    - Counts the number of values with absolute Z-scores exceeding the specified threshold, indicating outliers.
-
-    If the column has zero variance, the function returns 0, since no outliers can be detected in a constant column.
     """
-
     col_data = df[[column_name]].dropna()
 
     # Check if the column has zero variance to avoid issues with scaling
@@ -145,23 +42,6 @@ def detect_outliers(df, column_name, threshold=3):
 def generate_qa_report(df):
     """
     Generate a Quality Assurance (QA) report that identifies missing values and outliers.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Input DataFrame to generate the QA report.
-
-    Returns
-    -------
-    dict
-        A dictionary containing missing values and outliers information.
-
-    Description
-    -----------
-    This function generates a QA report for the given DataFrame. The report
-    includes a summary of columns with missing values and the count of outliers
-    in numerical columns. It uses the `detect_outliers` function to flag
-    outliers based on the standard deviation method.
     """
     report = {}
 
@@ -186,6 +66,23 @@ def generate_qa_report(df):
     }
 
     return report
+
+
+def sanity_check_chills(df, chills_column, chills_intensity_column, intensity_threshold=0, mode='flag'):
+    """
+    Perform a sanity check for inconsistencies between 'chills_column' and 'chills_intensity_column'.
+    """
+    # Identify rows where Chills is 0 but Chills_Intensity exceeds the threshold
+    inconsistent_rows = (df[chills_column] == 0) & (df[chills_intensity_column] > intensity_threshold)
+
+    if mode == 'flag':
+        # Create a new column 'Sanity_Flag' to mark these rows
+        df['Sanity_Flag'] = inconsistent_rows
+    elif mode == 'drop':
+        # Drop these rows from the DataFrame
+        df = df[~inconsistent_rows]
+
+    return df
 
 
 def detect_column_types(df):
@@ -277,77 +174,11 @@ def preprocess_for_output(df):
     return df
 
 
-def sanity_check_chills(df, chills_column, chills_intensity_column, intensity_threshold=0, mode='flag'):
+# CHANGED: Added mid-processing DataFrame return
+def process_data_pipeline(input_df, chills_column, chills_intensity_column, intensity_threshold=0, mode='flag',
+                          user_column_mappings=None):
     """
-    Perform a sanity check for inconsistencies between 'chills_column' and 'chills_intensity_column'.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        The input DataFrame containing the chills response columns.
-    chills_column : str
-        The name of the column representing whether chills were experienced (0 or 1).
-    chills_intensity_column : str
-        The name of the column representing the intensity of chills.
-    intensity_threshold : int, optional
-        The threshold value above which intensity is considered non-trivial.
-    mode : str, optional, default='flag'
-        The mode of handling inconsistent rows. Options:
-        - 'flag': Mark inconsistent rows with a new column 'Sanity_Flag' as True.
-        - 'drop': Remove the inconsistent rows from the DataFrame.
-
-    Returns
-    -------
-    pd.DataFrame
-        DataFrame with the inconsistencies handled based on the specified mode.
-    """
-    # Identify rows where Chills is 0 but Chills_Intensity exceeds the threshold
-    inconsistent_rows = (df[chills_column] == 0) & (df[chills_intensity_column] > intensity_threshold)
-
-    if mode == 'flag':
-        # Create a new column 'Sanity_Flag' to mark these rows
-        df['Sanity_Flag'] = inconsistent_rows
-    elif mode == 'drop':
-        # Drop these rows from the DataFrame
-        df = df[~inconsistent_rows]
-
-    return df
-
-# Full pipeline
-def process_data_pipeline(input_df, chills_column, chills_intensity_column, intensity_threshold=0, mode='flag', user_column_mappings=None):
-    """
-    Main pipeline function to handle the following:
-    1. Perform automated QA on the input DataFrame.
-    2. Generate a QA report.
-    3. Perform sanity checks for chills response.
-    4. Preprocess the data for output.
-    5. Calculate and aggregate scale scores based on user-provided mappings.
-
-    Parameters
-    ----------
-    input_df : pd.DataFrame
-        The input DataFrame to be processed.
-    chills_column : str
-        The column representing chills response (0 or 1).
-    chills_intensity_column : str
-        The column representing the intensity of chills.
-    intensity_threshold : int, optional
-        The threshold for flagging/removing inconsistent rows.
-    mode : str, optional, default='flag'
-        The mode of handling inconsistent rows ('flag' or 'drop').
-    user_column_mappings : dict, optional
-        A dictionary containing user-provided mappings for scale questions to DataFrame columns.
-
-    Returns
-    -------
-    processed_df : pd.DataFrame
-        The preprocessed DataFrame, ready for analysis.
-    intermediate_encoded_df : pd.DataFrame
-        Intermediate encoded DataFrame before scoring and column dropping.
-    flagged_rows_df : pd.DataFrame
-        DataFrame containing flagged rows if mode='flag'.
-    qa_report : str
-        A string representation of the QA report.
+    Main pipeline function that handles QA, sanity checks, encoding, and scoring.
     """
     # Step 1: Handle missing values
     df = handle_missing_values(input_df)
@@ -358,17 +189,13 @@ def process_data_pipeline(input_df, chills_column, chills_intensity_column, inte
     # Step 3: Perform sanity check for chills response using dynamic columns
     df = sanity_check_chills(df, chills_column, chills_intensity_column, intensity_threshold, mode)
 
-    # Step 4: Capture flagged rows if mode is 'flag'
-    flagged_rows_df = pd.DataFrame()
-    if mode == 'flag' and 'Sanity_Flag' in df.columns:
-        flagged_rows_df = df[df['Sanity_Flag']]
+    # Step 4: Preprocess the data for mid-processing (encoded dataset with all columns intact)
+    intermediate_df = preprocess_for_output(df.copy())
 
-    # Step 5: Preprocess the data for output (encoding and normalization)
-    intermediate_encoded_df = preprocess_for_output(df)
+    # Step 5: Calculate and aggregate the behavioral scales using user mappings
+    processed_df = calculate_all_scales(intermediate_df, user_column_mappings)
 
-    # Step 6: Calculate and aggregate the behavioral scales using user mappings
-    processed_df = intermediate_encoded_df.copy()
-    if user_column_mappings is not None:
-        processed_df = calculate_all_scales(processed_df, user_column_mappings)
+    # Step 6: Final processing with only score columns (question columns dropped)
+    final_df = calculate_all_scales(intermediate_df, user_column_mappings, mid_processing=False)
 
-    return processed_df, intermediate_encoded_df, flagged_rows_df, str(qa_report)
+    return final_df, intermediate_df, str(qa_report)

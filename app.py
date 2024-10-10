@@ -8,19 +8,23 @@ def save_dataframe_to_csv(df):
     return df.to_csv(index=False)
 
 
-def save_text_to_file(text, filename="report.txt"):
-    """Save text to a downloadable in-memory file and return it."""
-    return text.encode('utf-8')
-
-
 # Streamlit App Interface
 st.title("Data Pipeline Web Application")
 
+# Initialize session state variables if they don't exist
+if 'processed_df' not in st.session_state:
+    st.session_state.processed_df = None
+if 'intermediate_df' not in st.session_state:
+    st.session_state.intermediate_df = None
+if 'qa_report' not in st.session_state:
+    st.session_state.qa_report = None
+if 'flagged_rows' not in st.session_state:
+    st.session_state.flagged_rows = {}
+if 'user_column_mappings' not in st.session_state:
+    st.session_state.user_column_mappings = {}
+
 # Step 1: File Upload for Input CSV
 input_file = st.file_uploader("Upload your Input CSV File", type=["csv"])
-
-# Global variable to store flagged rows
-flagged_rows = {}
 
 # Step 2: Run the Pipeline if a file is uploaded
 if input_file is not None:
@@ -41,18 +45,48 @@ if input_file is not None:
             input_df = input_df.drop(columns=drop_columns)
             st.success(f"Dropped columns: {drop_columns}")
 
+        # Step 3.1: Let the user select columns for each scale using a multiselect
+        st.write("### Map Columns to Scale Questions")
+
+        available_scales = ["MODTAS"]  # Extend this list as more scales are added
+
+        # User selects the scales they want to include in the analysis
+        selected_scales = st.multiselect(
+            "Select scales to include in the analysis:",
+            options=available_scales,
+            default=[]
+        )
+
+        # For each selected scale, let the user select the columns for that scale
+        user_column_mappings = {}
+        for scale in selected_scales:
+            st.write(f"### Select Columns for {scale}")
+            selected_columns = st.multiselect(
+                f"Select the columns that correspond to the questions for {scale}:",
+                options=input_df.columns.tolist(),
+                help=f"Select columns from your dataset that match the {scale} questions.",
+                key=f"{scale}_columns"
+            )
+            if selected_columns:
+                user_column_mappings[scale] = {f"Question {i + 1}": col for i, col in enumerate(selected_columns)}
+
+        # Store the column mappings in session state
+        st.session_state.user_column_mappings = user_column_mappings
+
         # Step 4: Let the user select columns for the sanity check
         st.write("### Sanity Check Configuration")
 
         chills_column = st.selectbox(
             "Select the column representing Chills Response (0 or 1):",
-            options=input_df.columns.tolist(),
+            options=[None] + input_df.columns.tolist(),
+            format_func=lambda x: "" if x is None else x,
             help="This should be a binary column where 0 means no chills and 1 means chills were experienced."
         )
 
         chills_intensity_column = st.selectbox(
             "Select the column representing Chills Intensity:",
-            options=input_df.columns.tolist(),
+            options=[None] + input_df.columns.tolist(),
+            format_func=lambda x: "" if x is None else x,
             help="This column should represent the intensity of chills, with higher values indicating stronger chills."
         )
 
@@ -70,62 +104,98 @@ if input_file is not None:
             help="'flag' will add a column indicating the inconsistent rows, while 'drop' will remove these rows from the dataset."
         )
 
-        # Step 5: Run the pipeline with the selected configuration and capture the outputs
+        # Step 6: Run the pipeline with the selected configuration and capture the outputs
         if st.button("Run Pipeline"):
-            processed_df, intermediate_encoded_df, flagged_rows_df, qa_report = process_data_pipeline(
+            st.session_state.processed_df, st.session_state.intermediate_df, st.session_state.qa_report = process_data_pipeline(
                 input_df,
                 chills_column=chills_column if chills_column else None,
                 chills_intensity_column=chills_intensity_column if chills_intensity_column else None,
                 intensity_threshold=intensity_threshold,
-                mode=mode
-
+                mode=mode,
+                user_column_mappings=st.session_state.user_column_mappings  # Pass user-selected column mappings here
             )
 
             st.success("Data pipeline completed successfully!")
 
-            # Step 6: Display the processed DataFrame preview
-            st.write("### Processed Data Preview:")
-            st.dataframe(processed_df.head())
-
-            # Step 7: Display the intermediate encoded DataFrame preview
-            st.write("### Intermediate Encoded Data Preview:")
-            st.dataframe(intermediate_encoded_df.head())
-
-            # Step 8: Display flagged rows, if any
-            if not flagged_rows_df.empty:
-                st.write("### Flagged Rows:")
-                st.dataframe(flagged_rows_df)
-
-            # Step 9: Download options
-            # 9.1 Download Final Processed CSV
-            csv_data = save_dataframe_to_csv(processed_df)
-            st.download_button(
-                label="Download Final Processed CSV",
-                data=csv_data,
-                file_name="final_processed_data.csv",
-                mime='text/csv'
-            )
-
-            # 9.2 Download Intermediate Encoded CSV
-            encoded_csv_data = save_dataframe_to_csv(intermediate_encoded_df)
-            st.download_button(
-                label="Download Intermediate Encoded Data CSV",
-                data=encoded_csv_data,
-                file_name="intermediate_encoded_data.csv",
-                mime='text/csv'
-            )
-
-            # 9.3 Display and Download QA Report
-            st.write("### Quality Assurance (QA) Report:")
-            st.text(qa_report)
-
-            qa_report_file = save_text_to_file(qa_report, filename="QA_Report.txt")
-            st.download_button(
-                label="Download QA Report",
-                data=qa_report_file,
-                file_name="QA_Report.txt",
-                mime='text/plain'
-            )
-
     except Exception as e:
         st.error(f"An error occurred: {e}")
+
+# If the pipeline has been run, display the outputs
+if st.session_state.processed_df is not None:
+    processed_df = st.session_state.processed_df
+    intermediate_df = st.session_state.intermediate_df
+    qa_report = st.session_state.qa_report
+
+    # Step 7: Display the processed DataFrame preview
+    st.write("Processed Data Preview:")
+    st.dataframe(processed_df.head())
+
+    # Step 8: Mid-processing Download - Encoded Values
+    st.write("### Download Encoded Dataset (Mid-Processing)")
+    encoded_csv = save_dataframe_to_csv(intermediate_df)
+    st.download_button(
+        label="Download Encoded CSV",
+        data=encoded_csv,
+        file_name="encoded_dataset.csv",
+        mime='text/csv'
+    )
+
+    # Step 9: Let the user select columns for review and flagging
+    st.write("### Select Text Columns for Review and Flagging")
+    text_columns = processed_df.select_dtypes(include='object').columns.tolist()
+
+    if text_columns:
+        selected_columns = st.multiselect(
+            "Select text columns to review (choose one or more):",
+            options=text_columns,
+            default=[]
+        )
+
+        if selected_columns:
+            st.write("### Review and Flag Text Responses")
+            for col in selected_columns:
+                st.write(f"**Column**: `{col}`")
+
+                flag_list = []
+                for idx, value in processed_df[col].items():
+                    with st.expander(f"Row {idx + 1}: {value[:50]}..."):
+                        st.write(f"Full Response: {value}")
+                        flag = st.checkbox(f"Flag this row in '{col}'", key=f"{col}_{idx}")
+                        if flag:
+                            reason = st.text_input(f"Reason for flagging row {idx + 1}:", key=f"reason_{col}_{idx}")
+                            flag_list.append((idx, reason))
+
+                if flag_list:
+                    st.session_state.flagged_rows[col] = flag_list
+
+    # Step 11: Add an option to remove flagged rows
+    if st.session_state.flagged_rows:
+        if st.checkbox("Drop all flagged rows before download?"):
+            flagged_indices = [idx for col_flags in st.session_state.flagged_rows.values() for idx, _ in col_flags]
+            processed_df = processed_df.drop(flagged_indices)
+            st.success("Flagged rows have been dropped from the final dataset.")
+
+    # Step 12: Modify QA report to include flagged information
+    if st.session_state.flagged_rows:
+        flagged_info = "Flagged Rows Information:\n\n"
+        for col, flags in st.session_state.flagged_rows.items():
+            flagged_info += f"Column: {col}\n"
+            for idx, reason in flags:
+                flagged_info += f" - Row {idx + 1}: {reason}\n"
+        st.session_state.qa_report += "\n\n" + flagged_info
+
+    # Step 12: Final CSV download - With Only Behavioral Scores
+    st.write("### Download Final Processed Dataset (With Scores Only)")
+    csv_data = save_dataframe_to_csv(processed_df)
+    st.download_button(
+        label="Download Final Processed CSV",
+        data=csv_data,
+        file_name="final_processed_data.csv",
+        mime='text/csv'
+    )
+
+    # Step 13: Display the QA report
+    st.write("Quality Assurance Report:")
+    st.text(st.session_state.qa_report)
+
+# TODO - do logic for individually reviewing the rows and dropping them

@@ -40,9 +40,10 @@ def score_modtas(df, column_mapping):
 # Make sure that the sub scores are being represented
 
 
-def calculate_all_scales(df, user_column_mappings):
+# CHANGED: Updated calculate_all_scales to support mid-processing and final outputs
+def calculate_all_scales(df, user_column_mappings, mid_processing=False):
     """
-    Calculate all available scale scores for the input DataFrame and drop question columns after scoring.
+    Calculate all available scale scores for the input DataFrame.
 
     Parameters:
     ----------
@@ -50,14 +51,15 @@ def calculate_all_scales(df, user_column_mappings):
         Input DataFrame containing columns corresponding to multiple scales.
     user_column_mappings : dict
         Dictionary mapping scales to question-to-column mappings.
+    mid_processing : bool, optional
+        If True, keeps question columns and returns encoded DataFrame (Default: False)
 
     Returns:
     -------
     pd.DataFrame
         A DataFrame containing the original columns with additional columns for each calculated scale.
-        All question columns are removed after scoring.
+        All question columns are removed after scoring unless mid_processing is set to True.
     """
-    # Create a copy of the input DataFrame to avoid modifying the original
     df_scored = df.copy()
 
     # Dictionary of scale scoring functions
@@ -65,44 +67,24 @@ def calculate_all_scales(df, user_column_mappings):
         'MODTAS': score_modtas,  # Add other scale functions here as needed
     }
 
-    # Track all question columns to be dropped
     question_columns_to_drop = []
-
-    # Normalize the DataFrame columns once at the beginning
-    df_scored.columns = [normalize_column_name(col) for col in df_scored.columns]
 
     # Calculate each scale score and add it as a new column
     for scale_name, scoring_fn in scoring_functions.items():
         if scale_name not in user_column_mappings:
-            print(f"\n\n\nSkipping {scale_name} because no user mappings are provided.")
             continue
 
-        try:
-            # Get the user-provided column mappings for this scale
-            column_mapping = user_column_mappings[scale_name]
+        column_mapping = user_column_mappings[scale_name]
+        df_scored[scale_name + '_Score'] = scoring_fn(df_scored, column_mapping)
+        question_columns_to_drop.extend(list(column_mapping.values()))
 
-            # Normalize the column mapping to ensure consistency
-            column_mapping = {k: normalize_column_name(v) for k, v in column_mapping.items()}
-            print(f"\n\n\nMapping for {scale_name}: {column_mapping}")  # Debug: Show mappings
+    # CHANGED: Return the encoded DataFrame for mid-processing step
+    if mid_processing:
+        return df_scored
 
-            # Calculate the score using the mapped columns
-            df_scored[scale_name + '_Score'] = scoring_fn(df_scored, column_mapping)
-            print(f"\n\n\nSuccessfully scored {scale_name}")
-
-            # Add the columns used in this scale to the drop list
-            question_columns_to_drop.extend(list(column_mapping.values()))
-
-        except Exception as e:
-            # Debug output: Which columns are missing?
-            print(f"\n\n\nSkipping {scale_name} due to error: {e}")
-            print(f"DataFrame columns: {df.columns.tolist()}")  # Print current columns for debug
-
-    # Remove the columns used for scoring
-    print(f"\n\nColumns to be dropped: {question_columns_to_drop}")  # Debug: Show columns to be dropped
+    # CHANGED: Remove question columns for final output
     df_scored = df_scored.drop(columns=question_columns_to_drop, errors='ignore')
 
-    # Debug: Print the final columns after scoring
-    print("Columns after scoring and dropping questions:", df_scored.columns.tolist())
     return df_scored
 
 # TODO - look into starting with string associated with behavioral measure
