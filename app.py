@@ -7,20 +7,6 @@ def save_dataframe_to_csv(df):
     """Convert a DataFrame to CSV format in-memory and return as a string."""
     return df.to_csv(index=False)
 
-
-# def update_qa_report():
-#     """Update QA report with flagged rows information."""
-#     flagged_info = "Flagged Rows Information:\n\n"
-#     for col, flags in st.session_state.flagged_rows.items():
-#         flagged_info += f"Column: {col}\n"
-#         for idx, reason in flags:
-#             flagged_info += f" - Row {idx + 1}: {reason if reason else 'No reason provided'}\n"
-#
-#     # If there are new flags, update the QA report
-#     if st.session_state.qa_report_flags != st.session_state.flagged_rows:
-#         st.session_state.qa_report += "\n\n" + flagged_info
-#         st.session_state.qa_report_flags = st.session_state.flagged_rows.copy()
-
 def rebuild_qa_report():
     """Rebuild the QA report with the current flagged rows."""
     qa_report = "Quality Assurance Report\n\n"
@@ -234,18 +220,8 @@ if st.session_state.processed_df is not None:
             processed_df = processed_df.drop(flagged_indices)
             st.success("Flagged rows have been dropped from the final dataset.")
 
-    # # Step 13: Modify QA report to include flagged information
-    # if st.session_state.flagged_rows:
-    #     flagged_info = "Flagged Rows Information:\n\n"
-    #     for col, flags in st.session_state.flagged_rows.items():
-    #         flagged_info += f"Column: {col}\n"
-    #         for idx, reason in flags:
-    #             flagged_info += f" - Row {idx + 1}: {reason}\n"
-    #     st.session_state.qa_report += "\n\n" + flagged_info
-
     # Step 14: Update the QA report with flagged rows only if new flags are detected
     rebuild_qa_report()
-
 
     # Step 15: Final CSV download - With Only Behavioral Scores
     st.write("### Download Final Processed Dataset (With Scores Only)")
