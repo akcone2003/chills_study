@@ -8,6 +8,37 @@ def save_dataframe_to_csv(df):
     return df.to_csv(index=False)
 
 
+# def update_qa_report():
+#     """Update QA report with flagged rows information."""
+#     flagged_info = "Flagged Rows Information:\n\n"
+#     for col, flags in st.session_state.flagged_rows.items():
+#         flagged_info += f"Column: {col}\n"
+#         for idx, reason in flags:
+#             flagged_info += f" - Row {idx + 1}: {reason if reason else 'No reason provided'}\n"
+#
+#     # If there are new flags, update the QA report
+#     if st.session_state.qa_report_flags != st.session_state.flagged_rows:
+#         st.session_state.qa_report += "\n\n" + flagged_info
+#         st.session_state.qa_report_flags = st.session_state.flagged_rows.copy()
+
+def rebuild_qa_report():
+    """Rebuild the QA report with the current flagged rows."""
+    qa_report = "Quality Assurance Report\n\n"
+    qa_report += f"Missing Values: {st.session_state.get('missing_values', {})}\n\n"
+    qa_report += f"Outliers: {st.session_state.get('outliers', {})}\n\n"
+
+    flagged_info = "Flagged Rows Information:\n\n"
+    for col, flags in st.session_state.flagged_rows.items():
+        flagged_info += f"Column: {col}\n"
+        for idx, reason in flags:
+            flagged_info += f" - Row {idx + 1}: {reason if reason else 'No reason provided'}\n"
+
+    qa_report += flagged_info
+    st.session_state.qa_report = qa_report  # Rebuild the QA report from scratch
+
+
+
+
 # Streamlit App Interface
 st.title("Data Pipeline Web Application")
 
@@ -17,11 +48,17 @@ if 'processed_df' not in st.session_state:
 if 'intermediate_df' not in st.session_state:
     st.session_state.intermediate_df = None
 if 'qa_report' not in st.session_state:
-    st.session_state.qa_report = None
+    st.session_state.qa_report = "Quality Assurance Report\n\n"
+if 'qa_report_flags' not in st.session_state:
+    st.session_state.qa_report_flags = {}  # Track rows already added to the QA report
 if 'flagged_rows' not in st.session_state:
     st.session_state.flagged_rows = {}
 if 'user_column_mappings' not in st.session_state:
     st.session_state.user_column_mappings = {}
+# Initialize the `sanity_check_drops` set if it doesn't exist in session state
+if 'sanity_check_drops' not in st.session_state:
+    st.session_state.sanity_check_drops = set()
+
 
 # Step 1: File Upload for Input CSV
 input_file = st.file_uploader("Upload your Input CSV File", type=["csv"])
@@ -140,7 +177,29 @@ if st.session_state.processed_df is not None:
         mime='text/csv'
     )
 
-    # Step 9: Let the user select columns for review and flagging
+    # Step 9: Display flagged rows for individual review and dropping
+    if "Sanity_Flag" in processed_df.columns:
+        flagged_rows = processed_df[processed_df['Sanity_Flag'] == True]
+        st.write("### Sanity Check - Review Flagged Rows")
+        st.write("Below are the rows flagged for sanity check inconsistencies:")
+
+        # Display each flagged row with a checkbox for user to drop it
+        for idx, row in flagged_rows.iterrows():
+            with st.expander(f"Row {idx}"):
+                st.write(row)
+                if st.checkbox(f"Drop row {idx}?", key=f"sanity_drop_{idx}"):
+                    st.session_state.sanity_check_drops.add(idx)
+
+        # Step 10: Apply individual row drops if any
+    if st.session_state.sanity_check_drops:
+        st.write(f"Rows marked for removal: {st.session_state.sanity_check_drops}")
+        if st.button("Remove Selected Rows"):
+            processed_df = processed_df.drop(st.session_state.sanity_check_drops, errors='ignore')
+            st.success(f"Dropped rows: {st.session_state.sanity_check_drops}")
+            st.session_state.sanity_check_drops.clear()  # Reset the drop list
+            st.session_state.processed_df = processed_df  # Update the session state
+
+    # Step 11: Let the user select columns for review and flagging
     st.write("### Select Text Columns for Review and Flagging")
     text_columns = processed_df.select_dtypes(include='object').columns.tolist()
 
@@ -168,23 +227,27 @@ if st.session_state.processed_df is not None:
                 if flag_list:
                     st.session_state.flagged_rows[col] = flag_list
 
-    # Step 11: Add an option to remove flagged rows
+    # Step 12: Add an option to remove flagged rows
     if st.session_state.flagged_rows:
         if st.checkbox("Drop all flagged rows before download?"):
             flagged_indices = [idx for col_flags in st.session_state.flagged_rows.values() for idx, _ in col_flags]
             processed_df = processed_df.drop(flagged_indices)
             st.success("Flagged rows have been dropped from the final dataset.")
 
-    # Step 12: Modify QA report to include flagged information
-    if st.session_state.flagged_rows:
-        flagged_info = "Flagged Rows Information:\n\n"
-        for col, flags in st.session_state.flagged_rows.items():
-            flagged_info += f"Column: {col}\n"
-            for idx, reason in flags:
-                flagged_info += f" - Row {idx + 1}: {reason}\n"
-        st.session_state.qa_report += "\n\n" + flagged_info
+    # # Step 13: Modify QA report to include flagged information
+    # if st.session_state.flagged_rows:
+    #     flagged_info = "Flagged Rows Information:\n\n"
+    #     for col, flags in st.session_state.flagged_rows.items():
+    #         flagged_info += f"Column: {col}\n"
+    #         for idx, reason in flags:
+    #             flagged_info += f" - Row {idx + 1}: {reason}\n"
+    #     st.session_state.qa_report += "\n\n" + flagged_info
 
-    # Step 12: Final CSV download - With Only Behavioral Scores
+    # Step 14: Update the QA report with flagged rows only if new flags are detected
+    rebuild_qa_report()
+
+
+    # Step 15: Final CSV download - With Only Behavioral Scores
     st.write("### Download Final Processed Dataset (With Scores Only)")
     csv_data = save_dataframe_to_csv(processed_df)
     st.download_button(
@@ -194,8 +257,15 @@ if st.session_state.processed_df is not None:
         mime='text/csv'
     )
 
-    # Step 13: Display the QA report
+    # Step 16: Display the QA report
     st.write("Quality Assurance Report:")
     st.text(st.session_state.qa_report)
 
-# TODO - do logic for individually reviewing the rows and dropping them
+    # Step 17: Download button for the QA report
+    st.download_button(
+        label="Download QA Report",
+        data=st.session_state.qa_report,
+        file_name="qa_report.txt",
+        mime='text/plain'
+    )
+

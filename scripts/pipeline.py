@@ -174,7 +174,7 @@ def preprocess_for_output(df):
     return df
 
 
-# CHANGED: Added mid-processing DataFrame return
+# Full pipeline
 def process_data_pipeline(input_df, chills_column, chills_intensity_column, intensity_threshold=0, mode='flag',
                           user_column_mappings=None):
     """
@@ -189,13 +189,10 @@ def process_data_pipeline(input_df, chills_column, chills_intensity_column, inte
     # Step 3: Perform sanity check for chills response using dynamic columns
     df = sanity_check_chills(df, chills_column, chills_intensity_column, intensity_threshold, mode)
 
-    # Step 4: Preprocess the data for mid-processing (encoded dataset with all columns intact)
+    # Step 4: Save the data encoded dataset with all columns intact and no aggregation
     intermediate_df = preprocess_for_output(df.copy())
 
-    # Step 5: Calculate and aggregate the behavioral scales using user mappings
-    processed_df = calculate_all_scales(intermediate_df, user_column_mappings)
-
-    # Step 6: Final processing with only score columns (question columns dropped)
+    # Step 5: Final processing with only score columns (question columns dropped)
     final_df = calculate_all_scales(intermediate_df, user_column_mappings, mid_processing=False)
 
     return final_df, intermediate_df, str(qa_report)
