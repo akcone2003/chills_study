@@ -51,20 +51,52 @@ def score_tipi(df, column_mapping):
     pd.Series
         A Series containing the TIPI scores for each row in the DataFrame.
     """
-    # Normalize column mapping to ensure consistency
-    tipi_questions = [normalize_column_name(col) for col in column_mapping.values()]
+
+    def recode_reverse_score(item_score):
+        """
+        Recode the reverse-scored items.
+        Reverse scoring is done by subtracting the original score from 8.
+        """
+        return 8 - item_score
 
     # Normalize the DataFrame columns as well
     df.columns = [normalize_column_name(col) for col in df.columns]
 
-    # Check if the necessary questions are in the DataFrame
-    missing_columns = [q for q in tipi_questions if q not in df.columns]
-    if missing_columns:
-        print(f"\n\n\nMissing columns for MODTAS scoring: {missing_columns}")
-        return pd.Series(['Missing Columns'] * len(df))  # Return None values for rows if columns are missing
+    # Recode reverse-scored items within the DataFrame using column mappings for reverse-scored items
+    df[column_mapping[2]] = df[column_mapping[2]].apply(recode_reverse_score)
+    df[column_mapping[4]] = df[column_mapping[4]].apply(recode_reverse_score)
+    df[column_mapping[6]] = df[column_mapping[6]].apply(recode_reverse_score)
+    df[column_mapping[8]] = df[column_mapping[8]].apply(recode_reverse_score)
+    df[column_mapping[10]] = df[column_mapping[10]].apply(recode_reverse_score)
 
-    # Calculate the average of all MODTAS questions for each row
-    return df[tipi_questions].mean(axis=1)
+    # Calculate the average scores for each personality dimension
+    df['Extraversion'] = df[[column_mapping[1], column_mapping[6]]].mean(axis=1)
+    df['Agreeableness'] = df[[column_mapping[2], column_mapping[7]]].mean(axis=1)
+    df['Conscientiousness'] = df[[column_mapping[3], column_mapping[8]]].mean(axis=1)
+    df['Emotional_Stability'] = df[[column_mapping[4], column_mapping[9]]].mean(axis=1)
+    df['Openness_to_Experience'] = df[[column_mapping[5], column_mapping[10]]].mean(axis=1)
+
+    # Return a DataFrame with the calculated scores for each row
+    return df[['Extraversion', 'Agreeableness', 'Conscientiousness', 'Emotional_Stability', 'Openness_to_Experience']]
+
+
+def score_vviq(df, column_mapping):
+    """
+    Calculate the VVIQ score for each row in the DataFrame.
+
+    Parameters:
+    ----------
+    df : pd.DataFrame
+        Input DataFrame with columns corresponding to the MODTAS questions.
+    column_mapping : dict
+        Dictionary mapping the original question to the corresponding column in the input DataFrame.
+
+    Returns:
+    -------
+    pd.Series
+        A Series containing the VVIQ scores for each row in the DataFrame.
+    """
+    pass
 
 
 
@@ -96,7 +128,9 @@ def calculate_all_scales(df, user_column_mappings, mid_processing=False):
 
     # Dictionary of scale scoring functions
     scoring_functions = {
-        'MODTAS': score_modtas,  # Add other scale functions here as needed
+        'MODTAS': score_modtas,  # TODO - Add other scale functions here as needed
+        'TIPI': score_tipi,
+        'VVIQ': score_vviq
     }
 
     question_columns_to_drop = []
