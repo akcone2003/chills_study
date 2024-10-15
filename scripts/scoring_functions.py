@@ -35,7 +35,7 @@ def score_modtas(df, column_mapping):
     return df[modtas_questions].mean(axis=1)
 
 
-def score_tipi(df, column_mapping):
+def score_tipi(df, column_mapping): # TODO - unsure how to code this lowkey
     """
     Calculate the TIPI (ten-item personality inventory) average score for each row in the DataFrame.
 
@@ -77,7 +77,7 @@ def score_tipi(df, column_mapping):
     df['Openness_to_Experience'] = df[[column_mapping[5], column_mapping[10]]].mean(axis=1)
 
     # Return a DataFrame with the calculated scores for each row
-    return df[['Extraversion', 'Agreeableness', 'Conscientiousness', 'Emotional_Stability', 'Openness_to_Experience']]
+    return df[['Extraversion', 'Agreeableness', 'Conscientiousness', 'Neuroticism', 'Openness_to_Experience']]
 
 
 def score_vviq(df, column_mapping):
@@ -96,11 +96,32 @@ def score_vviq(df, column_mapping):
     pd.Series
         A Series containing the average VVIQ score for each row in the DataFrame.
     """
-    # Calculate the average VVIQ score across all specified columns for each participant
-    vviq_columns = [column_mapping[i] for i in range(1, 17)]  # Assuming there are 16 VVIQ items
-    df['VVIQ'] = df[vviq_columns].mean(axis=1)
 
-    return df[['VVIQ']]
+    # Normalize the DataFrame columns
+    df.columns = [normalize_column_name(col) for col in df.columns]
+
+    # Print the column names in the DataFrame for debugging
+    print("Columns in DataFrame:", df.columns)
+    print("\n\nVVIQ Column Mappings:", column_mapping)
+
+    try:
+        # Collect the 16 VVIQ columns specified in column_mapping
+        vviq_columns = [normalize_column_name(col) for col in column_mapping.values()]
+
+        # Ensure that we have all the required VVIQ columns
+        if len(vviq_columns) != 16:
+            missing_columns = set(range(1, 17)) - set(column_mapping.keys())
+            raise ValueError(f"Missing columns for VVIQ items: {missing_columns}")
+
+        # Calculate the average VVIQ score for each row
+        return df[vviq_columns].mean(axis=1)
+
+    except KeyError as e:
+        raise KeyError(f"Column mapping is missing or invalid for VVIQ: {e}")
+    except ValueError as e:
+        raise ValueError(f"An error occurred with VVIQ scoring: {e}")
+    except Exception as e:
+        raise Exception(f"An unexpected error occurred during VVIQ scoring: {e}")
 
 
 
@@ -139,6 +160,8 @@ def calculate_all_scales(df, user_column_mappings, mid_processing=False):
     }
 
     question_columns_to_drop = []
+
+    print("\n\nColumns in DataFrame:", df.columns)
 
     # Calculate each scale score and add it as a new column
     for scale_name, scoring_fn in scoring_functions.items():
