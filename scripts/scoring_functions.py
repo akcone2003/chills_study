@@ -82,21 +82,26 @@ def score_tipi(df, column_mapping):
 
 def score_vviq(df, column_mapping):
     """
-    Calculate the VVIQ score for each row in the DataFrame.
+    Calculate the VVIQ (Vividness of Visual Imagery Questionnaire) average score for each row in the DataFrame.
 
     Parameters:
     ----------
     df : pd.DataFrame
-        Input DataFrame with columns corresponding to the MODTAS questions.
+        Input DataFrame with columns corresponding to the VVIQ questions.
     column_mapping : dict
-        Dictionary mapping the original question to the corresponding column in the input DataFrame.
+        Dictionary mapping the VVIQ questions to their corresponding columns in the input DataFrame.
 
     Returns:
     -------
     pd.Series
-        A Series containing the VVIQ scores for each row in the DataFrame.
+        A Series containing the average VVIQ score for each row in the DataFrame.
     """
-    pass
+    # Calculate the average VVIQ score across all specified columns for each participant
+    vviq_columns = [column_mapping[i] for i in range(1, 17)]  # Assuming there are 16 VVIQ items
+    df['VVIQ'] = df[vviq_columns].mean(axis=1)
+
+    return df[['VVIQ']]
+
 
 
 
