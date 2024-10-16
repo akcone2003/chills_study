@@ -19,11 +19,11 @@ def score_modtas(df, column_mapping):
     pd.Series
         A Series containing the average MODTAS scores for each row in the DataFrame.
     """
-    # Normalize column mapping to ensure consistency
-    modtas_questions = [normalize_column_name(col) for col in column_mapping.values()]
+    # Get questions
+    modtas_questions = list(column_mapping.values())
 
-    # Normalize the DataFrame columns as well
-    df.columns = [normalize_column_name(col) for col in df.columns]
+    print("MODTAS column count:", len(modtas_questions))
+    print("MODTAS columns", modtas_questions)
 
     # Check if the necessary questions are in the DataFrame
     missing_columns = [q for q in modtas_questions if q not in df.columns]
@@ -59,8 +59,8 @@ def score_tipi(df, column_mapping): # TODO - unsure how to code this lowkey
         """
         return 8 - item_score
 
-    # Normalize the DataFrame columns as well
-    df.columns = [normalize_column_name(col) for col in df.columns]
+   # Get questions
+    df.columns = list(column_mapping.values())
 
     # Recode reverse-scored items within the DataFrame using column mappings for reverse-scored items
     df[column_mapping[2]] = df[column_mapping[2]].apply(recode_reverse_score)
@@ -97,16 +97,13 @@ def score_vviq(df, column_mapping):
         A Series containing the average VVIQ score for each row in the DataFrame.
     """
 
-    # Normalize the DataFrame columns
-    df.columns = [normalize_column_name(col) for col in df.columns]
-
     # Print the column names in the DataFrame for debugging
     print("Columns in DataFrame:", df.columns)
     print("\n\nVVIQ Column Mappings:", column_mapping)
 
     try:
         # Collect the 16 VVIQ columns specified in column_mapping
-        vviq_columns = [normalize_column_name(col) for col in column_mapping.values()]
+        vviq_columns = list(column_mapping.values())
 
         # Ensure that we have all the required VVIQ columns
         if len(vviq_columns) != 16:
@@ -122,8 +119,6 @@ def score_vviq(df, column_mapping):
         raise ValueError(f"An error occurred with VVIQ scoring: {e}")
     except Exception as e:
         raise Exception(f"An unexpected error occurred during VVIQ scoring: {e}")
-
-
 
 
 # TODO - add more functions for scoring the other behavioral measures
@@ -169,7 +164,7 @@ def calculate_all_scales(df, user_column_mappings, mid_processing=False):
             continue
 
         column_mapping = user_column_mappings[scale_name]
-        df_scored[scale_name + '_Score'] = scoring_fn(df_scored, column_mapping)
+        df_scored[scale_name] = scoring_fn(df_scored, column_mapping)
         question_columns_to_drop.extend(list(column_mapping.values()))
 
     # Return the encoded DataFrame for mid-processing step

@@ -118,11 +118,6 @@ def detect_column_types(df):
         unique_values = df[col].nunique()
         total_rows = len(df)
 
-        # Detect if a column is a timestamp
-        if pd.to_datetime(df[col], errors='coerce').notna().sum() > 0.9 * len(df):
-            column_types['timestamp'].append(col)
-            continue
-
         # Heuristic for free text columns (many unique values compared to the number of rows)
         if unique_values / total_rows > 0.3:
             column_types['free_text'].append(col)

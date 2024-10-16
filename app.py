@@ -135,7 +135,7 @@ if input_file is not None:
                 chills_intensity_column=chills_intensity_column if chills_intensity_column else None,
                 intensity_threshold=intensity_threshold,
                 mode=mode,
-                user_column_mappings=st.session_state.user_column_mappings  # Pass user-selected column mappings here
+                user_column_mappings=st.session_state.user_column_mappings
             )
 
             st.success("Data pipeline completed successfully!")
