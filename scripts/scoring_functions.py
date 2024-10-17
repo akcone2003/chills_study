@@ -123,53 +123,49 @@ def score_vviq(df, column_mapping):
 
 
 # Updated calculate_all_scales to support mid-processing and final outputs
-def calculate_all_scales(df, user_column_mappings, mid_processing=False):
+# Main function to detect scales and calculate scores
+def calculate_all_scales(df, mid_processing=False):
     """
-    Calculate all available scale scores for the input DataFrame.
+    Dynamically detect scales based on column prefixes and calculate scores.
 
     Parameters:
     ----------
     df : pd.DataFrame
-        Input DataFrame containing columns corresponding to multiple scales.
-    user_column_mappings : dict
-        Dictionary mapping scales to question-to-column mappings.
+        Input DataFrame containing columns for multiple behavioral measures.
     mid_processing : bool, optional
-        If True, keeps question columns and returns encoded DataFrame (Default: False)
+        If True, retains the original columns. Default is False.
 
     Returns:
     -------
     pd.DataFrame
-        A DataFrame containing the original columns with additional columns for each calculated scale.
-        All question columns are removed after scoring unless mid_processing is set to True.
+        DataFrame with calculated scale scores and (optionally) question columns removed.
     """
     df_scored = df.copy()
 
-    # Dictionary of scale scoring functions
+    # Define the mapping between scale names (prefix) and their scoring functions
     scoring_functions = {
-        'MODTAS': score_modtas,  # TODO - Add other scale functions here as needed
+        'MODTAS': score_modtas,
         'TIPI': score_tipi,
         'VVIQ': score_vviq
     }
 
     question_columns_to_drop = []
 
-    print("\n\nColumns in DataFrame:", df.columns)
-
-    # Calculate each scale score and add it as a new column
+    # Loop through all scoring functions and process relevant columns
     for scale_name, scoring_fn in scoring_functions.items():
-        if scale_name not in user_column_mappings:
-            continue
+        # Find all columns starting with the scale prefix
+        matching_columns = [col for col in df.columns if col.startswith(scale_name)]
 
-        column_mapping = user_column_mappings[scale_name]
-        df_scored[scale_name] = scoring_fn(df_scored, column_mapping)
-        question_columns_to_drop.extend(list(column_mapping.values()))
+        if matching_columns:
+            print(f"Calculating scores for: {scale_name} (Columns: {len(matching_columns)})")
 
-    # Return the encoded DataFrame for mid-processing step
-    if mid_processing:
-        return df_scored
+            # Calculate the scale score and add it as a new column
+            df_scored[scale_name] = scoring_fn(df_scored, matching_columns)
+            question_columns_to_drop.extend(matching_columns)
 
-    # Remove question columns for final output
-    df_scored = df_scored.drop(columns=question_columns_to_drop, errors='ignore')
+    # Optionally drop question columns for the final output
+    if not mid_processing:
+        df_scored = df_scored.drop(columns=question_columns_to_drop, errors='ignore')
 
     return df_scored
 
