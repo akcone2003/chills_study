@@ -164,7 +164,7 @@ def preprocess_for_output(df):
         df[col] = df[col].astype('category').cat.codes
 
     # Step 4: Normalize dataframe columns
-    df = normalize_column_name(df)
+    df.columns = [normalize_column_name(col) for col in df.columns]
 
     return df
 

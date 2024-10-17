@@ -19,11 +19,8 @@ def score_modtas(df, column_mapping):
     pd.Series
         A Series containing the average MODTAS scores for each row in the DataFrame.
     """
-    # Get questions
-    modtas_questions = list(column_mapping.values())
-
-    print("MODTAS column count:", len(modtas_questions))
-    print("MODTAS columns", modtas_questions)
+    # Normalize column mapping to ensure consistency
+    modtas_questions = [normalize_column_name(col) for col in column_mapping.values()]
 
     # Check if the necessary questions are in the DataFrame
     missing_columns = [q for q in modtas_questions if q not in df.columns]
