@@ -77,7 +77,7 @@ def score_tipi(df, column_mapping): # TODO - unsure how to code this lowkey
     return df[['Extraversion', 'Agreeableness', 'Conscientiousness', 'Neuroticism', 'Openness_to_Experience']]
 
 
-def score_vviq(df, column_mapping):
+def score_vviq(df, column_mapping): # TODO - need help
     """
     Calculate the VVIQ (Vividness of Visual Imagery Questionnaire) average score for each row in the DataFrame.
 
@@ -118,8 +118,66 @@ def score_vviq(df, column_mapping):
         raise Exception(f"An unexpected error occurred during VVIQ scoring: {e}")
 
 
+def score_kamf(df, column_mapping): # TODO - need help with this
+    pass
+
+
+def score_dpes_awe(df, column_mapping):
+    """
+    Calculate the DPES-Awe (Dispositional Positive Emotion Scale) score for each row in the DataFrame.
+
+    Parameters:
+    ----------
+    df : pd.DataFrame
+        Input DataFrame
+    column_mapping : dict
+        Dictionary mapping the DPES-Awe questions to their corresponding columns in the input DataFrame.
+
+    Returns:
+    -------
+    pd.Series
+        A Series containing the score of DPES-Awe for each row in the DataFrame.
+    """
+    dpes_questions = [normalize_column_name(col) for col in column_mapping.values()]
+
+    # Check if the necessary questions are in the DataFrame
+    missing_columns = [q for q in dpes_questions if q not in df.columns]
+    if missing_columns:
+        print(f"\n\n\nMissing columns for DPES-Awe scoring: {missing_columns}")
+        return pd.Series(['Missing Columns'] * len(df))  # Return None values for rows if columns are missing
+
+    # Return dataframe with aggregated score for each row
+    return df[dpes_questions].sum(axis=1)
+
+def score_maia(df, column_mapping):
+    """
+   Calculate the MAIA (Multidimensional Assessment of Interoceptive Awareness) score for each row in the DataFrame.
+
+   Parameters:
+   ----------
+   df : pd.DataFrame
+       Input DataFrame
+   column_mapping : dict
+       Dictionary mapping the MAIA questions to their corresponding columns in the input DataFrame.
+
+   Returns:
+   -------
+   pd.Series
+       A series containing the score of MAIA for each row in the DataFrame.
+       """
+    maia_questions = [normalize_column_name(col) for col in column_mapping.values()]
+
+    # Check if the necessary questions are in the DataFrame
+    missing_columns = [q for q in maia_questions if q not in df.columns]
+    if missing_columns:
+        print(f"\n\n\nMissing columns for DPES-Awe scoring: {missing_columns}")
+        return pd.Series(['Missing Columns'] * len(df))  # Return None values for rows if columns are missing
+
+    # Return dataframe with aggregated score for each row
+    return df[maia_questions].sum(axis=1)
+
+
 # TODO - add more functions for scoring the other behavioral measures
-# Make sure that the sub scores are being represented
 
 
 # Updated calculate_all_scales to support mid-processing and final outputs
@@ -143,10 +201,14 @@ def calculate_all_scales(df, mid_processing=False):
     df_scored = df.copy()
 
     # Define the mapping between scale names (prefix) and their scoring functions
+    # TODO - add here
     scoring_functions = {
         'MODTAS': score_modtas,
         'TIPI': score_tipi,
-        'VVIQ': score_vviq
+        'VVIQ': score_vviq,
+        'KAMF': score_kamf,
+        'DPES-Awe': score_dpes_awe,
+        'MAIA': score_maia
     }
 
     question_columns_to_drop = []
@@ -169,6 +231,3 @@ def calculate_all_scales(df, mid_processing=False):
 
     return df_scored
 
-# TODO - look into starting with string associated with behavioral measure
-# will remove need for user input, just create checks in pipeline for if a question starts with the string for behavioral measure, it will call that
-# scoring function
