@@ -341,5 +341,4 @@ def calculate_all_scales(df, user_column_mappings, mid_processing=False):
     return df_scored
 
 
-# TODO - user way to add scales at runtime
 
