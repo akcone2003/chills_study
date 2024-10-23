@@ -152,22 +152,15 @@ def preprocess_for_output(df): # TODO - encoding is weird need to fix
     """
     # Step 1: Detect column types automatically
     column_types = detect_column_types(df)
-    print("\n\nDetected Column Types:", column_types)  # Debug print
 
     # Step 2: Handle ordinal columns by using OrdinalEncoder to preserve order
     ordinal_encoder = OrdinalEncoder()
     if column_types['ordinal']:
-        print("\n\nOrdinal Columns Before Encoding:", df[column_types['ordinal']].head())
         df[column_types['ordinal']] = ordinal_encoder.fit_transform(df[column_types['ordinal']])
-        print("\n\nOrdinal Columns After Encoding:", df[column_types['ordinal']].head())
 
     # Step 3: Handle nominal columns by converting to numeric codes
     for col in column_types['nominal']:
-        print(f"\n\nNominal Column Before Encoding: {col}")
-        print(df[col].head())
         df[col] = df[col].astype('category').cat.codes
-        print(f"N\n\nominal Column After Encoding: {col}")
-        print(df[col].head())
 
     # Step 4: Normalize dataframe columns
     df.columns = [normalize_column_name(col) for col in df.columns]

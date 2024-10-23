@@ -94,10 +94,6 @@ def score_vviq(df, column_mapping):  # TODO - need help
             A Series containing the average VVIQ score for each row in the DataFrame.
     """
 
-    # Print the column names in the DataFrame for debugging
-    print("Columns in DataFrame:", df.columns)
-    print("\n\nVVIQ Column Mappings:", column_mapping)
-
     try:
         # Collect the 16 VVIQ columns specified in column_mapping
         vviq_columns = list(column_mapping.values())
