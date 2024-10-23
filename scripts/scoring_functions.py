@@ -1,4 +1,3 @@
-import pandas as pd
 from scripts.helpers import normalize_column_name
 
 
