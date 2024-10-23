@@ -5,19 +5,19 @@ from scripts.helpers import normalize_column_name
 # Function to score the MODTAS scale
 def score_modtas(df, column_mapping):
     """
-    Calculate the MODTAS (Modified Tellegen Absorption Scale) average score for each row in the DataFrame.
+        Calculate the MODTAS (Modified Tellegen Absorption Scale) average score for each row in the DataFrame.
 
-    Parameters:
-    ----------
-    df : pd.DataFrame
-        Input DataFrame with columns corresponding to the MODTAS questions.
-    column_mapping : dict
-        Dictionary mapping the original question to the corresponding column in the input DataFrame.
+        Parameters:
+        ----------
+        df : pd.DataFrame
+            Input DataFrame with columns corresponding to the MODTAS questions.
+        column_mapping : dict
+            Dictionary mapping the original question to the corresponding column in the input DataFrame.
 
-    Returns:
-    -------
-    pd.Series
-        A Series containing the average MODTAS scores for each row in the DataFrame.
+        Returns:
+        -------
+        pd.Series
+            A Series containing the average MODTAS scores for each row in the DataFrame.
     """
     # Normalize column mapping to ensure consistency
     modtas_questions = [normalize_column_name(col) for col in column_mapping.values()]
@@ -32,31 +32,31 @@ def score_modtas(df, column_mapping):
     return df[modtas_questions].mean(axis=1)
 
 
-def score_tipi(df, column_mapping): # TODO - unsure how to code this lowkey
+def score_tipi(df, column_mapping):  # TODO - unsure how to code this lowkey
     """
-    Calculate the TIPI (ten-item personality inventory) average score for each row in the DataFrame.
+        Calculate the TIPI (ten-item personality inventory) average score for each row in the DataFrame.
 
-    Parameters:
-    ----------
-    df : pd.DataFrame
-        Input DataFrame with columns corresponding to the MODTAS questions.
-    column_mapping : dict
-        Dictionary mapping the original question to the corresponding column in the input DataFrame.
+        Parameters:
+        ----------
+        df : pd.DataFrame
+            Input DataFrame with columns corresponding to the MODTAS questions.
+        column_mapping : dict
+            Dictionary mapping the original question to the corresponding column in the input DataFrame.
 
-    Returns:
-    -------
-    pd.Series
-        A Series containing the TIPI scores for each row in the DataFrame.
+        Returns:
+        -------
+        pd.Series
+            A Series containing the TIPI scores for each row in the DataFrame.
     """
 
     def recode_reverse_score(item_score):
         """
-        Recode the reverse-scored items.
-        Reverse scoring is done by subtracting the original score from 8.
+            Recode the reverse-scored items.
+            Reverse scoring is done by subtracting the original score from 8.
         """
         return 8 - item_score
 
-   # Get questions
+    # Get questions
     df.columns = list(column_mapping.values())
 
     # Recode reverse-scored items within the DataFrame using column mappings for reverse-scored items
@@ -77,21 +77,21 @@ def score_tipi(df, column_mapping): # TODO - unsure how to code this lowkey
     return df[['Extraversion', 'Agreeableness', 'Conscientiousness', 'Neuroticism', 'Openness_to_Experience']]
 
 
-def score_vviq(df, column_mapping): # TODO - need help
+def score_vviq(df, column_mapping):  # TODO - need help
     """
-    Calculate the VVIQ (Vividness of Visual Imagery Questionnaire) average score for each row in the DataFrame.
+        Calculate the VVIQ (Vividness of Visual Imagery Questionnaire) average score for each row in the DataFrame.
 
-    Parameters:
-    ----------
-    df : pd.DataFrame
-        Input DataFrame with columns corresponding to the VVIQ questions.
-    column_mapping : dict
-        Dictionary mapping the VVIQ questions to their corresponding columns in the input DataFrame.
+        Parameters:
+        ----------
+        df : pd.DataFrame
+            Input DataFrame with columns corresponding to the VVIQ questions.
+        column_mapping : dict
+            Dictionary mapping the VVIQ questions to their corresponding columns in the input DataFrame.
 
-    Returns:
-    -------
-    pd.Series
-        A Series containing the average VVIQ score for each row in the DataFrame.
+        Returns:
+        -------
+        pd.Series
+            A Series containing the average VVIQ score for each row in the DataFrame.
     """
 
     # Print the column names in the DataFrame for debugging
@@ -118,25 +118,25 @@ def score_vviq(df, column_mapping): # TODO - need help
         raise Exception(f"An unexpected error occurred during VVIQ scoring: {e}")
 
 
-def score_kamf(df, column_mapping): # TODO - need help with this
+def score_kamf(df, column_mapping):  # TODO - need help with this
     pass
 
 
 def score_dpes_awe(df, column_mapping):
     """
-    Calculate the DPES-Awe (Dispositional Positive Emotion Scale) score for each row in the DataFrame.
+        Calculate the DPES-Awe (Dispositional Positive Emotion Scale) score for each row in the DataFrame.
 
-    Parameters:
-    ----------
-    df : pd.DataFrame
-        Input DataFrame
-    column_mapping : dict
-        Dictionary mapping the DPES-Awe questions to their corresponding columns in the input DataFrame.
+        Parameters:
+        ----------
+        df : pd.DataFrame
+            Input DataFrame
+        column_mapping : dict
+            Dictionary mapping the DPES-Awe questions to their corresponding columns in the input DataFrame.
 
-    Returns:
-    -------
-    pd.Series
-        A Series containing the score of DPES-Awe for each row in the DataFrame.
+        Returns:
+        -------
+        pd.Series
+            A Series containing the score of DPES-Awe for each row in the DataFrame.
     """
     dpes_questions = [normalize_column_name(col) for col in column_mapping.values()]
 
@@ -149,32 +149,144 @@ def score_dpes_awe(df, column_mapping):
     # Return dataframe with aggregated score for each row
     return df[dpes_questions].sum(axis=1)
 
+
 def score_maia(df, column_mapping):
     """
-   Calculate the MAIA (Multidimensional Assessment of Interoceptive Awareness) score for each row in the DataFrame.
+       Calculate the MAIA (Multidimensional Assessment of Interoceptive Awareness) score for each row in the DataFrame.
 
-   Parameters:
-   ----------
-   df : pd.DataFrame
-       Input DataFrame
-   column_mapping : dict
-       Dictionary mapping the MAIA questions to their corresponding columns in the input DataFrame.
+       Parameters:
+       ----------
+       df : pd.DataFrame
+           Input DataFrame
+       column_mapping : dict
+           Dictionary mapping the MAIA questions to their corresponding columns in the input DataFrame.
 
-   Returns:
-   -------
-   pd.Series
-       A series containing the score of MAIA for each row in the DataFrame.
-       """
+       Returns:
+       -------
+       pd.Series
+           A series containing the score of MAIA for each row in the DataFrame.
+    """
     maia_questions = [normalize_column_name(col) for col in column_mapping.values()]
 
     # Check if the necessary questions are in the DataFrame
     missing_columns = [q for q in maia_questions if q not in df.columns]
     if missing_columns:
-        print(f"\n\n\nMissing columns for DPES-Awe scoring: {missing_columns}")
+        print(f"\n\n\nMissing columns for MAIA scoring: {missing_columns}")
         return pd.Series(['Missing Columns'] * len(df))  # Return None values for rows if columns are missing
 
     # Return dataframe with aggregated score for each row
     return df[maia_questions].sum(axis=1)
+
+
+def score_ego_dissolution(df, column_mapping):
+    """
+        Calculate the Ego-Dissolution score for each row in the DataFrame.
+
+        Parameters:
+        ----------
+        df : pd.DataFrame
+        Input DataFrame
+        column_mapping : dict
+        Dictionary mapping the ego-dissolution questions to their corresponding columns in the input DataFrame.
+
+        Returns:
+        -------
+        pd.Series
+        A series containing the score of dissolution for each row in the DataFrame.
+    """
+    ego_dissolution_questions = [normalize_column_name(col) for col in column_mapping.values()]
+
+    # Check if the necessary questions are in the DataFrame
+    missing_columns = [q for q in ego_dissolution_questions if q not in df.columns]
+    if missing_columns:
+        print(f"\n\n\nMissing columns for Ego-Dissolution scoring: {missing_columns}")
+        return pd.Series(['Missing Columns'] * len(df))  # Return 'Missing Columns' for rows if columns are missing
+
+    # Return dataframe with aggregated score for each row
+    return df[ego_dissolution_questions].sum(axis=1)
+
+
+def score_smes(df, column_mapping):
+    """
+       Calculate the SMES score for each row in the DataFrame.
+
+       Parameters:
+       ----------
+       df : pd.DataFrame
+           Input DataFrame
+       column_mapping : dict
+           Dictionary mapping the SMES questions to their corresponding columns in the input DataFrame.
+
+       Returns:
+       -------
+       pd.Series
+           A series containing the score of SMES for each row in the DataFrame.
+    """
+    smes_questions = [normalize_column_name(col) for col in column_mapping.values()]
+
+    # Check if the necessary questions are in the DataFrame
+    missing_columns = [q for q in smes_questions if q not in df.columns]
+    if missing_columns:
+        print(f"\n\n\nMissing columns for SMES scoring: {missing_columns}")
+        return pd.Series(['Missing Columns'] * len(df))  # Return None values for rows if columns are missing
+
+    # Return dataframe with aggregated score for each row
+    return df[smes_questions].sum(axis=1)
+
+
+def score_emotional_breakthrough(df, column_mapping):
+    """
+       Calculate the Ego-Dissolution score for each row in the DataFrame.
+
+       Parameters:
+       ----------
+       df : pd.DataFrame
+           Input DataFrame
+       column_mapping : dict
+           Dictionary mapping the ego-dissolution questions to their corresponding columns in the input DataFrame.
+
+       Returns:
+       -------
+       pd.Series
+           A series containing the score of dissolution for each row in the DataFrame.
+     """
+    emot_break_questions = [normalize_column_name(col) for col in column_mapping.values()]
+
+    # Check if the necessary questions are in the DataFrame
+    missing_columns = [q for q in emot_break_questions if q not in df.columns]
+    if missing_columns:
+        print(f"\n\n\nMissing columns for Emotional Breakthrough scoring: {missing_columns}")
+        return pd.Series(['Missing Columns'] * len(df))  # Return None values for rows if columns are missing
+
+    # Return dataframe with aggregated score for each row
+    return df[emot_break_questions].sum(axis=1)
+
+def score_psychological_insight(df, column_mapping):
+    """
+       Calculate the Ego-Dissolution score for each row in the DataFrame.
+
+       Parameters:
+       ----------
+       df : pd.DataFrame
+           Input DataFrame
+       column_mapping : dict
+           Dictionary mapping the ego-dissolution questions to their corresponding columns in the input DataFrame.
+
+       Returns:
+       -------
+       pd.Series
+           A series containing the score of dissolution for each row in the DataFrame.
+     """
+    psych_insight_questions = [normalize_column_name(col) for col in column_mapping.values()]
+
+    # Check if the necessary questions are in the DataFrame
+    missing_columns = [q for q in psych_insight_questions if q not in df.columns]
+    if missing_columns:
+        print(f"\n\n\nMissing columns for Psychological Insight scoring: {missing_columns}")
+        return pd.Series(['Missing Columns'] * len(df))  # Return None values for rows if columns are missing
+
+    # Return dataframe with aggregated score for each row
+    return df[psych_insight_questions].sum(axis=1)
 
 
 # TODO - add more functions for scoring the other behavioral measures
@@ -208,7 +320,10 @@ def calculate_all_scales(df, mid_processing=False):
         'VVIQ': score_vviq,
         'KAMF': score_kamf,
         'DPES-Awe': score_dpes_awe,
-        'MAIA': score_maia
+        'MAIA': score_maia,
+        'Ego-Dissolution': score_ego_dissolution,
+        'SMES': score_smes,
+        'Emotional-Breakthrough': score_emotional_breakthrough, # TODO - need to check on this if we have a hyphen or not in google form
     }
 
     question_columns_to_drop = []
@@ -230,4 +345,3 @@ def calculate_all_scales(df, mid_processing=False):
         df_scored = df_scored.drop(columns=question_columns_to_drop, errors='ignore')
 
     return df_scored
-
