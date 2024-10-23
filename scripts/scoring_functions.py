@@ -261,6 +261,7 @@ def score_emotional_breakthrough(df, column_mapping):
     # Return dataframe with aggregated score for each row
     return df[emot_break_questions].sum(axis=1)
 
+
 def score_psychological_insight(df, column_mapping):
     """
        Calculate the Ego-Dissolution score for each row in the DataFrame.
@@ -323,7 +324,8 @@ def calculate_all_scales(df, mid_processing=False):
         'MAIA': score_maia,
         'Ego-Dissolution': score_ego_dissolution,
         'SMES': score_smes,
-        'Emotional-Breakthrough': score_emotional_breakthrough, # TODO - need to check on this if we have a hyphen or not in google form
+        'Emotional-Breakthrough': score_emotional_breakthrough,
+        # TODO - need to check on this if we have a hyphen or not in google form
     }
 
     question_columns_to_drop = []
