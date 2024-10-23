@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
-from scripts.scoring_functions import calculate_all_scales
+from scripts.scoring_functions import ScaleScorer
 from scripts.helpers import normalize_column_name
 
 
@@ -189,7 +189,8 @@ def process_data_pipeline(input_df, chills_column, chills_intensity_column, inte
     # Step 4: Save the data encoded dataset with all columns intact and no aggregation
     intermediate_df = preprocess_for_output(df.copy())
 
-    # Step 5: Final processing with only score columns (question columns dropped)
-    final_df = calculate_all_scales(intermediate_df, user_column_mappings, mid_processing=False)
+    # Step 5. Calculate the scores
+    scorer = ScaleScorer(intermediate_df, user_column_mappings)  # Instantiate the ScaleScorer class
+    final_df = scorer.calculate_all_scales()  # Use the class to calculate scale scores
 
     return final_df, intermediate_df, str(qa_report)
