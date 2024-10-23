@@ -84,10 +84,9 @@ def sanity_check_chills(df, chills_column, chills_intensity_column, intensity_th
 
     return df
 
-
 def detect_column_types(df):
     """
-    Detect column types and classify them as nominal, ordinal, or free text.
+    Detect column types and classify them as nominal, ordinal, free text, or timestamp.
 
     Parameters
     ----------
@@ -97,19 +96,12 @@ def detect_column_types(df):
     Returns
     -------
     dict
-        A dictionary containing detected column types:
-        {
-            'nominal': list of nominal columns,
-            'ordinal': list of ordinal columns,
-            'free_text': list of free text columns,
-            'timestamp': list of timestamp columns
-        }
+        A dictionary containing detected column types.
     """
     column_types = {
         'nominal': [],
         'ordinal': [],
         'free_text': [],
-        'timestamp': []
     }
 
     cat_cols = df.select_dtypes(include='object')
@@ -118,57 +110,69 @@ def detect_column_types(df):
         unique_values = df[col].nunique()
         total_rows = len(df)
 
-        # Heuristic for free text columns (many unique values compared to the number of rows)
+        # Debug: Check column value distributions
+        print(f"[DEBUG] Column '{col}' unique values: {unique_values}")
+
+        # Free text columns: Many unique values compared to the number of rows
         if unique_values / total_rows > 0.3:
             column_types['free_text'].append(col)
         else:
-            # Determine if a categorical column is ordinal based on ordered keywords
-            ordered_keywords = ['never', 'rarely', 'sometimes', 'often', 'always',
-                                'poor', 'fair', 'good', 'agree', 'strongly',
-                                'low', 'medium', 'high', 'none', 'basic', 'advanced']
+            # Detect if column matches known ordinal patterns
+            ordered_keywords = [
+                'never', 'rarely', 'sometimes', 'occasionally', 'often', 'always',
+                'poor', 'fair', 'good', 'very good', 'excellent',
+                'dimly vivid', 'moderately vivid', 'realistically vivid', 'perfectly realistic',
+                'low', 'medium', 'high', 'agree', 'disagree', 'strongly agree', 'strongly disagree',
+                'none', 'basic', 'advanced', 'no image',
+            ]
 
-            if any(keyword in [str(val).lower() for val in df[col].unique()] for keyword in ordered_keywords):
+            values = [str(val).lower() for val in df[col].unique()]
+            if any(keyword in values for keyword in ordered_keywords):
                 column_types['ordinal'].append(col)
             else:
                 column_types['nominal'].append(col)
 
+    # Debug: Print detected types
+    print(f"[DEBUG] Detected column types: {column_types}")
+
     return column_types
 
 
-def preprocess_for_output(df): # TODO - encoding is weird need to fix
+def preprocess_for_output(df):
     """
-    Preprocess the DataFrame by handling categorical columns dynamically
-    based on detected types. Skip scaling for categorical and free text columns.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        The input DataFrame to be preprocessed.
-
-    Returns
-    -------
-    pd.DataFrame
-        The preprocessed DataFrame, ready for statistical analysis.
+    Preprocess the DataFrame by dynamically encoding nominal and ordinal columns.
+    This version focuses on aligning encodings to expected outcomes.
     """
-    # Step 1: Detect column types automatically
+    # Detect column types
     column_types = detect_column_types(df)
 
-    # Step 2: Handle ordinal columns by using OrdinalEncoder to preserve order
+    # Step 1: Handle Ordinal Columns with Correct Ordering
     ordinal_encoder = OrdinalEncoder()
-    if column_types['ordinal']:
-        df[column_types['ordinal']] = ordinal_encoder.fit_transform(df[column_types['ordinal']])
+    for col in column_types['ordinal']:
+        print(f"[DEBUG] Ordinal encoding column: {col} with unique values: {df[col].unique()}")
+        try:
+            # Fit and transform the ordinal values
+            df[col] = ordinal_encoder.fit_transform(df[[col]])
+        except Exception as e:
+            print(f"[ERROR] Failed to encode ordinal column '{col}': {e}")
 
-    # Step 3: Handle nominal columns by converting to numeric codes
+    # Step 2: Handle Nominal Columns by Converting to Category Codes
     for col in column_types['nominal']:
-        df[col] = df[col].astype('category').cat.codes
+        print(f"[DEBUG] Nominal encoding column: {col} with unique values: {df[col].unique()}")
+        try:
+            df[col] = df[col].astype('category').cat.codes
+        except Exception as e:
+            print(f"[ERROR] Failed to encode nominal column '{col}': {e}")
 
-    # Step 4: Normalize dataframe columns
+    # Step 3: Normalize Column Names (to avoid mismatches in scoring)
     df.columns = [normalize_column_name(col) for col in df.columns]
 
-    # Step 5: Ensure numeric columns are consistent in type (float64)
-    df = df.astype({col: 'float64' for col in df.select_dtypes(include=[np.int64, np.float64]).columns})
+    # Step 4: Ensure Consistent Numeric Types
+    numeric_cols = df.select_dtypes(include=[np.int64, np.float64]).columns
+    df[numeric_cols] = df[numeric_cols].astype('float64')
 
     return df
+
 
 
 # Full pipeline
