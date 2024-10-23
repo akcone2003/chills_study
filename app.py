@@ -23,8 +23,6 @@ def rebuild_qa_report():
     st.session_state.qa_report = qa_report  # Rebuild the QA report from scratch
 
 
-
-
 # Streamlit App Interface
 st.title("Data Pipeline Web Application")
 
@@ -246,3 +244,5 @@ if st.session_state.processed_df is not None:
         mime='text/plain'
     )
 
+
+# TODO - add a GenAI way of seeing the column names and then organizing those into the scales and call the corresponding functions

@@ -347,3 +347,7 @@ def calculate_all_scales(df, mid_processing=False):
         df_scored = df_scored.drop(columns=question_columns_to_drop, errors='ignore')
 
     return df_scored
+
+
+# TODO - user way to add scales at runtime
+
