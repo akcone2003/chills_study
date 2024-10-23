@@ -71,7 +71,8 @@ if input_file is not None:
         # Step 3.1: Let the user select columns for each scale using a multiselect
         st.write("### Map Columns to Scale Questions")
 
-        available_scales = ["MODTAS", "TIPI", "VVIQ"]  # TODO - Extend this list as more scales are added
+        available_scales = ["MODTAS", "TIPI", "VVIQ", "KAMF", "DPES-Awe", "MAIA",
+                            "Ego-Dissolution", "SMES", "Emotional Breakthrough"]  # TODO - Extend this list as more scales are added
 
         # User selects the scales they want to include in the analysis
         selected_scales = st.multiselect(
