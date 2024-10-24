@@ -123,7 +123,8 @@ def detect_column_types(df):
                 'poor', 'fair', 'good', 'very good', 'excellent',
                 'dimly vivid', 'moderately vivid', 'realistically vivid', 'perfectly realistic',
                 'low', 'medium', 'high', 'agree', 'disagree', 'strongly agree', 'strongly disagree',
-                'none', 'basic', 'advanced', 'no image',
+                'none', 'basic', 'advanced', 'no image', 'two or more times per day', 'very often',
+                'agree somewhat', 'disagree somewhat', 'a little', 'somewhat'
             ]
 
             values = [str(val).lower() for val in df[col].unique()]
