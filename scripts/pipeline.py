@@ -1,82 +1,22 @@
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import StandardScaler, OrdinalEncoder, OneHotEncoder
+from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 from scripts.scoring_functions import ScaleScorer
 from scripts.helpers import normalize_column_name
-
-# Scale mappings inferred from PDFs
-SCALE_MAPPINGS = {
-    "Likert_5": {1: "Strongly Disagree", 2: "Disagree", 3: "Neutral", 4: "Agree", 5: "Strongly Agree"},
-    "Likert_7": {
-        1: "Strongly Disagree", 2: "Disagree", 3: "Disagree Somewhat",
-        4: "Neither Agree nor Disagree", 5: "Agree Somewhat", 6: "Agree", 7: "Strongly Agree"
-    },
-    "Frequency": {
-        "Never": 1, "Rarely": 2, "Sometimes": 3, "Often": 4,
-        "Very Often": 5, "Always": 6, "Once a month": 2, "2-3 times a week": 4, "Two or more times per day": 5
-    },
-    "Anxiety_9": {1: "Not at all", 9: "Severely"}
-}
-
-
-def detect_ordinal_pattern(series):
-    """
-    Detect if the column matches one of the known ordinal patterns.
-    """
-    unique_vals = series.dropna().unique()
-    for scale_name, mapping in SCALE_MAPPINGS.items():
-        if all(str(val).strip() in mapping.values() for val in unique_vals):
-            print(f"[INFO] Column '{series.name}' matches '{scale_name}' scale.")
-            reversed_mapping = {v: k for k, v in mapping.items()}
-            return reversed_mapping
-    return None
-
-
-def encode_column(series):
-    """
-    Encode a column dynamically based on its content.
-    """
-    mapping = detect_ordinal_pattern(series)
-    if mapping:
-        return series.map(mapping).fillna(series)
-
-    # If not ordinal, apply OneHotEncoding
-    onehot_encoder = OneHotEncoder(sparse=False)
-    encoded = onehot_encoder.fit_transform(series.to_frame())
-    return pd.DataFrame(
-        encoded, columns=[f"{series.name}_{cat}" for cat in onehot_encoder.categories_[0]]
-    )
-
-
-def preprocess_for_output(df):
-    """
-    Preprocess the DataFrame by encoding ordinal and categorical columns.
-    """
-    encoded_dfs = []
-    for col in df.select_dtypes(include='object').columns:
-        print(f"[DEBUG] Encoding column: {col}")
-        try:
-            encoded_col = encode_column(df[col])
-            encoded_dfs.append(encoded_col)
-        except Exception as e:
-            print(f"[ERROR] Failed to encode column '{col}': {e}")
-
-    # Concatenate all encoded columns and ensure numeric columns are properly typed
-    encoded_df = pd.concat([df.select_dtypes(exclude='object')] + encoded_dfs, axis=1)
-    encoded_df.columns = [normalize_column_name(col) for col in encoded_df.columns]
-    return encoded_df
 
 
 def handle_missing_values(df):
     """
-    Handle missing values by filling numeric columns with mean values
-    and categorical columns with 'Missing'.
+    Handle missing values in the dataframe using appropriate imputation methods.
     """
     num_cols = df.select_dtypes(include=np.number)
     df[num_cols.columns] = num_cols.fillna(num_cols.mean())
 
+    # Fill missing values in categorical columns with 'Missing' only if they are sparse.
     cat_cols = df.select_dtypes(include='object')
     for col in cat_cols:
+        if df[col].isnull().mean() > 0.5:  # Flag columns with more than 50% missing
+            print(f"Warning: Column '{col}' has a high percentage of missing values.")
         df[col] = df[col].fillna('Missing')
 
     return df
@@ -84,53 +24,178 @@ def handle_missing_values(df):
 
 def detect_outliers(df, column_name, threshold=3):
     """
-    Detect outliers using Z-scores.
+    Detect outliers in a numerical column using Z-score calculations.
     """
     col_data = df[[column_name]].dropna()
-    if col_data.std().iloc[0] == 0:
-        return 0
 
-    z_scores = np.abs(StandardScaler().fit_transform(col_data))
-    return int((z_scores > threshold).sum())
+    # Check if the column has zero variance to avoid issues with scaling
+    if col_data.std().iloc[0] == 0:
+        return 0  # No outliers if there is no variation
+
+    scaler = StandardScaler()
+    z_scores = scaler.fit_transform(col_data)
+
+    outliers_count = (np.abs(z_scores) > threshold).sum()
+    return int(outliers_count)
 
 
 def generate_qa_report(df):
     """
-    Generate a QA report summarizing missing values and outliers.
+    Generate a Quality Assurance (QA) report that identifies missing values and outliers.
     """
-    report = {'missing_values': df.isnull().sum().to_dict()}
+    report = {}
+
+    # 1. Missing values report
+    missing_values_report = df.isnull().sum()
+    report['missing_values'] = missing_values_report[missing_values_report > 0].to_dict()
+
+    # 2. Outlier detection report (on numerical columns)
     outliers_report = {}
-    for col in df.select_dtypes(include=np.number).columns:
+    num_cols = df.select_dtypes(include=np.number)
+    for col in num_cols.columns:
         outliers_count = detect_outliers(df, col)
         if outliers_count > 0:
             outliers_report[col] = outliers_count
     report['outliers'] = outliers_report
+
+    # 3. Rows with 3 or more missing values
+    rows_with_excessive_missing = df[df.isnull().sum(axis=1) >= 3]
+    report['rows_with_3_or_more_missing_values'] = {
+        'count': rows_with_excessive_missing.shape[0],
+        'row_indices': rows_with_excessive_missing.index.tolist()
+    }
+
     return report
 
 
 def sanity_check_chills(df, chills_column, chills_intensity_column, intensity_threshold=0, mode='flag'):
     """
-    Check for inconsistencies between chills and intensity columns.
+    Perform a sanity check for inconsistencies between 'chills_column' and 'chills_intensity_column'.
     """
+    # Identify rows where Chills is 0 but Chills_Intensity exceeds the threshold
     inconsistent_rows = (df[chills_column] == 0) & (df[chills_intensity_column] > intensity_threshold)
+
     if mode == 'flag':
+        # Create a new column 'Sanity_Flag' to mark these rows
         df['Sanity_Flag'] = inconsistent_rows
     elif mode == 'drop':
+        # Drop these rows from the DataFrame
         df = df[~inconsistent_rows]
+
+    return df
+
+def detect_column_types(df):
+    """
+    Detect column types and classify them as nominal, ordinal, free text, or timestamp.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input DataFrame to analyze.
+
+    Returns
+    -------
+    dict
+        A dictionary containing detected column types.
+    """
+    column_types = {
+        'nominal': [],
+        'ordinal': [],
+        'free_text': [],
+    }
+
+    cat_cols = df.select_dtypes(include='object')
+
+    for col in cat_cols.columns:
+        unique_values = df[col].nunique()
+        total_rows = len(df)
+
+        # Debug: Check column value distributions
+        print(f"[DEBUG] Column '{col}' unique values: {unique_values}")
+
+        # Free text columns: Many unique values compared to the number of rows
+        if unique_values / total_rows > 0.3:
+            column_types['free_text'].append(col)
+        else:
+            # Detect if column matches known ordinal patterns
+            ordered_keywords = [
+                'never', 'rarely', 'sometimes', 'occasionally', 'often', 'always',
+                'poor', 'fair', 'good', 'very good', 'excellent',
+                'dimly vivid', 'moderately vivid', 'realistically vivid', 'perfectly realistic',
+                'low', 'medium', 'high', 'agree', 'disagree', 'strongly agree', 'strongly disagree',
+                'none', 'basic', 'advanced', 'no image', 'two or more times per day', 'very often',
+                'agree somewhat', 'disagree somewhat', 'a little', 'somewhat'
+            ]
+
+            values = [str(val).lower() for val in df[col].unique()]
+            if any(keyword in values for keyword in ordered_keywords):
+                column_types['ordinal'].append(col)
+            else:
+                column_types['nominal'].append(col)
+
+    # Debug: Print detected types
+    print(f"[DEBUG] Detected column types: {column_types}")
+
+    return column_types
+
+
+def preprocess_for_output(df):
+    """
+    Preprocess the DataFrame by dynamically encoding nominal and ordinal columns.
+    This version focuses on aligning encodings to expected outcomes.
+    """
+    # Detect column types
+    column_types = detect_column_types(df)
+
+    # Step 1: Handle Ordinal Columns with Correct Ordering
+    ordinal_encoder = OrdinalEncoder()
+    for col in column_types['ordinal']:
+        print(f"[DEBUG] Ordinal encoding column: {col} with unique values: {df[col].unique()}")
+        try:
+            # Fit and transform the ordinal values
+            df[col] = ordinal_encoder.fit_transform(df[[col]])
+        except Exception as e:
+            print(f"[ERROR] Failed to encode ordinal column '{col}': {e}")
+
+    # Step 2: Handle Nominal Columns by Converting to Category Codes
+    for col in column_types['nominal']:
+        print(f"[DEBUG] Nominal encoding column: {col} with unique values: {df[col].unique()}")
+        try:
+            df[col] = df[col].astype('category').cat.codes
+        except Exception as e:
+            print(f"[ERROR] Failed to encode nominal column '{col}': {e}")
+
+    # Step 3: Normalize Column Names (to avoid mismatches in scoring)
+    df.columns = [normalize_column_name(col) for col in df.columns]
+
+    # Step 4: Ensure Consistent Numeric Types
+    numeric_cols = df.select_dtypes(include=[np.int64, np.float64]).columns
+    df[numeric_cols] = df[numeric_cols].astype('float64')
+
     return df
 
 
-def process_data_pipeline(input_df, chills_column, chills_intensity_column,
-                          intensity_threshold=0, mode='flag', user_column_mappings=None):
+
+# Full pipeline
+def process_data_pipeline(input_df, chills_column, chills_intensity_column, intensity_threshold=0, mode='flag',
+                          user_column_mappings=None):
     """
-    Main data processing pipeline for encoding and scoring.
+    Main pipeline function that handles QA, sanity checks, encoding, and scoring.
     """
+    # Step 1: Handle missing values
     df = handle_missing_values(input_df)
+
+    # Step 2: Run automated QA and generate QA report
+    qa_report = generate_qa_report(df)
+
+    # Step 3: Perform sanity check for chills response using dynamic columns
     df = sanity_check_chills(df, chills_column, chills_intensity_column, intensity_threshold, mode)
-    final_df = preprocess_for_output(df)
 
-    qa_report = generate_qa_report(final_df)
-    scorer = ScaleScorer(final_df, user_column_mappings)
-    scored_df = scorer.calculate_all_scales()
+    # Step 4: Save the data encoded dataset with all columns intact and no aggregation
+    intermediate_df = preprocess_for_output(df.copy())
 
-    return scored_df, final_df, str(qa_report)
+    # Step 5. Calculate the scores
+    scorer = ScaleScorer(intermediate_df, user_column_mappings)  # Instantiate the ScaleScorer class
+    final_df = scorer.calculate_all_scales()  # Use the class to calculate scale scores
+
+    return final_df, intermediate_df, str(qa_report)
