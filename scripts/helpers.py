@@ -1,4 +1,18 @@
 import pandas as pd
+import re
+
+
+def clean_column_name(name):
+    """
+    Replace special characters and whitespace in column names to make them compatible with LightGBM.
+    """
+    # Replace spaces and special characters with underscores
+    name = re.sub(r'[^a-zA-Z0-9_]', '_', name)
+    # Ensure there are no multiple consecutive underscores
+    name = re.sub(r'__+', '_', name)
+    # Remove leading or trailing underscores
+    return name.strip('_')
+
 
 
 def normalize_column_name(df_or_name):
