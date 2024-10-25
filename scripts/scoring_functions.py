@@ -22,6 +22,7 @@ class ScaleScorer:
         self.question_columns_to_drop = []
 
         # Mapping scale names to their scoring functions
+        # TODO - add more as needed
         self.scoring_functions = {
             'MODTAS': self.score_modtas,
             'TIPI': self.score_tipi,
