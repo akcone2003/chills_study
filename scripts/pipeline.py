@@ -14,7 +14,19 @@ model = AutoModel.from_pretrained('bert-base-uncased')
 
 
 def get_embedding(text):
-    """Get the embedding of a given text using BERT."""
+    """
+    Get the BERT-based embedding for a given text.
+
+    Parameters:
+    ----------
+    text : str
+        The input text for which the embedding needs to be generated.
+
+    Returns:
+    -------
+    np.ndarray
+        The embedding vector for the input text.
+    """
     tokens = tokenizer(text, return_tensors='pt')
     with torch.no_grad():
         output = model(**tokens)
@@ -37,8 +49,18 @@ PREDEFINED_ORDINAL_CATEGORIES = {
 
 def handle_missing_values(df):
     """
-    Handle missing values by filling numerical columns with the mean
-    and categorical columns with 'Missing'.
+    Fill missing values in numerical columns with their mean and in
+    categorical columns with 'Missing'.
+
+    Parameters:
+    ----------
+    df : pd.DataFrame
+        The input DataFrame with potential missing values.
+
+    Returns:
+    -------
+    pd.DataFrame
+        DataFrame with filled missing values.
     """
     num_cols = df.select_dtypes(include=np.number)
     df[num_cols.columns] = df[num_cols.columns].fillna(num_cols.mean())
@@ -50,7 +72,17 @@ def handle_missing_values(df):
 
 def detect_column_types(df):
     """
-    Detect column types as nominal, ordinal, or free text.
+    Classify columns into nominal, ordinal, or free text based on data patterns.
+
+    Parameters:
+    ----------
+    df : pd.DataFrame
+        Input DataFrame containing mixed data types.
+
+    Returns:
+    -------
+    dict
+        Dictionary with column classifications.
     """
     column_types = {
         'nominal': [],
@@ -88,8 +120,17 @@ def detect_column_types(df):
 
 def determine_category_order(col_values):
     """
-    Determine the correct order of categories for a given column dynamically.
-    This ensures that even for new scales, the order is consistent and logical.
+    Dynamically determine the correct order of categories for a given column.
+
+    Parameters:
+    ----------
+    col_values : list
+        List of unique values in the column.
+
+    Returns:
+    -------
+    list
+        Sorted list of categories in the determined order.
     """
 
     # Define multiple ordered keyword lists for different types of scales
@@ -154,10 +195,21 @@ def determine_category_order(col_values):
     return sorted_categories
 
 
-def encode_columns_for_jamovi(df, column_types):
+def encode_columns(df, column_types):
     """
-    Encode ordinal columns with OrdinalEncoder and nominal columns with codes,
-    keeping the data interpretable for Jamovi.
+    Encode ordinal and nominal columns to make them interpretable for statistical analysis.
+
+    Parameters:
+    ----------
+    df : pd.DataFrame
+        The input DataFrame.
+    column_types : dict
+        Dictionary containing the classified column types.
+
+    Returns:
+    -------
+    pd.DataFrame
+        DataFrame with encoded columns.
     """
     # Step 1: Handle ordinal columns (using predefined or dynamically detected categories)
     for col in column_types['ordinal']:
@@ -192,6 +244,28 @@ def encode_columns_for_jamovi(df, column_types):
 def sanity_check_chills(df, chills_column, chills_intensity_column, threshold=0):
     """
     Sanity check to flag inconsistencies between chills columns.
+
+    This function checks for inconsistencies where a subject reports no chills
+    (indicated by a 0 in the chills column) but records a non-zero intensity
+    (greater than the given threshold) in the chills intensity column.
+
+    Parameters:
+    ----------
+    df : pd.DataFrame
+        The input DataFrame to be checked for inconsistencies.
+    chills_column : str
+        Name of the column that indicates whether chills were experienced (0 or 1).
+    chills_intensity_column : str
+        Name of the column representing the intensity of chills.
+    threshold : int, optional
+        The minimum value for chills intensity to flag an inconsistency.
+        Default is 0, meaning any non-zero intensity will trigger the flag.
+
+    Returns:
+    -------
+    pd.DataFrame
+        A copy of the input DataFrame with an additional column 'Sanity_Flag'.
+        This column contains 1 for inconsistent rows and 0 for consistent ones.
     """
     inconsistent_rows = (df[chills_column] == 0) & (df[chills_intensity_column] > threshold)
     df['Sanity_Flag'] = inconsistent_rows.astype(int)
@@ -200,7 +274,17 @@ def sanity_check_chills(df, chills_column, chills_intensity_column, threshold=0)
 
 def preprocess_data(df):
     """
-    Preprocess the DataFrame for Jamovi analysis with proper encodings.
+    Normalize column names, detect types, and encode data for statistical analysis and aggregating behavioral measure scores.
+
+    Parameters:
+    ----------
+    df : pd.DataFrame
+        The input DataFrame to be preprocessed.
+
+    Returns:
+    -------
+    pd.DataFrame
+        Preprocessed DataFrame ready for analysis.
     """
     # Normalize column names right at the beginning
     df.columns = [normalize_column_name(col) for col in df.columns]
@@ -209,7 +293,7 @@ def preprocess_data(df):
     column_types = detect_column_types(df)
 
     # Encode columns
-    df = encode_columns_for_jamovi(df, column_types)
+    df = encode_columns(df, column_types)
 
     # Ensure numeric columns are consistent in type (float64)
     df = df.astype({col: 'float64' for col in df.select_dtypes(include=[np.int64, np.float64]).columns})
@@ -218,8 +302,27 @@ def preprocess_data(df):
 
 def generate_qa_report(df):
     """
-    Generate a QA report identifying missing values and outliers.
+    Generate a QA report identifying missing values, outliers, and rows with many missing values.
+
+    This function scans the DataFrame for missing values and numerical outliers. It also identifies
+    rows that contain a significant number (3 or more) of missing values to assist with quality assurance.
+
+    Parameters:
+    ----------
+    df : pd.DataFrame
+        The input DataFrame to be analyzed for QA issues.
+
+    Returns:
+    -------
+    dict
+        A dictionary containing the QA report with the following keys:
+        - 'missing_values': Dictionary with column names as keys and count of missing values as values.
+        - 'outliers': Dictionary with column names as keys and count of detected outliers as values.
+        - 'rows_with_3_or_more_missing_values': Dictionary with:
+            - 'count': Number of rows containing 3 or more missing values.
+            - 'row_indices': List of indices of these rows.
     """
+
     report = {'missing_values': df.isnull().sum().to_dict()}
 
     outliers_report = {}
@@ -242,6 +345,24 @@ def generate_qa_report(df):
 def detect_outliers(df, column_name, threshold=3):
     """
     Detect outliers in a numerical column using Z-scores.
+
+    This function calculates Z-scores for each value in a specified column.
+    Outliers are defined as values with an absolute Z-score greater than the
+    given threshold.
+
+    Parameters:
+    ----------
+    df : pd.DataFrame
+        The DataFrame containing the column to analyze.
+    column_name : str
+        The name of the numerical column to check for outliers.
+    threshold : int, optional
+        The Z-score threshold to identify outliers. Default is 3.
+
+    Returns:
+    -------
+    int
+        The number of outliers found in the specified column.
     """
     col_data = df[[column_name]].dropna()
     if col_data.std().iloc[0] == 0:
@@ -257,6 +378,35 @@ def process_data_pipeline(input_df, chills_column, chills_intensity_column, inte
                           user_column_mappings=None):
     """
     Main pipeline function that handles QA, sanity checks, encoding, and scoring.
+
+    This function serves as the main entry point for processing data. It handles
+    missing values, generates a QA report, performs a sanity check for the
+    'chills' columns, preprocesses the data, and calculates scores using a
+    provided scorer.
+
+    Parameters:
+    ----------
+    input_df : pd.DataFrame
+        The raw input DataFrame to process.
+    chills_column : str
+        The column representing whether chills were experienced (e.g., 0 or 1).
+    chills_intensity_column : str
+        The column representing the intensity of chills.
+    intensity_threshold : int, optional
+        The threshold for intensity to flag inconsistencies in the sanity check.
+        Default is 0.
+    mode : str, optional
+        Processing mode; not currently used but reserved for future extensions.
+        Default is 'flag'.
+    user_column_mappings : dict, optional
+        Custom mappings provided by the user for scoring purposes.
+
+    Returns:
+    -------
+    tuple
+        - final_df (pd.DataFrame): DataFrame with all calculated scale scores.
+        - intermediate_df (pd.DataFrame): Preprocessed DataFrame before scoring.
+        - qa_report (str): JSON-like string representation of the QA report. This is downloaded as a .txt file in the application.
     """
     # Step 1: Handle missing values
     df = handle_missing_values(input_df)

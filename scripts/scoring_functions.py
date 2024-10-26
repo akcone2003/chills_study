@@ -103,3 +103,6 @@ class ScaleScorer:
 
     def score_psychological_insight(self, columns):
         return self.df[columns].sum(axis=1)
+
+
+    # TODO - add more scoring functions
