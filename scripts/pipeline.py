@@ -99,6 +99,7 @@ def determine_category_order(col_values):
         'frequency_01': ['never', 'less than once a month', 'once a month',
                          '2-3 times a month', 'once a week', '2-3 times a week',
                          'about once a day', 'two or more times per day'],
+        'frequency_02': ['never', 'rarely', 'occasionally', 'often', 'very often'],
         'agreement': ['strongly disagree', 'disagree', 'neither agree nor disagree', 'agree', 'strongly agree'],
         'agreement_1': ['strongly disagree', 'disagree', 'somewhat disagree', 'neutral', 'somewhat agree', 'agree',
                         'strongly agree'],
@@ -275,95 +276,7 @@ def process_data_pipeline(input_df, chills_column, chills_intensity_column, inte
 
     return final_df, intermediate_df, str(qa_report)
 
-
-import pandas as pd
-import numpy as np
-from transformers import AutoTokenizer, AutoModel
-import torch
-from sklearn.metrics.pairwise import cosine_similarity
-from scipy.stats import kendalltau
-
-# Load BERT tokenizer and model
-tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
-model = AutoModel.from_pretrained('bert-base-uncased')
-
-
-def get_embedding(text):
-    """Get the embedding of a given text using BERT."""
-    tokens = tokenizer(text, return_tensors='pt')
-    with torch.no_grad():
-        output = model(**tokens)
-    # Use the [CLS] token as the sentence embedding
-    embedding = output.last_hidden_state[:, 0, :].numpy().flatten()
-    return embedding
-
-
-def determine_category_order(col_values):
-    """
-    Determine the correct order of categories for a given column dynamically.
-    This ensures that even for new scales, the order is consistent and logical.
-    """
-    # Define multiple ordered keyword lists for different types of scales
-    ordered_keywords_sets = {
-        'frequency': ['never', 'rarely', 'sometimes', 'often', 'always'],
-        'recency': ['within the last year', 'within the last month', 'within the last 24 hours'],
-        'frequency_01': ['never', 'less than once a month', 'once a month',
-                         '2-3 times a month', 'once a week', '2-3 times a week',
-                         'about once a day', 'two or more times per day'],
-        'agreement': ['strongly disagree', 'disagree', 'neither agree nor disagree', 'agree', 'strongly agree'],
-        'agreement_1': ['strongly disagree', 'disagree', 'somewhat disagree', 'neutral', 'somewhat agree', 'agree',
-                        'strongly agree'],
-        'intensity': ['not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
-        'positivity': ['poor', 'fair', 'good', 'very good', 'excellent']
-    }
-
-    # Convert column values to lowercase for easier comparison
-    lower_col_values = [str(value).lower() for value in col_values]
-
-    # Attempt to match column values to one of the ordered keyword sets
-    best_match = None
-    best_match_count = 0
-
-    for scale_name, keywords in ordered_keywords_sets.items():
-        # Count how many values from the column match the current keyword list
-        match_count = sum(1 for value in lower_col_values if value in keywords)
-
-        # Keep track of the best match (most matches with the keywords)
-        if match_count > best_match_count:
-            best_match = keywords
-            best_match_count = match_count
-
-    # If a matching scale is found, use it to sort the categories
-    if best_match:
-        sorted_categories = sorted(col_values,
-                                   key=lambda x: best_match.index(x.lower()) if x.lower() in best_match else float(
-                                       'inf'))
-    else:
-        # Fallback to semantic similarity-based sorting
-        # Generate embeddings for each category
-        embeddings = {value: get_embedding(value) for value in col_values}
-
-        # Define a reference point for ordering, like "least" or "most"
-        reference_min = get_embedding("least")
-        reference_max = get_embedding("most")
-
-        # Calculate similarity to reference points
-        scores = {}
-        for value, embedding in embeddings.items():
-            # Similarity to "least" reference
-            similarity_to_min = cosine_similarity([embedding], [reference_min])[0][0]
-            # Similarity to "most" reference
-            similarity_to_max = cosine_similarity([embedding], [reference_max])[0][0]
-
-            # Calculate a combined score (the difference helps capture ordering)
-            scores[value] = similarity_to_max - similarity_to_min
-
-        # Sort categories based on their calculated score
-        sorted_categories = sorted(col_values, key=lambda x: scores[x])
-
-    return sorted_categories
-
-
+# Testing Semantic Analysis
 if __name__ == "__main__":
     from scipy.stats import kendalltau
     # Step 1: Create Test Data
