@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import StandardScaler, OrdinalEncoder
+from sklearn.preprocessing import StandardScaler, OrdinalEncoder, OneHotEncoder
 from scripts.scoring_functions import ScaleScorer
 from scripts.helpers import normalize_column_name
 
@@ -142,38 +142,36 @@ def detect_column_types(df):
 def preprocess_for_output(df):
     """
     Preprocess the DataFrame by dynamically encoding nominal and ordinal columns.
-    This version focuses on aligning encodings to expected outcomes.
+    This version aligns encodings with predefined orders and handles errors gracefully.
     """
-    # Detect column types
     column_types = detect_column_types(df)
 
-    # Step 1: Handle Ordinal Columns with Correct Ordering
-    ordinal_encoder = OrdinalEncoder()
+    # Step 1: Handle Ordinal Columns with Defined Ordering
     for col in column_types['ordinal']:
-        print(f"[DEBUG] Ordinal encoding column: {col} with unique values: {df[col].unique()}")
+        print(f"[DEBUG] Encoding ordinal column: {col}")
         try:
-            # Fit and transform the ordinal values
-            df[col] = ordinal_encoder.fit_transform(df[[col]])
+            # Provide explicit ordering to the OrdinalEncoder
+            unique_values = sorted(df[col].dropna().unique(), key=str)
+            encoder = OrdinalEncoder(categories=[unique_values], dtype=int)
+            df[col] = encoder.fit_transform(df[[col]])
         except Exception as e:
             print(f"[ERROR] Failed to encode ordinal column '{col}': {e}")
 
-    # Step 2: Handle Nominal Columns by Converting to Category Codes
+    # Step 2: Handle Nominal Columns with One-Hot Encoding
     for col in column_types['nominal']:
-        print(f"[DEBUG] Nominal encoding column: {col} with unique values: {df[col].unique()}")
+        print(f"[DEBUG] One-hot encoding nominal column: {col}")
         try:
-            df[col] = df[col].astype('category').cat.codes
+            encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
+            encoded = encoder.fit_transform(df[[col]])
+            encoded_df = pd.DataFrame(encoded, columns=encoder.get_feature_names_out([col]))
+            df = pd.concat([df.drop(columns=[col]), encoded_df], axis=1)
         except Exception as e:
             print(f"[ERROR] Failed to encode nominal column '{col}': {e}")
 
-    # Step 3: Normalize Column Names (to avoid mismatches in scoring)
+    # Step 3: Normalize Column Names
     df.columns = [normalize_column_name(col) for col in df.columns]
 
-    # Step 4: Ensure Consistent Numeric Types
-    numeric_cols = df.select_dtypes(include=[np.int64, np.float64]).columns
-    df[numeric_cols] = df[numeric_cols].astype('float64')
-
     return df
-
 
 
 # Full pipeline
