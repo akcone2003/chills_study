@@ -14,7 +14,6 @@ def clean_column_name(name):
     return name.strip('_')
 
 
-
 def normalize_column_name(df_or_name):
     """
     Normalize column names for a DataFrame or an individual column name.
