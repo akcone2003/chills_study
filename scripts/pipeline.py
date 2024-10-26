@@ -76,9 +76,13 @@ def determine_category_order(col_values):
     # Define multiple ordered keyword lists for different types of scales
     ordered_keywords_sets = {
         'frequency': ['never', 'rarely', 'sometimes', 'often', 'always'],
-        'recency': ['within the last month', ''],
+        'recency': ['within the last year', 'within the last month', 'within the last 24 hours'],
+        'frequency_01': ['never', 'less than once a month', 'once a month',
+                         '2-3 times a month', 'once a week', '2-3 times a week',
+                         'about once a day', 'two or more times per day'],
         'agreement': ['strongly disagree', 'disagree', 'neither agree nor disagree', 'agree', 'strongly agree'],
-        'agreement_1': ['strongly disagree', 'disagree', 'somewhat disagree', 'neutral', 'somewhat agree', 'agree', 'strongly agree'],
+        'agreement_1': ['strongly disagree', 'disagree', 'somewhat disagree', 'neutral', 'somewhat agree', 'agree',
+                        'strongly agree'],
         'intensity': ['not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
         'positivity': ['poor', 'fair', 'good', 'very good', 'excellent']
     }
@@ -101,7 +105,9 @@ def determine_category_order(col_values):
 
     # If a matching scale is found, use it to sort the categories
     if best_match:
-        sorted_categories = sorted(col_values, key=lambda x: best_match.index(x.lower()) if x.lower() in best_match else float('inf'))
+        sorted_categories = sorted(col_values,
+                                   key=lambda x: best_match.index(x.lower()) if x.lower() in best_match else float(
+                                       'inf'))
     else:
         # Fallback to alphabetical sorting if no known keyword list matches
         sorted_categories = sorted(col_values, key=str)
