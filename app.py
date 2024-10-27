@@ -9,6 +9,7 @@ def save_dataframe_to_csv(df):
     """Convert a DataFrame to CSV format in-memory and return as a string."""
     return df.to_csv(index=False)
 
+
 def rebuild_qa_report():
     """Rebuild the QA report with the current flagged rows."""
     qa_report = "Quality Assurance Report\n\n"
@@ -74,8 +75,7 @@ if input_file is not None:
         # TODO - Extend this list as more scales are added
         available_scales = ["MODTAS", "TIPI", "VVIQ", "KAMF", "DPES-Awe", "MAIA",
                             "Ego-Dissolution", "SMES",
-                            "Emotional Breakthrough",
-                            "WCS-Connectedness-To-World-Spirituality", "WCS-Connectedness-To-Others", "WCS-Connectedness-To-Self", "WCS"]
+                            "Emotional Breakthrough", "WCS", "Religiosity", "Big Five", "Psychological Insight"]
 
         # User selects the scales they want to include in the analysis
         selected_scales = st.multiselect(

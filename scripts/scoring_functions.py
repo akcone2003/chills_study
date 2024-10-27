@@ -1,6 +1,7 @@
 from scripts.helpers import normalize_column_name
 import pandas as pd
 
+
 class ScaleScorer:
     """
     A class to encapsulate the logic for detecting and scoring behavioral scales.
@@ -36,7 +37,9 @@ class ScaleScorer:
             'WCS-Connectedness-To-World-Spirituality': self.score_wcs_connectedness_to_world_spirituality,
             'WCS-Connectedness-To-Others': self.score_wcs_connectedness_to_others,
             'WCS-Connectedness-To-Self': self.score_wcs_connectedness_to_self,
-            'WCS': self.score_wcs
+            'WCS': self.score_wcs,
+            'Religiosity': self.score_religiosity,
+            'Big-Five': self.score_big_five
         }
 
     def calculate_all_scales(self, mid_processing=False):
@@ -100,10 +103,37 @@ class ScaleScorer:
         return self.df
 
     def score_modtas(self, columns):
+        """
+        Calculate the MODTAS (Modified Tellegen Absorption Scale) score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names associated with the MODTAS questions.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated mean MODTAS score for each row.
+        """
         return self.df[columns].mean(axis=1)
 
     def score_tipi(self, columns):
+        """
+        Calculate the TIPI (Ten-Item Personality Inventory) score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names associated with the TIPI questions.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated mean TIPI score for each row with reverse-coded items.
+        """
         def recode_reverse_score(item_score):
+            """Reverse score for TIPI items."""
             return 8 - item_score
 
         self.df[columns[1]] = self.df[columns[1]].apply(recode_reverse_score)
@@ -111,24 +141,115 @@ class ScaleScorer:
         return self.df[columns].mean(axis=1)
 
     def score_vviq(self, columns):
+        """
+        Calculate the VVIQ (Vividness of Visual Imagery Questionnaire) score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names associated with the VVIQ questions.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated mean VVIQ score for each row.
+        """
         return self.df[columns].mean(axis=1)
 
     def score_dpes_awe(self, columns):
+        """
+        Calculate the DPES Awe (Dispositional Positive Emotion Scale - Awe) score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names associated with the DPES Awe questions.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated sum of DPES Awe scores for each row.
+        """
         return self.df[columns].sum(axis=1)
 
     def score_maia(self, columns):
+        """
+       Calculate the MAIA (Multidimensional Assessment of Interoceptive Awareness) score.
+
+       Parameters:
+       -----------
+       columns : list
+           A list with the column names associated with the MAIA questions.
+
+       Returns:
+       --------
+       pd.Series
+           A series containing the calculated sum of MAIA scores for each row.
+       """
         return self.df[columns].sum(axis=1)
 
     def score_ego_dissolution(self, columns):
+        """
+        Calculate the Ego Dissolution score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names associated with the Ego Dissolution questions.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated sum of Ego Dissolution scores for each row.
+        """
         return self.df[columns].sum(axis=1)
 
     def score_smes(self, columns):
+        """
+       Calculate the SMES (Self-Memory System) score.
+
+       Parameters:
+       -----------
+       columns : list
+           A list with the column names associated with the SMES questions.
+
+       Returns:
+       --------
+       pd.Series
+           A series containing the calculated sum of SMES scores for each row.
+       """
         return self.df[columns].sum(axis=1)
 
     def score_emotional_breakthrough(self, columns):
+        """
+        Calculate the Emotional Breakthrough score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names associated with the Emotional Breakthrough questions.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated sum of Emotional Breakthrough scores for each row.
+        """
         return self.df[columns].sum(axis=1)
 
     def score_psychological_insight(self, columns):
+        """
+       Calculate the Psychological Insight score.
+
+       Parameters:
+       -----------
+       columns : list
+           A list with the column names associated with the Psychological Insight questions.
+
+       Returns:
+       --------
+       pd.Series
+           A series containing the calculated sum of Psychological Insight scores for each row.
+       """
         return self.df[columns].sum(axis=1)
 
     def score_wcs_connectedness_to_self(self, columns):
@@ -145,7 +266,6 @@ class ScaleScorer:
         pd.Series
             A series containing the connectedness scores for each row.
         """
-
         # Combine columns and calculate row-wise mean
         return self.df[columns].mean(axis=1)
 
@@ -163,16 +283,15 @@ class ScaleScorer:
         pd.Series
             A series containing the connectedness scores for each row.
         """
-
         # Apply the formula: ((10 - col1) + (10 - col2) + col3 + col4 + (10 - col5) + (10 - col6)) / 6
         score = (
-            (10 - self.df[columns[0]]) +
-            (10 - self.df[columns[1]]) +
-            self.df[columns[2]] +
-            self.df[columns[3]] +
-            (10 - self.df[columns[4]]) +
-            (10 - self.df[columns[5]])
-        ) / 6
+                        (10 - self.df[columns[0]]) +
+                        (10 - self.df[columns[1]]) +
+                        self.df[columns[2]] +
+                        self.df[columns[3]] +
+                        (10 - self.df[columns[4]]) +
+                        (10 - self.df[columns[5]])
+                ) / 6
 
         return score
 
@@ -190,7 +309,6 @@ class ScaleScorer:
         pd.Series
             A series containing the connectedness scores for each row.
         """
-
         # Calculate row-wise mean for the provided columns
         return self.df[columns].mean(axis=1)
 
@@ -224,11 +342,6 @@ class ScaleScorer:
         others_columns = columns[6:12]  # Next 6 columns
         world_columns = columns[12:]  # Last 7 columns
 
-        # Debug: Print the columns assigned to each group
-        print("\n\n[DEBUG] Self Columns:", self_columns)
-        print("\n\n[DEBUG] Others Columns:", others_columns)
-        print("\n\n[DEBUG] World/Spirituality Columns:", world_columns)
-
         # Calculate Connectedness to Self score
         self_score = self.score_wcs_connectedness_to_self(self_columns)
 
@@ -250,5 +363,110 @@ class ScaleScorer:
         })
 
         return scores_df
+
+    def score_big_five(self, columns):
+        """
+        Calculate subcategory and main Big Five scores.
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing all subcategory scores, the five big five traits.
+        """
+        # Ensure the columns are correctly passed
+        if len(columns) != 60:
+            raise ValueError(f"Expected 60 columns, but got {len(columns)}")
+
+        # Unpack the 60 columns directly
+        (
+            c1, c2, c3, c4, c5,  # Negative Affect
+            c6, c7, c8, c9, c10, c11, c12,  # Self-Reproach
+            c13, c14,  # Neuroticism (combination of negative affect and self-reproach)
+            c15, c16, c17, c18,  # Positive Affect
+            c19, c20, c21, c22,  # Sociability
+            c23, c24, c25, c26,  # Activity
+            c27, c28, c29,  # Extraversion
+            c30, c31, c32,  # Aesthetic Interest
+            c33, c34, c35,  # Intellectual Interest
+            c36, c37, c38, c39,  # Unconventionality
+            c40, c41, c42,  # Openness
+            c43, c44, c45, c46, c47, c48, c49, c50,  # Nonantagonistic Orientation
+            c51, c52, c53, c54,  # Prosocial Orientation
+            c55, c56,  # Agreeableness
+            c57, c58, c59, c60  # Conscientiousness
+        ) = columns
+
+        # Calculate subcategory scores
+        negative_affect = (6 - self.df[c1]) + self.df[c2] + (6 - self.df[c3]) + (6 - self.df[c4]) + (6 - self.df[c5])
+        self_reproach = self.df[[c6, c7, c8, c9, c10, c11, c12]].sum(axis=1)
+        neuroticism = negative_affect + self_reproach
+
+        positive_affect = self.df[c15] + (6 - self.df[c16]) + self.df[c17] + (6 - self.df[c18])
+        sociability = self.df[c19] + self.df[c20] + (6 - self.df[c21]) + (6 - self.df[c22])
+        activity = self.df[[c23, c24, c25, c26]].sum(axis=1)
+        extraversion = positive_affect + sociability + activity
+
+        aesthetic_interest = self.df[c30] + (6 - self.df[c31]) + self.df[c32]
+        intellectual_interest = (6 - self.df[c33]) + self.df[c34] + self.df[c35]
+        unconventionality = (6 - self.df[c36]) + (6 - self.df[c37]) + (6 - self.df[c38]) + (6 - self.df[c39])
+        openness = aesthetic_interest + intellectual_interest + unconventionality
+
+        nonantagonistic_orientation = (
+                (6 - self.df[c43]) + (6 - self.df[c44]) + self.df[c45] +
+                (6 - self.df[c46]) + (6 - self.df[c47]) + (6 - self.df[c48]) +
+                (6 - self.df[c49]) + (6 - self.df[c50])
+        )
+        prosocial_orientation = self.df[c51] + self.df[c52] + (6 - self.df[c53]) + (6 - self.df[c54])
+        agreeableness = nonantagonistic_orientation + prosocial_orientation
+
+        orderliness = self.df[c5] + self.df[c10] + (6 - self.df[c15])
+
+        conscientiousness = self.df[[c57, c58, c59, c60]].sum(axis=1)
+
+        # Create a DataFrame with all subcategories and main categories
+        scores_df = pd.DataFrame({
+            'Negative Affect': negative_affect,
+            'Self-Reproach': self_reproach,
+            'Neuroticism': neuroticism,
+            'Positive-Affect': positive_affect,
+            'Sociability': sociability,
+            'Activity': activity,
+            'Extraversion': extraversion,
+            'Aesthetic Interest': aesthetic_interest,
+            'Intellectual Interest': intellectual_interest,
+            'Unconventionality': unconventionality,
+            'Openness': openness,
+            'Nonantagonistic-Orientation': nonantagonistic_orientation,
+            'Prosocial-Orientation': prosocial_orientation,
+            'Agreeableness': agreeableness,
+            'Orderliness': orderliness,
+            'Goal-Striving': goal_striving,
+            'Dependability': dependability,
+            'Conscientiousness': conscientiousness
+        })
+
+        # Return the final DataFrame with all scores
+        return scores_df
+
+    def score_religiosity(self, columns):
+        """
+        Calculate the Religiosity score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the religiosity scores for each row.
+        """
+        # Religiosity scores require 7 columns
+        if len(columns) != 7:
+            raise ValueError(f"Expected 7 columns, but got {len(columns)}")
+
+        return self.df[columns].sum(axis=1)
+
 
     # TODO - add more scoring functions
