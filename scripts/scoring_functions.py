@@ -65,6 +65,7 @@ class ScaleScorer:
 
             # Retrieve the original column mapping from user input
             column_mapping = self.user_column_mappings[scale_name]
+            print(f"\n\n[DEBUG] User Passed Columns: {column_mapping}")
 
             # Normalize both the DataFrame columns and the user-mapped columns
             normalized_mapping = [normalize_column_name(col) for col in column_mapping.values()]
@@ -73,7 +74,7 @@ class ScaleScorer:
             # Find the matching columns (after normalization)
             matching_columns = [col for col in normalized_mapping if col in normalized_df_columns]
 
-            print(f"[DEBUG] Matching columns for {scale_name}: {matching_columns}")
+            print(f"\n\n[DEBUG] Matching columns for {scale_name}: {matching_columns}")
 
             if matching_columns:
                 # Call the appropriate scoring function
@@ -82,6 +83,7 @@ class ScaleScorer:
                 if isinstance(score_result, pd.DataFrame):
                     # If the scoring function returns a DataFrame, store it for concatenation
                     results.append(score_result)
+                    self.question_columns_to_drop.extend(matching_columns)
                 else:
                     # If it returns a Series, add it directly to the DataFrame
                     self.df[scale_name] = score_result

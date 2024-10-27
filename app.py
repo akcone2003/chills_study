@@ -75,7 +75,7 @@ if input_file is not None:
         # TODO - Extend this list as more scales are added
         available_scales = ["MODTAS", "TIPI", "VVIQ", "KAMF", "DPES-Awe", "MAIA",
                             "Ego-Dissolution", "SMES",
-                            "Emotional Breakthrough", "WCS", "Religiosity", "Big Five", "Psychological Insight"]
+                            "Emotional-Breakthrough", "WCS", "Religiosity", "Big-Five", "Psychological-Insight"]
 
         # User selects the scales they want to include in the analysis
         selected_scales = st.multiselect(
