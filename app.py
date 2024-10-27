@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-
+from collections import OrderedDict
 from scripts.helpers import normalize_column_input
 from scripts.pipeline import process_data_pipeline
 
@@ -75,7 +75,7 @@ if input_file is not None:
         available_scales = ["MODTAS", "TIPI", "VVIQ", "KAMF", "DPES-Awe", "MAIA",
                             "Ego-Dissolution", "SMES",
                             "Emotional Breakthrough",
-                            "WCS-Connectedness-To-World-Spirituality", "WCS-Connectedness-To-Others", "WCS-Connectedness-To-Self"]
+                            "WCS-Connectedness-To-World-Spirituality", "WCS-Connectedness-To-Others", "WCS-Connectedness-To-Self", "WCS"]
 
         # User selects the scales they want to include in the analysis
         selected_scales = st.multiselect(
@@ -113,12 +113,13 @@ if input_file is not None:
             st.write(f"**Detected {len(pasted_list)} columns** from pasted input.")
 
             # Combine pasted columns and manually selected columns, ensuring uniqueness
-            all_selected_columns = list(set(pasted_list + selected_columns))
+            all_selected_columns = pasted_list + [col for col in selected_columns if col not in pasted_list]
 
+            # Store the selected columns in an ordered manner
             if all_selected_columns:
-                user_column_mappings[scale] = {
+                user_column_mappings[scale] = OrderedDict({
                     f"Question {i + 1}": col for i, col in enumerate(all_selected_columns)
-                }
+                })
 
         # Store the column mappings in session state
         st.session_state.user_column_mappings = user_column_mappings
