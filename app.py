@@ -71,8 +71,11 @@ if input_file is not None:
         # Step 4: Let the user select columns for each scale either by pasting or multiselect
         st.write("### Map Columns to Scale Questions")
 
+        # TODO - Extend this list as more scales are added
         available_scales = ["MODTAS", "TIPI", "VVIQ", "KAMF", "DPES-Awe", "MAIA",
-                            "Ego-Dissolution", "SMES", "Emotional Breakthrough"]  # TODO - Extend this list as more scales are added
+                            "Ego-Dissolution", "SMES",
+                            "Emotional Breakthrough",
+                            "WCS-Connectedness-To-World-Spirituality", "WCS-Connectedness-To-Others", "WCS-Connectedness-To-Self"]
 
         # User selects the scales they want to include in the analysis
         selected_scales = st.multiselect(
@@ -268,6 +271,3 @@ if st.session_state.processed_df is not None:
         file_name="qa_report.txt",
         mime='text/plain'
     )
-
-
-# TODO - add a GenAI way of seeing the column names and then organizing those into the scales and call the corresponding functions

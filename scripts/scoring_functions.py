@@ -1,5 +1,5 @@
 from scripts.helpers import normalize_column_name
-
+import pandas as pd
 
 class ScaleScorer:
     """
@@ -32,7 +32,10 @@ class ScaleScorer:
             'Ego-Dissolution': self.score_ego_dissolution,
             'SMES': self.score_smes,
             'Emotional-Breakthrough': self.score_emotional_breakthrough,
-            'Psychological-Insight': self.score_psychological_insight
+            'Psychological-Insight': self.score_psychological_insight,
+            'WCS-Connectedness-To-World-Spirituality': self.score_wcs_connectedness_to_world_spirituality,
+            'WCS-Connectedness-To-Others': self.score_wcs_connectedness_to_others,
+            'WCS-Connectedness-To-Self': self.score_wcs_connectedness_to_self
         }
 
     def calculate_all_scales(self, mid_processing=False):
@@ -104,5 +107,57 @@ class ScaleScorer:
     def score_psychological_insight(self, columns):
         return self.df[columns].sum(axis=1)
 
+    def score_wcs_connectedness_to_world_spirituality(self, columns):
+        return self.df[columns].mean(axis=1)
+
+    def score_wcs_connectedness_to_others(self, columns): # TODO - add warning in app that will tell users that the columns must match exactly as seen below
+        """
+        Calculate the WCS Connectedness to Others score
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated connectedness scores for each row.
+        """
+        # Extract relevant columns directly from the DataFrame
+        col1 = self.df[columns[0]]  # 'I felt trapped in my mind.'
+        col2 = self.df[columns[1]]  # 'I felt alone.'
+        col3 = self.df[columns[2]]  # 'I felt connected to friends and/or family.'
+        col4 = self.df[columns[3]]  # 'I felt connected to a community.'
+        col5 = self.df[columns[4]]  # 'I felt unwelcome amongst others.'
+        col6 = self.df[columns[5]]  # 'I felt separate from the world around me.'
+
+        # Apply the formula
+        connectedness_score = ((10 - col1) + (10 - col2) + col3 + col4 + (10 - col5) + (10 - col6)) / 6
+
+        return connectedness_score
+
+    def score_wcs_connectedness_to_self(self, columns):
+        """
+        Calculate the WCS Connectedness to Self score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated connectedness scores for each row.
+        """
+
+        # Extract the relevant columns from the DataFrame
+        cols = [self.df[col] for col in columns]
+
+        # Combine columns into a DataFrame and calculate the row-wise mean
+        connectedness_score = pd.concat(cols, axis=1).mean(axis=1)
+
+        return connectedness_score
 
     # TODO - add more scoring functions
