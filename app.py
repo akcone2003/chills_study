@@ -68,7 +68,7 @@ if input_file is not None:
             input_df = input_df.drop(columns=drop_columns)
             st.success(f"Dropped columns: {drop_columns}")
 
-        # Step 3.1: Let the user select columns for each scale using a multiselect
+        # Step 4: Let the user select columns for each scale either by pasting or multiselect
         st.write("### Map Columns to Scale Questions")
 
         available_scales = ["MODTAS", "TIPI", "VVIQ", "KAMF", "DPES-Awe", "MAIA",
@@ -120,7 +120,7 @@ if input_file is not None:
         # Store the column mappings in session state
         st.session_state.user_column_mappings = user_column_mappings
 
-        # Step 4: Let the user select columns for the sanity check
+        # Step 5: Let the user select columns for the sanity check
         st.write("### Sanity Check Configuration")
 
         chills_column = st.selectbox(
@@ -200,7 +200,7 @@ if st.session_state.processed_df is not None:
                 if st.checkbox(f"Drop row {idx}?", key=f"sanity_drop_{idx}"):
                     st.session_state.sanity_check_drops.add(idx)
 
-        # Step 10: Apply individual row drops if any
+    # Step 10: Apply individual row drops if any
     if st.session_state.sanity_check_drops:
         st.write(f"Rows marked for removal: {st.session_state.sanity_check_drops}")
         if st.button("Remove Selected Rows"):
@@ -244,10 +244,10 @@ if st.session_state.processed_df is not None:
             processed_df = processed_df.drop(flagged_indices)
             st.success("Flagged rows have been dropped from the final dataset.")
 
-    # Step 14: Update the QA report with flagged rows only if new flags are detected
+    # Step 13: Update the QA report with flagged rows only if new flags are detected
     rebuild_qa_report()
 
-    # Step 15: Final CSV download - With Only Behavioral Scores
+    # Step 14: Final CSV download - With Only Behavioral Scores
     st.write("### Download Final Processed Dataset (With Scores Only)")
     csv_data = save_dataframe_to_csv(processed_df)
     st.download_button(
@@ -257,11 +257,11 @@ if st.session_state.processed_df is not None:
         mime='text/csv'
     )
 
-    # Step 16: Display the QA report
+    # Step 15: Display the QA report
     st.write("Quality Assurance Report:")
     st.text(st.session_state.qa_report)
 
-    # Step 17: Download button for the QA report
+    # Step 16: Download button for the QA report
     st.download_button(
         label="Download QA Report",
         data=st.session_state.qa_report,
