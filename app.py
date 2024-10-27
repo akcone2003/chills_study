@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-from scripts.helpers import normalize_column_name
+from scripts.helpers import normalize_column_input
 from scripts.pipeline import process_data_pipeline
 
 
@@ -81,18 +81,41 @@ if input_file is not None:
             default=[]
         )
 
-        # For each selected scale, let the user select the columns for that scale
+        # Initialize the user_column_mappings dictionary
         user_column_mappings = {}
+
+        # Loop over each selected scale
         for scale in selected_scales:
             st.write(f"### Select Columns for {scale}")
-            selected_columns = st.multiselect(
-                f"Select the columns that correspond to the questions for {scale}:",
-                options=input_df.columns.tolist(),
-                help=f"Select columns from your dataset that match the {scale} questions.",
-                key=f"{scale}_columns"
+
+            # Option 1: Text area for pasting column names (newline-separated)
+            pasted_columns = st.text_area(
+                f"Paste the columns for {scale}:",
+                placeholder="Paste column names here, "
+                            "separated by new lines (pressing 'enter' at the beginning of each new question)...",
+                key=f"{scale}_paste"
             )
-            if selected_columns:
-                user_column_mappings[scale] = {f"Question {i + 1}": col for i, col in enumerate(selected_columns)}
+
+            # Option 2: Optional multiselect for additional manual selection (if needed)
+            selected_columns = st.multiselect(
+                f"Select additional columns for {scale} (optional):",
+                options=input_df.columns.tolist(),
+                key=f"{scale}_select"
+            )
+
+            # Normalize and clean the pasted input
+            pasted_list = normalize_column_input(pasted_columns) if pasted_columns.strip() else []
+
+            # Show the detected column count to the user
+            st.write(f"**Detected {len(pasted_list)} columns** from pasted input.")
+
+            # Combine pasted columns and manually selected columns, ensuring uniqueness
+            all_selected_columns = list(set(pasted_list + selected_columns))
+
+            if all_selected_columns:
+                user_column_mappings[scale] = {
+                    f"Question {i + 1}": col for i, col in enumerate(all_selected_columns)
+                }
 
         # Store the column mappings in session state
         st.session_state.user_column_mappings = user_column_mappings

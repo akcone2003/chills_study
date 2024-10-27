@@ -1,17 +1,4 @@
 import pandas as pd
-import re
-
-
-def clean_column_name(name):
-    """
-    Replace special characters and whitespace in column names to make them compatible with LightGBM.
-    """
-    # Replace spaces and special characters with underscores
-    name = re.sub(r'[^a-zA-Z0-9_]', '_', name)
-    # Ensure there are no multiple consecutive underscores
-    name = re.sub(r'__+', '_', name)
-    # Remove leading or trailing underscores
-    return name.strip('_')
 
 
 def normalize_column_name(df_or_name):
@@ -84,3 +71,17 @@ def add_behavioral_score_prefix(df, behavioral_score_mappings):
     df = df.rename(columns=updated_columns)
 
     return df
+
+
+def normalize_column_input(pasted_text):
+    """
+    Clean pasted input by removing extra spaces, handling mixed delimiters,
+    and ensuring consistent formatting of column names.
+
+    Columns are split based on newlines to avoid breaking on embedded commas.
+    """
+    # Split only by newlines or tabs to avoid splitting columns with embedded commas
+    clean_text = pasted_text.replace('\t', '\n')  # Convert tabs to newlines
+    columns = [col.strip() for col in clean_text.splitlines() if col.strip()]
+    return columns
+

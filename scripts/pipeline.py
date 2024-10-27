@@ -213,7 +213,6 @@ def encode_columns(df, column_types):
     """
     # Step 1: Handle ordinal columns (using predefined or dynamically detected categories)
     for col in column_types['ordinal']:
-        print(f"[DEBUG] Encoding ordinal column: {col}")
         try:
             if col in PREDEFINED_ORDINAL_CATEGORIES:
                 # Use predefined categories for known ordinal columns
@@ -236,7 +235,7 @@ def encode_columns(df, column_types):
             # Use LabelEncoder for other nominal columns
             le = LabelEncoder()
             df[col] = le.fit_transform(df[col].astype(str))  # Convert to string to handle non-string categories
-        print(f"[DEBUG] Encoding nominal column: {col}")
+
 
     return df
 
