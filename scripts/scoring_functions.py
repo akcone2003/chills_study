@@ -379,49 +379,55 @@ class ScaleScorer:
 
         # Unpack the 60 columns directly
         (
-            c1, c2, c3, c4, c5,  # Negative Affect
-            c6, c7, c8, c9, c10, c11, c12,  # Self-Reproach
-            c13, c14,  # Neuroticism (combination of negative affect and self-reproach)
-            c15, c16, c17, c18,  # Positive Affect
-            c19, c20, c21, c22,  # Sociability
-            c23, c24, c25, c26,  # Activity
-            c27, c28, c29,  # Extraversion
-            c30, c31, c32,  # Aesthetic Interest
-            c33, c34, c35,  # Intellectual Interest
-            c36, c37, c38, c39,  # Unconventionality
-            c40, c41, c42,  # Openness
-            c43, c44, c45, c46, c47, c48, c49, c50,  # Nonantagonistic Orientation
-            c51, c52, c53, c54,  # Prosocial Orientation
-            c55, c56,  # Agreeableness
-            c57, c58, c59, c60  # Conscientiousness
+            c1, c2, c3, c4, c5,
+            c6, c7, c8, c9, c10, c11, c12,
+            c13, c14,
+            c15, c16, c17, c18,
+            c19, c20, c21, c22,
+            c23, c24, c25, c26,
+            c27, c28, c29,
+            c30, c31, c32,
+            c33, c34, c35,
+            c36, c37, c38, c39,
+            c40, c41, c42,
+            c43, c44, c45, c46, c47, c48, c49, c50,
+            c51, c52, c53, c54,
+            c55, c56,
+            c57, c58, c59, c60
         ) = columns
 
         # Calculate subcategory scores
-        negative_affect = (6 - self.df[c1]) + self.df[c2] + (6 - self.df[c3]) + (6 - self.df[c4]) + (6 - self.df[c5])
-        self_reproach = self.df[[c6, c7, c8, c9, c10, c11, c12]].sum(axis=1)
+        # Negative Affect, Self-Reproach, and Neuroticism
+        negative_affect = (6 - self.df[c1]) + self.df[c11] + (6 - self.df[c16]) + (6 - self.df[c31]) + (6 - self.df[c46])
+        self_reproach = self.df[[c6, c21, c26, c36, c41, c51, c56]].sum(axis=1)
         neuroticism = negative_affect + self_reproach
 
-        positive_affect = self.df[c15] + (6 - self.df[c16]) + self.df[c17] + (6 - self.df[c18])
-        sociability = self.df[c19] + self.df[c20] + (6 - self.df[c21]) + (6 - self.df[c22])
-        activity = self.df[[c23, c24, c25, c26]].sum(axis=1)
+        # Positive Affect, Sociability, Activity, and Extraversion
+        positive_affect = self.df[c7] + (6 - self.df[c12]) + self.df[c37] + (6 - self.df[c42])
+        sociability = self.df[c2] + self.df[c17] + (6 - self.df[c27]) + (6 - self.df[c57])
+        activity = self.df[[c22, c32, c47, c52]].sum(axis=1)
         extraversion = positive_affect + sociability + activity
 
-        aesthetic_interest = self.df[c30] + (6 - self.df[c31]) + self.df[c32]
-        intellectual_interest = (6 - self.df[c33]) + self.df[c34] + self.df[c35]
-        unconventionality = (6 - self.df[c36]) + (6 - self.df[c37]) + (6 - self.df[c38]) + (6 - self.df[c39])
+        # Aesthetic Interest, Intellectual Interest, Unconventionality, and Openness
+        aesthetic_interest = self.df[c13] + (6 - self.df[c23]) + self.df[c43]
+        intellectual_interest = (6 - self.df[c48]) + self.df[c53] + self.df[c58]
+        unconventionality = (6 - self.df[c3]) + (6 - self.df[c8]) + (6 - self.df[c18]) + (6 - self.df[c38])
         openness = aesthetic_interest + intellectual_interest + unconventionality
 
+        # Nonantagonistic Orientation, Prosocial Orientation, and Agreeableness
         nonantagonistic_orientation = (
-                (6 - self.df[c43]) + (6 - self.df[c44]) + self.df[c45] +
-                (6 - self.df[c46]) + (6 - self.df[c47]) + (6 - self.df[c48]) +
-                (6 - self.df[c49]) + (6 - self.df[c50])
+                (6 - self.df[c9]) + (6 - self.df[c14]) + self.df[c19] +
+                (6 - self.df[c24]) + (6 - self.df[c29]) + (6 - self.df[c44]) +
+                (6 - self.df[c54]) + (6 - self.df[c59])
         )
-        prosocial_orientation = self.df[c51] + self.df[c52] + (6 - self.df[c53]) + (6 - self.df[c54])
+        prosocial_orientation = self.df[c4] + self.df[c34] + (6 - self.df[c39]) + (6 - self.df[c49])
         agreeableness = nonantagonistic_orientation + prosocial_orientation
 
-        orderliness = self.df[c5] + self.df[c10] + (6 - self.df[c15])
-
-        conscientiousness = self.df[[c57, c58, c59, c60]].sum(axis=1)
+        # Orderliness, Goal-Striving, Dependability, and Conscientiousness
+        orderliness = self.df[c5] + self.df[c10] + (6 - self.df[c15]) + (6 - self.df[c30]) + (6 - self.df[c55])
+        goal_striving = self.df[c25] + self.df[c35] + self.df[c60]
+        dependability = self.df[c20] + self.df[c40] + (6 - self.df[c45]) + self.df[c50]
+        conscientiousness = orderliness + goal_striving + dependability
 
         # Create a DataFrame with all subcategories and main categories
         scores_df = pd.DataFrame({
