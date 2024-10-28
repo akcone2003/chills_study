@@ -135,16 +135,21 @@ def determine_category_order(col_values):
 
     # Define multiple ordered keyword lists for different types of scales
     ordered_keywords_sets = {
+        'recency': ['cannot remember', 'within the last year', 'within the last month', 'within the last 24 hours'],
+
         'frequency': ['never', 'rarely', 'sometimes', 'often', 'always'],
-        'recency': ['within the last year', 'within the last month', 'within the last 24 hours'],
         'frequency_01': ['never', 'less than once a month', 'once a month',
                          '2-3 times a month', 'once a week', '2-3 times a week',
                          'about once a day', 'two or more times per day'],
         'frequency_02': ['never', 'rarely', 'occasionally', 'often', 'very often'],
+
         'agreement': ['strongly disagree', 'disagree', 'neither agree nor disagree', 'agree', 'strongly agree'],
         'agreement_1': ['strongly disagree', 'disagree', 'somewhat disagree', 'neutral', 'somewhat agree', 'agree',
                         'strongly agree'],
-        'intensity': ['not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
+
+        'intensity_01': ['not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
+        'intensity_02': ['not at all', 'somewhat', 'extremely'],
+
         'positivity': ['poor', 'fair', 'good', 'very good', 'excellent']
     }
 

@@ -1,5 +1,6 @@
 from scripts.helpers import normalize_column_name
 import pandas as pd
+import numpy as np
 
 
 class ScaleScorer:
@@ -39,7 +40,8 @@ class ScaleScorer:
             'WCS-Connectedness-To-Self': self.score_wcs_connectedness_to_self,
             'WCS': self.score_wcs,
             'Religiosity': self.score_religiosity,
-            'Big-Five': self.score_big_five
+            'Big-Five': self.score_big_five,
+            'KAMF': self.score_kamf
         }
 
     def calculate_all_scales(self, mid_processing=False):
@@ -476,5 +478,62 @@ class ScaleScorer:
 
         return self.df[columns].sum(axis=1)
 
+    def score_kamf(self, columns):
+        """
+        Calculate the KAMF score for each question and apply transformations as specified.
+
+        Parameters:
+        ----------
+        columns : list
+            List of column names in the following order:
+            - KAMF_1 (When was the last time you felt moved or touched?)
+            - KAMF_2 (How often do you feel moved or touched?)
+            - KAMF_3_1, KAMF_3_2, KAMF_3_3, KAMF_3_4 (Sub-questions of item 3)
+            - KAMF_4 (How easily do you get moved or touched?)
+
+        Returns:
+        -------
+        pd.DataFrame
+            DataFrame with calculated KAMF scores for each row.
+        """
+        # Ensure the correct number of columns are passed
+        if len(columns) != 7:
+            raise ValueError(f"Expected 7 columns, but got {len(columns)}")
+
+        # Extract each question into variables
+        kamf_1 = self.df[columns[0]]
+        kamf_2 = self.df[columns[1]]
+        kamf_3_1 = self.df[columns[2]]
+        kamf_3_2 = self.df[columns[3]]
+        kamf_3_3 = self.df[columns[4]]
+        kamf_3_4 = self.df[columns[5]]
+        kamf_4 = self.df[columns[6]]
+
+        # Apply transformations for KAMF_1r and KAMF_4r
+        kamf_1r = (kamf_1 * 1.75) - 0.75
+        kamf_4r = (kamf_4 * 1.166) - 0.166
+
+        # Compute the KAMF total, which is the average amongst the items
+        total_items = pd.concat([
+            kamf_1, kamf_1r, kamf_2, kamf_3_1, kamf_3_2, kamf_3_3, kamf_3_4, kamf_4, kamf_4r
+        ], axis=1)
+
+        kamf_total = total_items.mean(axis=1)
+
+        # Create a DataFrame to store all the calculated values
+        scores_df = pd.DataFrame({
+            'KAMF_1': kamf_1,
+            'KAMF_1r': kamf_1r,
+            'KAMF_2': kamf_2,
+            'KAMF_3_1': kamf_3_1,
+            'KAMF_3_2': kamf_3_2,
+            'KAMF_3_3': kamf_3_3,
+            'KAMF_3_4': kamf_3_4,
+            'KAMF_4': kamf_4,
+            'KAMF_4r': kamf_4r,
+            'KAMF_Total': kamf_total
+        })
+
+        return scores_df
 
     # TODO - add more scoring functions
