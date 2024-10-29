@@ -106,7 +106,9 @@ def detect_column_types(df):
                                     'strongly disagree', 'disagree', 'disagree somewhat',
                                     'neither agree nor disagree', 'agree somewhat',
                                     'agree', 'strongly agree', 'not at all', 'a little',
-                                    'moderately', 'quite a bit', 'extremely', 'somewhat', 'neutral']
+                                    'moderately', 'quite a bit', 'extremely', 'somewhat',
+                                    'neutral', 'within the last month', 'cannot remember',
+                                    'within the last 24 hours']
 
                 if any(keyword in [str(val).lower() for val in df[col].unique()] for keyword in ordered_keywords):
                     column_types['ordinal'].append(col)
@@ -152,7 +154,7 @@ def determine_category_order(col_values):
     }
 
     # Convert column values to lowercase for easier comparison
-    lower_col_values = [str(value).lower() for value in col_values]
+    lower_col_values = [normalize_column_name(value) for value in col_values]
 
     # Attempt to match column values to one of the ordered keyword sets
     best_match = None
@@ -229,7 +231,6 @@ def encode_columns(df, column_types):
                 unique_values = df[col].dropna().unique()
                 categories = [determine_category_order(unique_values)]
                 print(f"\n\n[DEBUG] Determined Order for {col}: {categories}")  # Track category order
-
 
             encoder = OrdinalEncoder(categories=categories)
             df[col] = encoder.fit_transform(df[[col]]) + 1  # +1 to avoid 0-based indexing
@@ -436,45 +437,47 @@ def process_data_pipeline(input_df, chills_column, chills_intensity_column, inte
 # Testing Semantic Analysis
 if __name__ == "__main__":
     from scipy.stats import kendalltau
-    # Step 1: Create Test Data
-    test_data = {
-        "Intensity": ["not at all", "extremely", "quite a bit", "moderately", "a little"],
-        "Frequency": ["never", "sometimes", "often", "always", "rarely"],
-        "Custom Scale": ["minimal", "extreme", "moderate", "low", "high"]
+
+    data = {
+        "When was the last time you felt moved or touched?": [
+            "Within the last month", "Within the last year", "Within the last month",
+            "Within the last month", "Within the last 24 hours", "Within the last month",
+            "Within the last month", "Within the last month", "Within the last 24 hours",
+            "Within the last year", "Within the last month", "Within the last month",
+            "Within the last 24 hours", "Within the last month", "Within the last month",
+            "Within the last month", "Within the last month", "Within the last month",
+            "Within the last 24 hours", "Cannot remember", "Within the last 24 hours",
+            "Within the last year", "Within the last year", "Within the last 24 hours",
+            "Within the last year", "Within the last 24 hours", "Cannot remember",
+            "Within the last 24 hours", "Within the last month", "Within the last 24 hours",
+            "Within the last month", "Cannot remember", "Within the last month",
+            "Within the last month", "Within the last month", "Within the last month",
+            "Within the last month", "Within the last month", "Cannot remember",
+            "Within the last year", "Within the last 24 hours", "Within the last 24 hours",
+            "Within the last 24 hours", "Within the last year", "Within the last month",
+            "Within the last year", "Within the last 24 hours", "Within the last month",
+            "Within the last 24 hours", "Within the last month", "Within the last month",
+            "Within the last month", "Within the last month", "Within the last year",
+            "Within the last 24 hours", "Within the last month", "Within the last month",
+            "Within the last 24 hours", "Within the last month", "Within the last 24 hours",
+            "Cannot remember", "Within the last year", "Within the last 24 hours",
+            "Within the last month", "Within the last month", "Within the last month",
+            "Cannot remember", "Within the last month", "Within the last 24 hours",
+            "Within the last month", "Within the last year", "Within the last year",
+            "Within the last month", "Within the last month", "Within the last month",
+            "Within the last month", "Within the last month", "Within the last year",
+            "Within the last month", "Within the last 24 hours", "Within the last month",
+            "Within the last year", "Within the last month", "Within the last month",
+            "Within the last year", "Within the last 24 hours", "Within the last month",
+            "Within the last year", "Within the last month", "Within the last year",
+            "Within the last month", "Within the last month", "Within the last year",
+            "Within the last year", "Within the last month", "Within the last year",
+            "Within the last 24 hours", "Within the last year", "Within the last month"
+        ]
     }
 
-    df = pd.DataFrame(test_data)
+    df_test = pd.DataFrame(data)
 
-    # Step 2: Run Semantic Ranking
-    for column in df.columns:
-        col_values = df[column].unique()
-        ordered_categories = determine_category_order(col_values)
-        print(f"Column: {column}")
-        print(f"Original Categories: {col_values}")
-        print(f"Determined Order: {ordered_categories}\n")
+    encoded_df = preprocess_data(df_test)
 
-    # Step 3: Qualitative Analysis
-    # Manually verify the determined order by looking at the printed output
-
-    # Step 4: Quantitative Evaluation using Kendall's Tau
-    for column in df.columns:
-        if column == "Intensity":
-            expected_order = ["not at all", "a little", "moderately", "quite a bit", "extremely"]
-        elif column == "Frequency":
-            expected_order = ["never", "rarely", "sometimes", "often", "always"]
-        else:
-            continue  # Skip Custom Scale since it has no defined order for comparison
-
-        ranked_order = determine_category_order(df[column].unique())
-
-        # Convert categories to numeric rank based on expected and actual order
-        expected_ranks = [expected_order.index(x) for x in expected_order]
-        actual_ranks = [ranked_order.index(x) for x in expected_order]
-
-        # Calculate Kendall's Tau
-        tau, p_value = kendalltau(expected_ranks, actual_ranks)
-        print(f"Kendall's Tau for '{column}': {tau}, P-value: {p_value}")
-
-    # Step 5: Iterate based on findings (manual iteration step)
-    # If Kendall's Tau value is low or p-value indicates poor correlation,
-    # consider modifying the semantic ranking fallback or adding more predefined sets.
+    print("[TEST] Encoded DataFrame:\n", encoded_df)
