@@ -40,6 +40,7 @@ class ScaleScorer:
             'WCS': self.score_wcs,
             'Religiosity': self.score_religiosity,
             'Five-Factor-Inventory': self.score_big_five,
+            'Cloninger-Self-Transcendence-Subscale': self.score_csts,
             # Measuring Experience-Drive Trait Changes
             'DPES-Joy': self.score_dpes_joy,
             'DPES-Love': self.score_dpes_love,
@@ -751,5 +752,21 @@ class ScaleScorer:
         })
 
         return scores_df
+
+    def score_csts(self, columns):
+        """
+        Calculate Cloninger Self-Transcendence Subscale scores.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names corresponding to the FFMQ questions.
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing all subcategory scores and the total PANAS score.
+        """
+        return self.df[columns].sum(axis=1) / 10
 
     # TODO - add more scoring functions
