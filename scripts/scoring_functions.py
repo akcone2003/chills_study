@@ -26,10 +26,9 @@ class ScaleScorer:
         # Mapping scale names to their scoring functions
         # TODO - add more as needed
         self.scoring_functions = {
-            'MODTAS': self.score_modtas,
+            # Trait Measures
             'TIPI': self.score_tipi,
             'VVIQ': self.score_vviq,
-            'DPES-Awe': self.score_dpes_awe,
             'MAIA': self.score_maia,
             'Ego-Dissolution': self.score_ego_dissolution,
             'SMES': self.score_smes,
@@ -40,8 +39,17 @@ class ScaleScorer:
             'WCS-Connectedness-To-Self': self.score_wcs_connectedness_to_self,
             'WCS': self.score_wcs,
             'Religiosity': self.score_religiosity,
-            'Big-Five': self.score_big_five,
-            'KAMF': self.score_kamf
+            'Five-Factor-Inventory': self.score_big_five,
+            # Measuring Experience-Drive Trait Changes
+            'DPES-Joy': self.score_dpes_joy,
+            'DPES-Love': self.score_dpes_love,
+            'DPES-Pride': self.score_dpes_pride,
+            'MODTAS': self.score_modtas,
+            'DPES-Awe': self.score_dpes_awe,
+            'KAMF': self.score_kamf,
+            'MAAS': self.score_maas,
+            'Five-Facet-Mindfulness-Questionnaire (FFMQ)': self.score_ffmq,
+            'Positive-Negative-Affect-Schedule (PANAS)': self.score_panas,
         }
 
     def calculate_all_scales(self, mid_processing=False):
@@ -532,6 +540,180 @@ class ScaleScorer:
             'KAMF_4': kamf_4,
             'KAMF_4r': kamf_4r,
             'KAMF_Total': kamf_total
+        })
+
+        return scores_df
+
+    def score_dpes_joy(self, columns):
+        """
+        Calculate the DPES Awe (Dispositional Positive Emotion Scale - Joy) score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names associated with the DPES Joy questions.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated sum of DPES Joy scores for each row.
+        """
+        return self.df[columns].sum(axis=1)
+
+    def score_dpes_love(self, columns):
+        """
+        Calculate the DPES Awe (Dispositional Positive Emotion Scale - Love) score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names associated with the DPES Love questions.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated sum of DPES Love scores for each row.
+        """
+        return self.df[columns].sum(axis=1)
+
+    def score_dpes_pride(self, columns):
+        """
+        Calculate the DPES Awe (Dispositional Positive Emotion Scale - Pride) score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names associated with the DPES Pride questions.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated sum of DPES Pride scores for each row.
+        """
+        return self.df[columns].sum(axis=1)
+
+    def score_maas(self, columns):
+        """
+        Calculate the MAAS (Mindful Attention Awareness Scale) score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names associated with the DPES Pride questions.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated MAAS scores for each row.
+        """
+        return self.df[columns].mean(axis=1)
+
+    def score_ffmq(self, columns):
+        """
+        Calculate subcategory and total FFMQ scores.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names corresponding to the FFMQ questions.
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing all subcategory scores and the total FFMQ score.
+        """
+        # Ensure the correct number of columns (39 questions expected)
+        if len(columns) != 39:
+            raise ValueError(f"Expected 39 columns, but got {len(columns)}")
+
+        # Unpack all 39 questions directly
+        (
+            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
+            q11, q12, q13, q14, q15, q16, q17, q18, q19, q20,
+            q21, q22, q23, q24, q25, q26, q27, q28, q29, q30,
+            q31, q32, q33, q34, q35, q36, q37, q38, q39
+        ) = columns
+
+        # Define helper for reverse scoring
+        def reverse(q):
+            return 6 - self.df[q]
+
+        # Calculate subscale scores
+        # Observing Score
+        observing = self.df[[q1, q6, q11, q15, q20, q26, q31, q36]].sum(axis=1)
+
+        # Describing Score
+        describing = (
+                self.df[[q2, q7, q27, q32, q37]]  # Regular scores
+                + reverse(q12) + reverse(q16) + reverse(q22)  # Reverse-scored
+        ).sum(axis=1)
+
+        # Acting With Awareness Score
+        acting_with_awareness = (
+                reverse(q5) + reverse(q8) + reverse(q13) + reverse(q18) +
+                reverse(q23) + reverse(q28) + reverse(q34) + reverse(q38)
+        ).sum(axis=1)
+
+        # Non-judging Score
+        nonjudging = (
+                reverse(q3) + reverse(q10) + reverse(q14) + reverse(q17) +
+                reverse(q25) + reverse(q30) + reverse(q35) + reverse(q39)
+        ).sum(axis=1)
+
+        # Non-reactivity score
+        nonreactivity = self.df[[q4, q9, q19, q21, q24, q29, q33]].sum(axis=1)
+
+        # Calculate the total FFMQ score
+        total_score = observing + describing + acting_with_awareness + nonjudging + nonreactivity
+
+        # Create a DataFrame with all subscale and total scores
+        scores_df = pd.DataFrame({
+            'Observing': observing,
+            'Describing': describing,
+            'Acting with Awareness': acting_with_awareness,
+            'Nonjudging': nonjudging,
+            'Nonreactivity': nonreactivity,
+            'Total FFMQ Score': total_score
+        })
+
+        return scores_df
+
+    def score_panas(self, columns):
+        """
+        Calculate subcategory and total PANAS (Positive Negative Affect Schedule) scores.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names corresponding to the FFMQ questions.
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing all subcategory scores and the total PANAS score.
+        """
+        # Ensure the correct number of columns (39 questions expected)
+        if len(columns) != 20:
+            raise ValueError(f"Expected 20 columns, but got {len(columns)}")
+
+        # Unpack all 20 questions directly
+        (
+            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
+            q11, q12, q13, q14, q15, q16, q17, q18, q19, q20,
+        ) = columns
+
+        # Calculating sub scores
+        positive = self.df[q1, q3, q5, q10, q12, q14, q16, q17, q19].sum(axis=1)
+
+        negative = self.df[q2, q4, q6, q7, q8, q11, q13, q15, q18, q20].sum(axis=1)
+
+        total_panas = positive + negative
+
+        # Create a DataFrame with all subscale and total scores
+        scores_df = pd.DataFrame({
+            'Positive_PANAS': positive,
+            'Negative_PANAS': negative,
+            'PANAS': total_panas
         })
 
         return scores_df

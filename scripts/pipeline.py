@@ -135,21 +135,26 @@ def determine_category_order(col_values):
 
     # Define multiple ordered keyword lists for different types of scales
     ordered_keywords_sets = {
+        # Recency Scales
         'recency': ['cannot remember', 'within the last year', 'within the last month', 'within the last 24 hours'],
-
+        # Frequency Scales
         'frequency': ['never', 'rarely', 'sometimes', 'often', 'always'],
         'frequency_01': ['never', 'less than once a month', 'once a month',
                          '2-3 times a month', 'once a week', '2-3 times a week',
                          'about once a day', 'two or more times per day'],
         'frequency_02': ['never', 'rarely', 'occasionally', 'often', 'very often'],
-
+        'frequency_03': ['almost always', 'very frequently', 'somewhat frequently',
+                         'somewhat infrequently', 'very infrequently', 'almost never'],
+        'frequency_04': ['never or very rarely true', 'rarely true', 'sometimes true', 'often true', 'very often or always true'],
+        # Agreement Scales
         'agreement': ['strongly disagree', 'disagree', 'neither agree nor disagree', 'agree', 'strongly agree'],
         'agreement_1': ['strongly disagree', 'disagree', 'somewhat disagree', 'neutral', 'somewhat agree', 'agree',
                         'strongly agree'],
-
+        # Intensity Scales
         'intensity_01': ['not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
         'intensity_02': ['not at all', 'somewhat', 'extremely'],
-
+        'intensity_03': ['very slightly or not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
+        # Mood Scales
         'positivity': ['poor', 'fair', 'good', 'very good', 'excellent']
     }
 
@@ -434,7 +439,7 @@ def process_data_pipeline(input_df, chills_column, chills_intensity_column, inte
 
     return final_df, intermediate_df, str(qa_report)
 
-# Testing Semantic Analysis
+# Testing Ground
 if __name__ == "__main__":
     from scipy.stats import kendalltau
 
