@@ -44,8 +44,10 @@ class ScaleScorer:
             'DPES-Joy': self.score_dpes_joy,
             'DPES-Love': self.score_dpes_love,
             'DPES-Pride': self.score_dpes_pride,
-            'MODTAS': self.score_modtas,
             'DPES-Awe': self.score_dpes_awe,
+            'DPES-Amusement': self.score_dpes_amusement,
+            'DPES-Compassion': self.score_dpes_compassion,
+            'MODTAS': self.score_modtas,
             'KAMF': self.score_kamf,
             'MAAS': self.score_maas,
             'Five-Facet-Mindfulness-Questionnaire (FFMQ)': self.score_ffmq,
@@ -589,6 +591,38 @@ class ScaleScorer:
         --------
         pd.Series
             A series containing the calculated sum of DPES Pride scores for each row.
+        """
+        return self.df[columns].sum(axis=1)
+
+    def score_dpes_amusement(self, columns):
+        """
+        Calculate the DPES Amusement (Dispositional Positive Emotion Scale - Amusement) score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names associated with the DPES Amusement questions.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated sum of DPES Amusement scores for each row.
+        """
+        return self.df[columns].sum(axis=1)
+
+    def score_dpes_compassion(self, columns):
+        """
+        Calculate the DPES Compassion (Dispositional Positive Emotion Scale - Compassion) score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names associated with the DPES Compassion questions.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated sum of DPES Compassion scores for each row.
         """
         return self.df[columns].sum(axis=1)
 

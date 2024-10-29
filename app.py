@@ -73,10 +73,11 @@ if input_file is not None:
         st.write("### Map Columns to Scale Questions")
 
         # TODO - Extend this list as more scales are added
-        available_scales = ["MODTAS", "TIPI", "VVIQ", "KAMF", "DPES-Awe", "MAIA",
+        available_scales = ["MODTAS", "TIPI", "VVIQ", "KAMF", "MAIA",
                             "Ego-Dissolution", "SMES",
                             "Emotional-Breakthrough", "WCS", "Religiosity", "Five-Factor-Inventory",
-                            "Psychological-Insight", "DPES-Joy", "DPES-Love", "DPES-Pride",
+                            "Psychological-Insight", "DPES-Joy", "DPES-Love", "DPES-Pride", "DPES-Awe",
+                            "DPES-Amusement", "DPES-Compassion",
                             "MAAS", "Five-Facet-Mindfulness-Questionnaire (FFMQ)", "Positive-Negative-Affect-Schedule (PANAS)"]
 
         # User selects the scales they want to include in the analysis
