@@ -32,15 +32,18 @@ class ScaleScorer:
             'MAIA': self.score_maia,
             'Ego-Dissolution': self.score_ego_dissolution,
             'SMES': self.score_smes,
-            'Emotional-Breakthrough': self.score_emotional_breakthrough,
-            'Psychological-Insight': self.score_psychological_insight,
+            'Emotional Breakthrough': self.score_emotional_breakthrough,
+            'Psychological Insight': self.score_psychological_insight,
             'WCS-Connectedness-To-World-Spirituality': self.score_wcs_connectedness_to_world_spirituality,
             'WCS-Connectedness-To-Others': self.score_wcs_connectedness_to_others,
             'WCS-Connectedness-To-Self': self.score_wcs_connectedness_to_self,
             'WCS': self.score_wcs,
             'Religiosity': self.score_religiosity,
-            'Five-Factor-Inventory': self.score_big_five,
-            'Cloninger-Self-Transcendence-Subscale': self.score_csts,
+            'Five Factor Inventory': self.score_big_five,
+            'Cloninger Self Transcendence Subscale': self.score_csts,
+            'Self-Transcendence Scale': self.score_sts,
+            'Early Maladaptive Schema (EMS) - Young Schema Questionnaire - Short Form 3 (YSQ-S3)': self.score_ems_ysq3S3,
+            'Stubborn Opinionatedness Scale (SOP)': self.score_sop,
             # Measuring Experience-Drive Trait Changes
             'DPES-Joy': self.score_dpes_joy,
             'DPES-Love': self.score_dpes_love,
@@ -51,8 +54,8 @@ class ScaleScorer:
             'MODTAS': self.score_modtas,
             'KAMF': self.score_kamf,
             'MAAS': self.score_maas,
-            'Five-Facet-Mindfulness-Questionnaire (FFMQ)': self.score_ffmq,
-            'Positive-Negative-Affect-Schedule (PANAS)': self.score_panas,
+            'Five Facet Mindfulness Questionnaire (FFMQ)': self.score_ffmq,
+            'Positive Negative Affect Schedule (PANAS)': self.score_panas,
         }
 
     def calculate_all_scales(self, mid_processing=False):
@@ -634,7 +637,7 @@ class ScaleScorer:
         Parameters:
         -----------
         columns : list
-            A list with the column names associated with the DPES Pride questions.
+            A list with the column names associated with the MAAS questions.
 
         Returns:
         --------
@@ -720,7 +723,7 @@ class ScaleScorer:
         Parameters:
         -----------
         columns : list
-            A list with the column names corresponding to the FFMQ questions.
+            A list with the column names corresponding to the PANAS questions.
 
         Returns:
         --------
@@ -755,18 +758,108 @@ class ScaleScorer:
 
     def score_csts(self, columns):
         """
-        Calculate Cloninger Self-Transcendence Subscale scores.
+        Calculate Cloninger Self-Transcendence Subscale (CSTS) scores.
 
         Parameters:
         -----------
         columns : list
-            A list with the column names corresponding to the FFMQ questions.
+            A list with the column names corresponding to the CSTS questions.
+
+        Returns:
+        --------
+        pd.Series
+            Series containing CSTS score.
+        """
+        if len(columns) != 15:
+            raise ValueError(f"Expected 15 columns but got {len(columns)}")
+
+        return self.df[columns].sum(axis=1) / 10
+
+    def score_sts(self, columns):
+        """
+        Calculate Self-Transcendence Scale scores.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names corresponding to the STS questions.
+
+        Returns:
+        --------
+        pd.Series
+            Series containing STS score.
+        """
+        if len(columns) != 15:
+            raise ValueError(f"Expected 15 columns but got {len(columns)}")
+
+        return self.df[columns].sum(axis=1)
+
+    def score_ems_ysq3S3(self, columns):
+
+        """
+        Calculate the 18 EMS schema scores based on the YSQ-S3.
+
+        Parameters:
+        -----------
+        columns : list
+            A list containing the column names of the 90 YSQ-S3 questions.
 
         Returns:
         --------
         pd.DataFrame
-            DataFrame containing all subcategory scores and the total PANAS score.
+            DataFrame containing the scores for each of the 18 schemas.
         """
-        return self.df[columns].sum(axis=1) / 10
+        # Ensure that the correct number of columns is provided
+        if len(columns) != 90:
+            raise ValueError(f"Expected 90 columns, but got {len(columns)}")
+
+        # Unpack the 90 questions directly
+        (
+            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
+            q11, q12, q13, q14, q15, q16, q17, q18, q19, q20,
+            q21, q22, q23, q24, q25, q26, q27, q28, q29, q30,
+            q31, q32, q33, q34, q35, q36, q37, q38, q39, q40,
+            q41, q42, q43, q44, q45, q46, q47, q48, q49, q50,
+            q51, q52, q53, q54, q55, q56, q57, q58, q59, q60,
+            q61, q62, q63, q64, q65, q66, q67, q68, q69, q70,
+            q71, q72, q73, q74, q75, q76, q77, q78, q79, q80,
+            q81, q82, q83, q84, q85, q86, q87, q88, q89, q90
+        ) = columns
+
+        # Define the items belonging to each EMS schema
+        schema_map = {
+            "Abandonment": [q1, q2, q3, q4, q5],
+            "Mistrust/Abuse": [q6, q7, q8, q9, q10],
+            "Emotional Deprivation": [q11, q12, q13, q14, q15],
+            "Defectiveness/Shame": [q16, q17, q18, q19, q20],
+            "Social Isolation/Alienation": [q21, q22, q23, q24, q25],
+            "Dependence/Incompetence": [q26, q27, q28, q29, q30],
+            "Vulnerability to Harm or Illness": [q31, q32, q33, q34, q35],
+            "Enmeshment/Undeveloped Self": [q36, q37, q38, q39, q40],
+            "Failure": [q41, q42, q43, q44, q45],
+            "Entitlement/Grandiosity": [q46, q47, q48, q49, q50],
+            "Insufficient Self-Control": [q51, q52, q53, q54, q55],
+            "Subjugation": [q56, q57, q58, q59, q60],
+            "Self-Sacrifice": [q61, q62, q63, q64, q65],
+            "Approval-Seeking/Recognition-Seeking": [q66, q67, q68, q69, q70],
+            "Negativity/Pessimism": [q71, q72, q73, q74, q75],
+            "Emotional Inhibition": [q76, q77, q78, q79, q80],
+            "Unrelenting Standards/Hypercriticalness": [q81, q82, q83, q84, q85],
+            "Punitiveness": [q86, q87, q88, q89, q90]
+        }
+
+        # Calculate the mean score for each schema
+        schema_scores = {
+            schema: self.df[questions].mean(axis=1) for schema, questions in schema_map.items()
+        }
+
+        # Convert the scores into a DataFrame
+        scores_df = pd.DataFrame(schema_scores)
+
+        return scores_df
+
+    def score_sop(self, columns):
+        pass
+
 
     # TODO - add more scoring functions

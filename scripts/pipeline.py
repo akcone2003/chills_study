@@ -16,6 +16,7 @@ def load_model():
     model = AutoModel.from_pretrained('bert-base-uncased', torch_dtype=torch.float32).to('cpu')
     return tokenizer, model
 
+
 # Use the cached resources within your functions when needed.
 tokenizer, model = load_model()
 
@@ -138,22 +139,26 @@ def determine_category_order(col_values):
         # Recency Scales
         'recency': ['cannot remember', 'within the last year', 'within the last month', 'within the last 24 hours'],
         # Frequency Scales
-        'frequency': ['never', 'rarely', 'sometimes', 'often', 'always'],
-        'frequency_01': ['never', 'less than once a month', 'once a month',
+        'frequency_01': ['never', 'rarely', 'sometimes', 'often', 'always'],
+        'frequency_02': ['never', 'less than once a month', 'once a month',
                          '2-3 times a month', 'once a week', '2-3 times a week',
                          'about once a day', 'two or more times per day'],
-        'frequency_02': ['never', 'rarely', 'occasionally', 'often', 'very often'],
-        'frequency_03': ['almost always', 'very frequently', 'somewhat frequently',
+        'frequency_03': ['never', 'rarely', 'occasionally', 'often', 'very often'],
+        'frequency_04': ['almost always', 'very frequently', 'somewhat frequently',
                          'somewhat infrequently', 'very infrequently', 'almost never'],
-        'frequency_04': ['never or very rarely true', 'rarely true', 'sometimes true', 'often true', 'very often or always true'],
+        'frequency_05': ['never or very rarely true', 'rarely true', 'sometimes true', 'often true',
+                         'very often or always true'],
         # Agreement Scales
-        'agreement': ['strongly disagree', 'disagree', 'neither agree nor disagree', 'agree', 'strongly agree'],
-        'agreement_1': ['strongly disagree', 'disagree', 'somewhat disagree', 'neutral', 'somewhat agree', 'agree',
-                        'strongly agree'],
+        'agreement_01': ['strongly disagree', 'disagree', 'neither agree nor disagree', 'agree', 'strongly agree'],
+        'agreement_02': ['strongly disagree', 'disagree', 'somewhat disagree', 'neutral', 'somewhat agree', 'agree',
+                         'strongly agree'],
+        'agreement_03': ['completely untrue of me', 'mostly untrue of me', 'slightly more true than untrue',
+                         'moderately true of me', 'mostly true of me', 'describes me perfectly'],
         # Intensity Scales
         'intensity_01': ['not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
         'intensity_02': ['not at all', 'somewhat', 'extremely'],
         'intensity_03': ['very slightly or not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
+        'intensity_04': ['not at all', 'a little', 'somewhat', 'very much'],
         # Mood Scales
         'positivity': ['poor', 'fair', 'good', 'very good', 'excellent']
     }
@@ -438,6 +443,7 @@ def process_data_pipeline(input_df, chills_column, chills_intensity_column, inte
     final_df = scorer.calculate_all_scales()
 
     return final_df, intermediate_df, str(qa_report)
+
 
 # Testing Ground
 if __name__ == "__main__":

@@ -75,10 +75,13 @@ if input_file is not None:
         # TODO - Extend this list as more scales are added
         available_scales = ["MODTAS", "TIPI", "VVIQ", "KAMF", "MAIA",
                             "Ego-Dissolution", "SMES",
-                            "Emotional-Breakthrough", "WCS", "Religiosity", "Five-Factor-Inventory",
-                            "Psychological-Insight", "DPES-Joy", "DPES-Love", "DPES-Pride", "DPES-Awe",
+                            "Emotional Breakthrough", "WCS", "Religiosity", "Five Factor Inventory",
+                            "Psychological Insight", "DPES-Joy", "DPES-Love", "DPES-Pride", "DPES-Awe",
                             "DPES-Amusement", "DPES-Compassion",
-                            "MAAS", "Five-Facet-Mindfulness-Questionnaire (FFMQ)", "Positive-Negative-Affect-Schedule (PANAS)"]
+                            "MAAS", "Five Facet Mindfulness Questionnaire (FFMQ)", "Positive Negative Affect Schedule (PANAS)",
+                            "Self-Transcendence Scale",
+                            "Early Maladaptive Schema (EMS) - Young Schema Questionnaire - Short Form 3 (YSQ-S3)",
+                            "Stubborn Opinionatedness Scale (SOP)",]
 
         # User selects the scales they want to include in the analysis
         selected_scales = st.multiselect(
