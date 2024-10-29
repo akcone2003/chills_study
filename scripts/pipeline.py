@@ -4,34 +4,32 @@ from sklearn.preprocessing import OrdinalEncoder, StandardScaler, LabelEncoder
 from scripts.scoring_functions import ScaleScorer
 from scripts.helpers import normalize_column_name
 import torch
+import streamlit as st
 from sklearn.metrics.pairwise import cosine_similarity
 from transformers import AutoTokenizer, AutoModel
 
 
-# Load BERT tokenizer and model
-tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
-model = AutoModel.from_pretrained('bert-base-uncased')
+@st.cache_resource
+def load_model():
+    """Load BERT tokenizer and model."""
+    tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
+    model = AutoModel.from_pretrained('bert-base-uncased', torch_dtype=torch.float32).to('cpu')
+    return tokenizer, model
+
+# Use the cached resources within your functions when needed.
+tokenizer, model = load_model()
 
 
 def get_embedding(text):
     """
     Get the BERT-based embedding for a given text.
-
-    Parameters:
-    ----------
-    text : str
-        The input text for which the embedding needs to be generated.
-
-    Returns:
-    -------
-    np.ndarray
-        The embedding vector for the input text.
     """
     tokens = tokenizer(text, return_tensors='pt')
     with torch.no_grad():
         output = model(**tokens)
+
     # Use the [CLS] token as the sentence embedding
-    embedding = output.last_hidden_state[:, 0, :].numpy().flatten()
+    embedding = output.last_hidden_state[:, 0, :].cpu().numpy().flatten()
     return embedding
 
 
@@ -171,10 +169,13 @@ def determine_category_order(col_values):
 
     # If a matching scale is found, use it to sort the categories
     if best_match:
+        print(f"[DEBUG] Best Match Found: {best_match}")  # Track matched keywords
+
         sorted_categories = sorted(col_values,
                                    key=lambda x: best_match.index(x.lower()) if x.lower() in best_match else float(
                                        'inf'))
     else:
+        print("\n\n[WARN] No predefined match found. Using semantic similarity fallback.")
         # Fallback to semantic similarity-based sorting
         # Generate embeddings for each category
         embeddings = {value: get_embedding(value) for value in col_values}
@@ -197,6 +198,7 @@ def determine_category_order(col_values):
         # Sort categories based on their calculated score
         sorted_categories = sorted(col_values, key=lambda x: scores[x])
 
+    print(f"\n\n[DEBUG] Sorted Categories: {sorted_categories}")  # Final sorted output
     return sorted_categories
 
 
@@ -226,6 +228,8 @@ def encode_columns(df, column_types):
                 # Dynamically determine categories for unseen ordinal columns
                 unique_values = df[col].dropna().unique()
                 categories = [determine_category_order(unique_values)]
+                print(f"\n\n[DEBUG] Determined Order for {col}: {categories}")  # Track category order
+
 
             encoder = OrdinalEncoder(categories=categories)
             df[col] = encoder.fit_transform(df[[col]]) + 1  # +1 to avoid 0-based indexing
@@ -240,7 +244,6 @@ def encode_columns(df, column_types):
             # Use LabelEncoder for other nominal columns
             le = LabelEncoder()
             df[col] = le.fit_transform(df[col].astype(str))  # Convert to string to handle non-string categories
-
 
     return df
 
