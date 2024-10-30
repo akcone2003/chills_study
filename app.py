@@ -75,7 +75,7 @@ if input_file is not None:
         # TODO - Extend this list as more scales are added
         available_scales = ["MODTAS", "TIPI", "VVIQ", "KAMF", "MAIA",
                             "Ego-Dissolution", "SMES",
-                            "Emotional_Breakthrough", "WCS", "Religiosity", "Five_Factor_Inventory",
+                            "Emotional_Breakthrough", "WCS", "Religiosity", "NEO-FFI-3_Five_Factor_Inventory",
                             "Psychological_Insight", "DPES-Joy", "DPES-Love", "DPES-Pride", "DPES-Awe",
                             "DPES-Amusement", "DPES-Compassion",
                             "MAAS", "Five_Facet_Mindfulness_Questionnaire_(FFMQ)", "Positive_Negative_Affect_Schedule_(PANAS)",

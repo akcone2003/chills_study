@@ -39,7 +39,7 @@ class ScaleScorer:
             'WCS_Connectedness_To_Self': self.score_wcs_connectedness_to_self,
             'WCS': self.score_wcs,
             'Religiosity': self.score_religiosity,
-            'Five_Factor_Inventory': self.score_big_five,
+            'NEO-FFI-3_Five_Factor_Inventory': self.score_neo_ffi_3,
             'Cloninger_Self_Transcendence_Subscale': self.score_csts,
             'Self-Transcendence_Scale': self.score_sts,
             'Early_Maladaptive_Schema_(EMS)_Young_Schema_Questionnaire_Short_Form_3_(YSQ-S3)': self.score_ems_ysq3S3,
@@ -383,7 +383,7 @@ class ScaleScorer:
 
         return scores_df
 
-    def score_big_five(self, columns):
+    def score_neo_ffi_3(self, columns):
         """
         Calculate subcategory and main Big Five scores.
 
@@ -1006,5 +1006,8 @@ class ScaleScorer:
         cams_r_score = df_corrected[columns].sum(axis=1)
 
         return cams_r_score
+
+    def score_neoffi_3(self, columns):
+        ...
 
 # TODO - add more scoring functions
