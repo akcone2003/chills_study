@@ -32,18 +32,19 @@ class ScaleScorer:
             'MAIA': self.score_maia,
             'Ego-Dissolution': self.score_ego_dissolution,
             'SMES': self.score_smes,
-            'Emotional Breakthrough': self.score_emotional_breakthrough,
-            'Psychological Insight': self.score_psychological_insight,
-            'WCS-Connectedness-To-World-Spirituality': self.score_wcs_connectedness_to_world_spirituality,
-            'WCS-Connectedness-To-Others': self.score_wcs_connectedness_to_others,
-            'WCS-Connectedness-To-Self': self.score_wcs_connectedness_to_self,
+            'Emotional_Breakthrough': self.score_emotional_breakthrough,
+            'Psychological_Insight': self.score_psychological_insight,
+            'WCS_Connectedness_To_World_Spirituality': self.score_wcs_connectedness_to_world_spirituality,
+            'WCS_Connectedness_To_Others': self.score_wcs_connectedness_to_others,
+            'WCS_Connectedness_To_Self': self.score_wcs_connectedness_to_self,
             'WCS': self.score_wcs,
             'Religiosity': self.score_religiosity,
-            'Five Factor Inventory': self.score_big_five,
-            'Cloninger Self Transcendence Subscale': self.score_csts,
-            'Self-Transcendence Scale': self.score_sts,
-            'Early Maladaptive Schema (EMS) - Young Schema Questionnaire - Short Form 3 (YSQ-S3)': self.score_ems_ysq3S3,
-            'Stubborn Opinionatedness Scale (SOP)': self.score_sop,
+            'Five_Factor_Inventory': self.score_big_five,
+            'Cloninger_Self_Transcendence_Subscale': self.score_csts,
+            'Self-Transcendence_Scale': self.score_sts,
+            'Early_Maladaptive_Schema_(EMS)_Young_Schema_Questionnaire_Short_Form_3_(YSQ-S3)': self.score_ems_ysq3S3,
+            'Multidimensional_Iowa_Suggestibility_Scale_(MISS)': self.score_miss,
+            'Short_Suggestibility_Scale_(SSS)': self.score_sss,
             # Measuring Experience-Drive Trait Changes
             'DPES-Joy': self.score_dpes_joy,
             'DPES-Love': self.score_dpes_love,
@@ -54,8 +55,8 @@ class ScaleScorer:
             'MODTAS': self.score_modtas,
             'KAMF': self.score_kamf,
             'MAAS': self.score_maas,
-            'Five Facet Mindfulness Questionnaire (FFMQ)': self.score_ffmq,
-            'Positive Negative Affect Schedule (PANAS)': self.score_panas,
+            'Five_Facet_Mindfulness_Questionnaire_(FFMQ)': self.score_ffmq,
+            'Positive_Negative_Affect_Schedule_(PANAS)': self.score_panas,
         }
 
     def calculate_all_scales(self, mid_processing=False):
@@ -795,7 +796,6 @@ class ScaleScorer:
         return self.df[columns].sum(axis=1)
 
     def score_ems_ysq3S3(self, columns):
-
         """
         Calculate the 18 EMS schema scores based on the YSQ-S3.
 
@@ -858,8 +858,107 @@ class ScaleScorer:
 
         return scores_df
 
-    def score_sop(self, columns):
-        pass
+    def score_sss(self, columns):
+        """
+        Calculate the Short Suggestibility Scale (SSS) score.
 
+        Parameters:
+        -----------
+        columns : list
+            List of column names corresponding to the 95 MISS questions.
 
-    # TODO - add more scoring functions
+        Returns:
+        --------
+        pd.Series
+            Series containing the SSS scores.
+        """
+        if len(columns) != 21:
+            raise ValueError(f"Expected 21 columns but got {len(columns)}")
+
+        return self.df[columns].sum(axis=1)
+
+    def score_miss(self, columns):
+        """
+        Calculate the MISS scores for each subscale and the total suggestibility score.
+
+        Parameters:
+        -----------
+        columns : list
+            List of column names corresponding to the 95 MISS questions.
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing scores for each subscale and the total score.
+        """
+        # Ensure that the correct number of columns is provided
+        if len(columns) != 95:
+            raise ValueError(f"Expected 95 columns, but got {len(columns)}")
+
+        # Unpack the 90 questions directly
+        (
+            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
+            q11, q12, q13, q14, q15, q16, q17, q18, q19, q20,
+            q21, q22, q23, q24, q25, q26, q27, q28, q29, q30,
+            q31, q32, q33, q34, q35, q36, q37, q38, q39, q40,
+            q41, q42, q43, q44, q45, q46, q47, q48, q49, q50,
+            q51, q52, q53, q54, q55, q56, q57, q58, q59, q60,
+            q61, q62, q63, q64, q65, q66, q67, q68, q69, q70,
+            q71, q72, q73, q74, q75, q76, q77, q78, q79, q80,
+            q81, q82, q83, q84, q85, q86, q87, q88, q89, q90,
+            q91, q92, q93, q94, q95
+        ) = columns
+
+        # Define subscale calculations
+        # Consumer Suggestibility
+        consumer = self.df[[q2, q10, q14, q20, q24, q32, q45, q51, q57, q63, q70]].sum(axis=1)
+        # Persuadability
+        persuadability = self.df[[q1, q5, q13, q22, q35, q44, q47, q62, q69, q75, q76, q82, q88, q89]].sum(axis=1)
+        # Physiological Suggestibility
+        physiological = self.df[[q11, q15, q25, q33, q52, q58, q64, q66, q68, q71, q77, q94]].sum(axis=1)
+
+        # Physiological Reactivity
+        physiological_reactivity = self.df[[q3, q12, q17, q21, q27, q31, q40, q43, q50, q60, q73, q85, q91]].sum(axis=1)
+
+        # Peer Conformity
+        peer_conformity = (
+                self.df[[q4, q16, q29, q46, q53, q59, q65, q72, q78, q84, q90, q95]].sum(axis=1)
+                - self.df[[q34, q39]].sum(axis=1) + 12
+        )
+
+        # Mental Control
+        mental_control = self.df[[q6, q8, q18, q23, q28, q36, q41, q48, q55, q67, q74, q79, q80, q83, q92]].sum(axis=1)
+
+        # Unpersuabability
+        unpersuadability = self.df[[q7, q9, q19, q26, q30, q37, q38, q42, q49, q54, q56, q61, q81, q86, q87, q93]].sum(axis=1)
+
+        # Short Suggestibility Scale (SSS)
+        # Check if SSS is already in the DataFrame
+        if 'Short Suggestibility Scale (SSS)' in self.df.columns:
+            print("SSS already exists in the DataFrame. Skipping SSS calculation.")
+            sss = self.df['Short Suggestibility Scale (SSS)']
+        else:
+            # Calculate the SSS if not present
+            sss_columns = [q1, q14, q15, q27, q45, q51, q57, q58, q63, q66, q69, q73,
+                           q75, q76, q77, q78, q84, q85, q90, q94, q95]
+            sss = self.score_sss(sss_columns)
+
+        # Total Suggestibility Score
+        total_suggestibility = consumer + physiological + physiological_reactivity + persuadability + peer_conformity
+
+        # Create a DataFrame with all scores
+        scores_df = pd.DataFrame({
+            'Consumer Suggestibility': consumer,
+            'Persuadability': persuadability,
+            'Physiological Suggestibility': physiological,
+            'Physiological Reactivity': physiological_reactivity,
+            'Peer Conformity': peer_conformity,
+            'Mental Control': mental_control,
+            'Unpersuadability': unpersuadability,
+            'Short Suggestibility Scale (SSS)': sss,
+            'Total Suggestibility': total_suggestibility
+        })
+
+        return scores_df
+
+# TODO - add more scoring functions
