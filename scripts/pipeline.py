@@ -347,7 +347,7 @@ def detect_outliers(df, column_name, threshold=3):
 
 
 # Full pipeline
-def process_data_pipeline(input_df, chills_column, chills_intensity_column, intensity_threshold=0, mode='flag',
+def process_data_pipeline(input_df, chills_column=None, chills_intensity_column=None, intensity_threshold=0, mode='flag',
                           user_column_mappings=None):
     """
     Main pipeline function that handles QA, sanity checks, encoding, and scoring.
@@ -387,8 +387,9 @@ def process_data_pipeline(input_df, chills_column, chills_intensity_column, inte
     # Step 2: Run automated QA and generate QA report
     qa_report = generate_qa_report(df)
 
-    # Step 3: Perform sanity check for chills response using dynamic columns
-    df = sanity_check_chills(df, chills_column, chills_intensity_column, intensity_threshold)
+    # Step 3: Perform sanity check for chills response if present in data
+    if chills_column and chills_intensity_column:
+        df = sanity_check_chills(df, chills_column, chills_intensity_column, intensity_threshold)
 
     # Step 4: Preprocess data
     intermediate_df = preprocess_data(df.copy())

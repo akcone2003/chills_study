@@ -1047,3 +1047,4 @@ class ScaleScorer:
 
 
 # TODO - add more scoring functions
+# TODO - add multi dimensional health locus, POMS, NEOPI

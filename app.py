@@ -132,36 +132,46 @@ if input_file is not None:
         # Store the column mappings in session state
         st.session_state.user_column_mappings = user_column_mappings
 
-        # Step 5: Let the user select columns for the sanity check
-        st.write("### Sanity Check Configuration")
-
-        chills_column = st.selectbox(
-            "Select the column representing Chills Response (0 or 1):",
-            options=[None] + input_df.columns.tolist(),
-            format_func=lambda x: "" if x is None else x,
-            help="This should be a binary column where 0 means no chills and 1 means chills were experienced."
+        # Step 5: Ask the user if the study includes chills
+        include_chills = st.radio(
+            "Did your study include chills?",
+            options=["No", "Yes"],
+            index=0,  # Default to "No"
+            help="Select 'Yes' if your study recorded data about chills."
         )
 
-        chills_intensity_column = st.selectbox(
-            "Select the column representing Chills Intensity:",
-            options=[None] + input_df.columns.tolist(),
-            format_func=lambda x: "" if x is None else x,
-            help="This column should represent the intensity of chills, with higher values indicating stronger chills."
-        )
+        # Conditionally show the chills-related options only if "Yes" is selected
+        if include_chills == "Yes":
+            # Step 5.1: Let the user select columns for the sanity check
+            st.write("### Chills Sanity Check Configuration")
 
-        intensity_threshold = st.number_input(
-            "Enter the intensity threshold to flag or drop inconsistent rows:",
-            min_value=0,
-            max_value=10,
-            value=0,
-            help="Rows where the Chills Response is 0 but the intensity is above this value will be flagged or dropped."
-        )
+            chills_column = st.selectbox(
+                "Select the column representing Chills Response (0 or 1):",
+                options=[None] + input_df.columns.tolist(),
+                format_func=lambda x: "" if x is None else x,
+                help="This should be a binary column where 0 means no chills and 1 means chills were experienced."
+            )
 
-        mode = st.radio(
-            "Select how to handle inconsistent rows:",
-            options=['flag', 'drop'],
-            help="'flag' will add a column indicating the inconsistent rows, while 'drop' will remove these rows from the dataset."
-        )
+            chills_intensity_column = st.selectbox(
+                "Select the column representing Chills Intensity:",
+                options=[None] + input_df.columns.tolist(),
+                format_func=lambda x: "" if x is None else x,
+                help="This column should represent the intensity of chills, with higher values indicating stronger chills."
+            )
+
+            intensity_threshold = st.number_input(
+                "Enter the intensity threshold to flag or drop inconsistent rows:",
+                min_value=0,
+                max_value=10,
+                value=0,
+                help="Rows where the Chills Response is 0 but the intensity is above this value will be flagged or dropped."
+            )
+
+            mode = st.radio(
+                "Select how to handle inconsistent rows:",
+                options=['flag', 'drop'],
+                help="'flag' will add a column indicating the inconsistent rows, while 'drop' will remove these rows from the dataset."
+            )
 
         # Step 6: Run the pipeline with the selected configuration and capture the outputs
         if st.button("Run Pipeline"):
