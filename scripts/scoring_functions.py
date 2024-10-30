@@ -45,6 +45,8 @@ class ScaleScorer:
             'Early_Maladaptive_Schema_(EMS)_Young_Schema_Questionnaire_Short_Form_3_(YSQ-S3)': self.score_ems_ysq3S3,
             'Multidimensional_Iowa_Suggestibility_Scale_(MISS)': self.score_miss,
             'Short_Suggestibility_Scale_(SSS)': self.score_sss,
+            'Warwick-Edinburgh_Mental_Wellbeing_Scale_(WEMWBS)': self.score_wemwbs,
+            'Cognitive_and_Affective_Mindfulness_Scale_Revised_(CAMS-R)': self.score_cams_r,
             # Measuring Experience-Drive Trait Changes
             'DPES-Joy': self.score_dpes_joy,
             'DPES-Love': self.score_dpes_love,
@@ -354,8 +356,6 @@ class ScaleScorer:
         if len(columns) != 19:
             raise ValueError(f"Expected 19 columns, but got {len(columns)}")
 
-        print(f"\n\n[DEBUG] Columns passed in: {columns}")
-
         # Split the columns into the three categories
         self_columns = columns[:6]  # First 6 columns
         others_columns = columns[6:12]  # Next 6 columns
@@ -398,21 +398,11 @@ class ScaleScorer:
 
         # Unpack the 60 columns directly
         (
-            c1, c2, c3, c4, c5,
-            c6, c7, c8, c9, c10, c11, c12,
-            c13, c14,
-            c15, c16, c17, c18,
-            c19, c20, c21, c22,
-            c23, c24, c25, c26,
-            c27, c28, c29,
-            c30, c31, c32,
-            c33, c34, c35,
-            c36, c37, c38, c39,
-            c40, c41, c42,
-            c43, c44, c45, c46, c47, c48, c49, c50,
-            c51, c52, c53, c54,
-            c55, c56,
-            c57, c58, c59, c60
+            c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14,
+            c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26,
+            c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39,
+            c40, c41, c42, c43, c44, c45, c46, c47, c48, c49, c50, c51, c52, c53, c54,
+            c55, c56, c57, c58, c59, c60
         ) = columns
 
         # Calculate subcategory scores
@@ -955,10 +945,66 @@ class ScaleScorer:
             'Peer_Conformity': peer_conformity,
             'Mental_Control': mental_control,
             'Unpersuadability': unpersuadability,
-            'Short_Suggestibility_Scale (SSS)': sss,
+            'Short_Suggestibility_Scale_(SSS)': sss,
             'Total_Suggestibility': total_suggestibility
         })
 
         return scores_df
+
+    def score_wemwbs(self, columns):
+        """
+        Calculate the WEMWBS score.
+
+        Parameters:
+        -----------
+        columns : list
+            List of column names corresponding to the 14 WEMWBS questions.
+
+        Returns:
+        --------
+        pd.Series
+            Series containing the WEMWBS scores.
+        """
+        # Ensure correct number of columns
+        if len(columns) != 14:
+            raise ValueError(f"Expected 14 columns but got {len(columns)}")
+
+        # Sum the responses to get the total WEMWBS score
+        return self.df[columns].sum(axis=1)
+
+    def score_cams_r(self, columns):
+        """
+        Calculate the CAMS-R score.
+
+        Parameters:
+        -----------
+        columns : list
+            List of column names corresponding to the 12 CAMS-R questions.
+
+        Returns:
+        --------
+        pd.Series
+            Series containing the CAMS-R scores.
+        """
+        # Ensure correct number of columns
+        if len(columns) != 12:
+            raise ValueError(f"Expected 12 columns but got {len(columns)}")
+
+        # Unpack the 12 questions directly
+        (
+            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12
+        ) = columns
+
+        # Reverse-scoring for items 2, 6, and 7: new_score = 6 - original_score
+        reverse_scored = self.df[[q2, q6, q7]].apply(lambda x: 5 - x)
+
+        # Replace original scores for these items with reversed scores
+        df_corrected = self.df.copy()
+        df_corrected[[q2, q6, q7]] = reverse_scored
+
+        # Calculate total CAMS-R score by summing all 12 items
+        cams_r_score = df_corrected[columns].sum(axis=1)
+
+        return cams_r_score
 
 # TODO - add more scoring functions

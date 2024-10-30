@@ -148,6 +148,8 @@ def determine_category_order(col_values):
                          'somewhat infrequently', 'very infrequently', 'almost never'],
         'frequency_05': ['never or very rarely true', 'rarely true', 'sometimes true', 'often true',
                          'very often or always true'],
+        'frequency_06': ['none of the time', 'rarely', 'some of the time', 'often', 'all of the time'],
+        'frequency_07': ['rarely/not at all', 'sometimes', 'often', 'almost always'],
         # Agreement Scales
         'agreement_01': ['strongly disagree', 'disagree', 'neither agree nor disagree', 'agree', 'strongly agree'],
         'agreement_02': ['strongly disagree', 'disagree', 'somewhat disagree', 'neutral', 'somewhat agree', 'agree',
