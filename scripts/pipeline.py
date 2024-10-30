@@ -103,24 +103,23 @@ def detect_column_types(df):
     dict
         Dictionary with column classifications.
     """
-    column_types = {
-        'nominal': [],
-        'ordinal': [],
-        'free_text': [],
-    }
-
+    column_types = {'nominal': [], 'ordinal': [], 'free_text': []}
     cat_cols = df.select_dtypes(include='object')
 
-    # Heuristic to classify free text or categorical columns
     for col in cat_cols.columns:
         unique_values = df[col].nunique()
         total_rows = len(df)
 
+        # Classify as 'free_text' if many unique values
         if unique_values / total_rows > 0.3:
             column_types['free_text'].append(col)
         else:
-            # Determine if a column is ordinal using ordered keywords or known categories
-            if col in ORDERED_KEYWORD_SET:
+            # Check if the column values match any known scale in ORDERED_KEYWORD_SET
+            if any(
+                    keyword in [normalize_column_name(val) for val in df[col].unique()]
+                    for scale in ORDERED_KEYWORD_SET.values()
+                    for keyword in scale
+            ):
                 column_types['ordinal'].append(col)
             else:
                 column_types['nominal'].append(col)
@@ -142,55 +141,32 @@ def determine_category_order(col_values):
     list
         Sorted list of categories in the determined order.
     """
-    # Convert column values to lowercase for easier comparison
-    lower_col_values = [normalize_column_name(value) for value in col_values]
-
-    # Attempt to match column values to one of the ordered keyword sets
+    lower_col_values = [normalize_column_name(val) for val in col_values]
     best_match = None
     best_match_count = 0
 
+    # Try to match the column values with the known ordered keyword sets
     for scale_name, keywords in ORDERED_KEYWORD_SET.items():
-        # Count how many values from the column match the current keyword list
-        match_count = sum(1 for value in lower_col_values if value in keywords)
-
-        # Keep track of the best match (most matches with the keywords)
+        match_count = sum(1 for val in lower_col_values if val in keywords)
         if match_count > best_match_count:
             best_match = keywords
             best_match_count = match_count
 
-    # If a matching scale is found, use it to sort the categories
+    # Sort based on the matched order, or use semantic similarity if no match
     if best_match:
-        print(f"[DEBUG] Best Match Found: {best_match}")  # Track matched keywords
-
-        sorted_categories = sorted(col_values,
-                                   key=lambda x: best_match.index(x.lower()) if x.lower() in best_match else float(
-                                       'inf'))
+        print(f"[DEBUG] Best Match Found: {best_match}")
+        return sorted(col_values,
+                      key=lambda x: best_match.index(x.lower()) if x.lower() in best_match else float('inf'))
     else:
-        print("\n\n[WARN] No predefined match found. Using semantic similarity fallback.")
-        # Fallback to semantic similarity-based sorting
-        # Generate embeddings for each category
-        embeddings = {value: get_embedding(value) for value in col_values}
+        print("[WARN] No predefined match found. Using semantic similarity.")
+        embeddings = {val: get_embedding(val) for val in col_values}
+        ref_min = get_embedding("least")
+        ref_max = get_embedding("most")
 
-        # Define a reference point for ordering, like "least" or "most"
-        reference_min = get_embedding("least")
-        reference_max = get_embedding("most")
-
-        # Calculate similarity to reference points
-        scores = {}
-        for value, embedding in embeddings.items():
-            # Similarity to "least" reference
-            similarity_to_min = cosine_similarity([embedding], [reference_min])[0][0]
-            # Similarity to "most" reference
-            similarity_to_max = cosine_similarity([embedding], [reference_max])[0][0]
-
-            # Calculate a combined score (the difference helps capture ordering)
-            scores[value] = similarity_to_max - similarity_to_min
-
-        # Sort categories based on their calculated score
-        sorted_categories = sorted(col_values, key=lambda x: scores[x])
-
-    print(f"\n\n[DEBUG] Sorted Categories: {sorted_categories}")  # Final sorted output
-    return sorted_categories
+        scores = {val: cosine_similarity([embedding], [ref_max])[0][0] -
+                       cosine_similarity([embedding], [ref_min])[0][0]
+                  for val, embedding in embeddings.items()}
+        return sorted(col_values, key=lambda x: scores[x])
 
 
 def encode_columns(df, column_types):

@@ -1007,7 +1007,9 @@ class ScaleScorer:
 
         return cams_r_score
 
-    def score_neoffi_3(self, columns):
+    def score_valence_arousal_mood(self, columns):
         ...
 
+    def score_toronto_scale(self, columns):
+        ...
 # TODO - add more scoring functions
