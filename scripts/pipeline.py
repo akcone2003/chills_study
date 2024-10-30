@@ -34,15 +34,35 @@ def get_embedding(text):
     return embedding
 
 
-# Define the ordered categories for known ordinal scales
-PREDEFINED_ORDINAL_CATEGORIES = {
-    'HARDY': ['Not true at all', 'A little true', 'Quite true', 'Completely true'],
-    'CD-RISC': ['Not True at All', 'True Nearly All the Time'],
-    'BRS': ['Strongly disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly agree'],
-    'ARS-30': ['Never', 'Rarely', 'Sometimes', 'Often', 'Always'],
-    'STAI': ['Not at all', 'Somewhat', 'Moderately so', 'Very much so'],
-    'ASI': ['Very little', 'A little', 'Some', 'Much', 'Very much'],
-    'Cloninger': ['Definitely False', 'Definitely True']
+# Define multiple ordered keyword lists for different types of scales
+ORDERED_KEYWORD_SET = {
+    # Recency Scales
+    'recency': ['cannot remember', 'within the last year', 'within the last month', 'within the last 24 hours'],
+    # Frequency Scales
+    'frequency_01': ['never', 'rarely', 'sometimes', 'often', 'always'],
+    'frequency_02': ['never', 'less than once a month', 'once a month',
+                     '2-3 times a month', 'once a week', '2-3 times a week',
+                     'about once a day', 'two or more times per day'],
+    'frequency_03': ['never', 'rarely', 'occasionally', 'often', 'very often'],
+    'frequency_04': ['almost always', 'very frequently', 'somewhat frequently',
+                     'somewhat infrequently', 'very infrequently', 'almost never'],
+    'frequency_05': ['never or very rarely true', 'rarely true', 'sometimes true', 'often true',
+                     'very often or always true'],
+    'frequency_06': ['none of the time', 'rarely', 'some of the time', 'often', 'all of the time'],
+    'frequency_07': ['rarely/not at all', 'sometimes', 'often', 'almost always'],
+    # Agreement Scales
+    'agreement_01': ['strongly disagree', 'disagree', 'neither agree nor disagree', 'agree', 'strongly agree'],
+    'agreement_02': ['strongly disagree', 'disagree', 'somewhat disagree', 'neutral', 'somewhat agree', 'agree',
+                     'strongly agree'],
+    'agreement_03': ['completely untrue of me', 'mostly untrue of me', 'slightly more true than untrue',
+                     'moderately true of me', 'mostly true of me', 'describes me perfectly'],
+    # Intensity Scales
+    'intensity_01': ['not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
+    'intensity_02': ['not at all', 'somewhat', 'extremely'],
+    'intensity_03': ['very slightly or not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
+    'intensity_04': ['not at all', 'a little', 'somewhat', 'very much'],
+    # Mood Scales
+    'positivity': ['poor', 'fair', 'good', 'very good', 'excellent']
 }
 
 
@@ -100,21 +120,10 @@ def detect_column_types(df):
             column_types['free_text'].append(col)
         else:
             # Determine if a column is ordinal using ordered keywords or known categories
-            if col in PREDEFINED_ORDINAL_CATEGORIES:
+            if col in ORDERED_KEYWORD_SET:
                 column_types['ordinal'].append(col)
             else:
-                ordered_keywords = ['never', 'rarely', 'sometimes', 'often', 'always',
-                                    'strongly disagree', 'disagree', 'disagree somewhat',
-                                    'neither agree nor disagree', 'agree somewhat',
-                                    'agree', 'strongly agree', 'not at all', 'a little',
-                                    'moderately', 'quite a bit', 'extremely', 'somewhat',
-                                    'neutral', 'within the last month', 'cannot remember',
-                                    'within the last 24 hours']
-
-                if any(keyword in [str(val).lower() for val in df[col].unique()] for keyword in ordered_keywords):
-                    column_types['ordinal'].append(col)
-                else:
-                    column_types['nominal'].append(col)
+                column_types['nominal'].append(col)
 
     return column_types
 
@@ -133,38 +142,6 @@ def determine_category_order(col_values):
     list
         Sorted list of categories in the determined order.
     """
-
-    # Define multiple ordered keyword lists for different types of scales
-    ordered_keywords_sets = {
-        # Recency Scales
-        'recency': ['cannot remember', 'within the last year', 'within the last month', 'within the last 24 hours'],
-        # Frequency Scales
-        'frequency_01': ['never', 'rarely', 'sometimes', 'often', 'always'],
-        'frequency_02': ['never', 'less than once a month', 'once a month',
-                         '2-3 times a month', 'once a week', '2-3 times a week',
-                         'about once a day', 'two or more times per day'],
-        'frequency_03': ['never', 'rarely', 'occasionally', 'often', 'very often'],
-        'frequency_04': ['almost always', 'very frequently', 'somewhat frequently',
-                         'somewhat infrequently', 'very infrequently', 'almost never'],
-        'frequency_05': ['never or very rarely true', 'rarely true', 'sometimes true', 'often true',
-                         'very often or always true'],
-        'frequency_06': ['none of the time', 'rarely', 'some of the time', 'often', 'all of the time'],
-        'frequency_07': ['rarely/not at all', 'sometimes', 'often', 'almost always'],
-        # Agreement Scales
-        'agreement_01': ['strongly disagree', 'disagree', 'neither agree nor disagree', 'agree', 'strongly agree'],
-        'agreement_02': ['strongly disagree', 'disagree', 'somewhat disagree', 'neutral', 'somewhat agree', 'agree',
-                         'strongly agree'],
-        'agreement_03': ['completely untrue of me', 'mostly untrue of me', 'slightly more true than untrue',
-                         'moderately true of me', 'mostly true of me', 'describes me perfectly'],
-        # Intensity Scales
-        'intensity_01': ['not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
-        'intensity_02': ['not at all', 'somewhat', 'extremely'],
-        'intensity_03': ['very slightly or not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
-        'intensity_04': ['not at all', 'a little', 'somewhat', 'very much'],
-        # Mood Scales
-        'positivity': ['poor', 'fair', 'good', 'very good', 'excellent']
-    }
-
     # Convert column values to lowercase for easier comparison
     lower_col_values = [normalize_column_name(value) for value in col_values]
 
@@ -172,7 +149,7 @@ def determine_category_order(col_values):
     best_match = None
     best_match_count = 0
 
-    for scale_name, keywords in ordered_keywords_sets.items():
+    for scale_name, keywords in ORDERED_KEYWORD_SET.items():
         # Count how many values from the column match the current keyword list
         match_count = sum(1 for value in lower_col_values if value in keywords)
 
@@ -235,9 +212,9 @@ def encode_columns(df, column_types):
     # Step 1: Handle ordinal columns (using predefined or dynamically detected categories)
     for col in column_types['ordinal']:
         try:
-            if col in PREDEFINED_ORDINAL_CATEGORIES:
+            if col in ORDERED_KEYWORD_SET:
                 # Use predefined categories for known ordinal columns
-                categories = [PREDEFINED_ORDINAL_CATEGORIES[col]]
+                categories = [ORDERED_KEYWORD_SET[col]]
             else:
                 # Dynamically determine categories for unseen ordinal columns
                 unique_values = df[col].dropna().unique()
