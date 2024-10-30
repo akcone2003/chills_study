@@ -59,6 +59,8 @@ class ScaleScorer:
             'MAAS': self.score_maas,
             'Five_Facet_Mindfulness_Questionnaire_(FFMQ)': self.score_ffmq,
             'Positive_Negative_Affect_Schedule_(PANAS)': self.score_panas,
+            # Outcome Measures
+            'Toronto_Mindfulness_Scale': self.score_toronto_mind_scale
         }
 
     def calculate_all_scales(self, mid_processing=False):
@@ -1007,9 +1009,41 @@ class ScaleScorer:
 
         return cams_r_score
 
-    def score_valence_arousal_mood(self, columns):
-        ...
+    def score_toronto_mind_scale(self, columns):
+        """
+        Calculate the MISS scores for each subscale and the total suggestibility score.
 
-    def score_toronto_scale(self, columns):
-        ...
+        Parameters:
+        -----------
+        columns : list
+            List of column names corresponding to the 95 MISS questions.
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing scores for each subscale and the total score.
+        """
+        if len(columns) != 13:
+            raise ValueError(f"Expected 13 columns but got {len(columns)}")
+
+        # Unpack the 12 questions directly
+        (
+            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12, q13
+        ) = columns
+
+        # Scoring subscales
+        curiosity = self.df[[q3, q5, q6, q10, q12, q13]].sum(axis=1)
+        decentering = self.df[[q1, q2, q4, q7, q8, q9, q11]].sum(axis=1)
+        # Calculate total
+        total = curiosity + decentering
+
+        scores_df = pd.DataFrame({
+            'Curiosity': curiosity,
+            'De-Centering': decentering,
+            'Toronto_Mindfulness_Scale_Total': total
+        })
+
+        return scores_df
+
+
 # TODO - add more scoring functions
