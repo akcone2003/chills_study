@@ -375,9 +375,9 @@ class ScaleScorer:
 
         # Combine all scores into a DataFrame
         scores_df = pd.DataFrame({
-            'WCS-Connectedness-To-Self': self_score,
-            'WCS-Connectedness-To-Others': others_score,
-            'WCS-Connectedness-To-World-Spirituality': world_score,
+            'WCS_Connectedness_To-Self': self_score,
+            'WCS_Connectedness_To_Others': others_score,
+            'WCS_Connectedness_To_World_Spirituality': world_score,
             'Total WCS': total_score
         })
 
@@ -451,18 +451,18 @@ class ScaleScorer:
         # Create a DataFrame with all subcategories and main categories
         scores_df = pd.DataFrame({
             'Negative Affect': negative_affect,
-            'Self-Reproach': self_reproach,
+            'Self_Reproach': self_reproach,
             'Neuroticism': neuroticism,
-            'Positive-Affect': positive_affect,
+            'Positive_Affect': positive_affect,
             'Sociability': sociability,
             'Activity': activity,
             'Extraversion': extraversion,
-            'Aesthetic Interest': aesthetic_interest,
-            'Intellectual Interest': intellectual_interest,
+            'Aesthetic_Interest': aesthetic_interest,
+            'Intellectual_Interest': intellectual_interest,
             'Unconventionality': unconventionality,
             'Openness': openness,
-            'Nonantagonistic-Orientation': nonantagonistic_orientation,
-            'Prosocial-Orientation': prosocial_orientation,
+            'Nonantagonistic_Orientation': nonantagonistic_orientation,
+            'Prosocial_Orientation': prosocial_orientation,
             'Agreeableness': agreeableness,
             'Orderliness': orderliness,
             'Goal-Striving': goal_striving,
@@ -709,10 +709,10 @@ class ScaleScorer:
         scores_df = pd.DataFrame({
             'Observing': observing,
             'Describing': describing,
-            'Acting with Awareness': acting_with_awareness,
+            'Acting_with_Awareness': acting_with_awareness,
             'Nonjudging': nonjudging,
             'Nonreactivity': nonreactivity,
-            'Total FFMQ Score': total_score
+            'Total_FFMQ_Score': total_score
         })
 
         return scores_df
@@ -830,21 +830,21 @@ class ScaleScorer:
         schema_map = {
             "Abandonment": [q1, q2, q3, q4, q5],
             "Mistrust/Abuse": [q6, q7, q8, q9, q10],
-            "Emotional Deprivation": [q11, q12, q13, q14, q15],
+            "Emotional_Deprivation": [q11, q12, q13, q14, q15],
             "Defectiveness/Shame": [q16, q17, q18, q19, q20],
-            "Social Isolation/Alienation": [q21, q22, q23, q24, q25],
+            "Social_Isolation/Alienation": [q21, q22, q23, q24, q25],
             "Dependence/Incompetence": [q26, q27, q28, q29, q30],
-            "Vulnerability to Harm or Illness": [q31, q32, q33, q34, q35],
-            "Enmeshment/Undeveloped Self": [q36, q37, q38, q39, q40],
+            "Vulnerability_to_Harm_or_Illness": [q31, q32, q33, q34, q35],
+            "Enmeshment/Undeveloped_Self": [q36, q37, q38, q39, q40],
             "Failure": [q41, q42, q43, q44, q45],
             "Entitlement/Grandiosity": [q46, q47, q48, q49, q50],
-            "Insufficient Self-Control": [q51, q52, q53, q54, q55],
+            "Insufficient_Self-Control": [q51, q52, q53, q54, q55],
             "Subjugation": [q56, q57, q58, q59, q60],
             "Self-Sacrifice": [q61, q62, q63, q64, q65],
             "Approval-Seeking/Recognition-Seeking": [q66, q67, q68, q69, q70],
             "Negativity/Pessimism": [q71, q72, q73, q74, q75],
-            "Emotional Inhibition": [q76, q77, q78, q79, q80],
-            "Unrelenting Standards/Hypercriticalness": [q81, q82, q83, q84, q85],
+            "Emotional_Inhibition": [q76, q77, q78, q79, q80],
+            "Unrelenting_Standards/Hypercriticalness": [q81, q82, q83, q84, q85],
             "Punitiveness": [q86, q87, q88, q89, q90]
         }
 
@@ -934,9 +934,9 @@ class ScaleScorer:
 
         # Short Suggestibility Scale (SSS)
         # Check if SSS is already in the DataFrame
-        if 'Short Suggestibility Scale (SSS)' in self.df.columns:
+        if 'Short_Suggestibility_Scale_(SSS)' in self.df.columns:
             print("SSS already exists in the DataFrame. Skipping SSS calculation.")
-            sss = self.df['Short Suggestibility Scale (SSS)']
+            sss = self.df['Short_Suggestibility_Scale_(SSS)']
         else:
             # Calculate the SSS if not present
             sss_columns = [q1, q14, q15, q27, q45, q51, q57, q58, q63, q66, q69, q73,
@@ -948,15 +948,15 @@ class ScaleScorer:
 
         # Create a DataFrame with all scores
         scores_df = pd.DataFrame({
-            'Consumer Suggestibility': consumer,
+            'Consumer_Suggestibility': consumer,
             'Persuadability': persuadability,
-            'Physiological Suggestibility': physiological,
-            'Physiological Reactivity': physiological_reactivity,
-            'Peer Conformity': peer_conformity,
-            'Mental Control': mental_control,
+            'Physiological_Suggestibility': physiological,
+            'Physiological_Reactivity': physiological_reactivity,
+            'Peer_Conformity': peer_conformity,
+            'Mental_Control': mental_control,
             'Unpersuadability': unpersuadability,
-            'Short Suggestibility Scale (SSS)': sss,
-            'Total Suggestibility': total_suggestibility
+            'Short_Suggestibility_Scale (SSS)': sss,
+            'Total_Suggestibility': total_suggestibility
         })
 
         return scores_df
