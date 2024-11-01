@@ -1,5 +1,6 @@
 from scripts.helpers import normalize_column_name
 import pandas as pd
+import numpy as np
 
 
 class ScaleScorer:
@@ -25,21 +26,41 @@ class ScaleScorer:
         # Mapping scale names to their scoring functions
         # TODO - add more as needed
         self.scoring_functions = {
-            'MODTAS': self.score_modtas,
+            # Trait Measures
             'TIPI': self.score_tipi,
             'VVIQ': self.score_vviq,
-            'DPES-Awe': self.score_dpes_awe,
             'MAIA': self.score_maia,
             'Ego-Dissolution': self.score_ego_dissolution,
             'SMES': self.score_smes,
-            'Emotional-Breakthrough': self.score_emotional_breakthrough,
-            'Psychological-Insight': self.score_psychological_insight,
-            'WCS-Connectedness-To-World-Spirituality': self.score_wcs_connectedness_to_world_spirituality,
-            'WCS-Connectedness-To-Others': self.score_wcs_connectedness_to_others,
-            'WCS-Connectedness-To-Self': self.score_wcs_connectedness_to_self,
+            'Emotional_Breakthrough': self.score_emotional_breakthrough,
+            'Psychological_Insight': self.score_psychological_insight,
+            'WCS_Connectedness_To_World_Spirituality': self.score_wcs_connectedness_to_world_spirituality,
+            'WCS_Connectedness_To_Others': self.score_wcs_connectedness_to_others,
+            'WCS_Connectedness_To_Self': self.score_wcs_connectedness_to_self,
             'WCS': self.score_wcs,
             'Religiosity': self.score_religiosity,
-            'Big-Five': self.score_big_five
+            'NEO-FFI-3_Five_Factor_Inventory': self.score_neo_ffi_3,
+            'Cloninger_Self_Transcendence_Subscale': self.score_csts,
+            'Self-Transcendence_Scale': self.score_sts,
+            'Early_Maladaptive_Schema_(EMS)_Young_Schema_Questionnaire_Short_Form_3_(YSQ-S3)': self.score_ems_ysq3S3,
+            'Multidimensional_Iowa_Suggestibility_Scale_(MISS)': self.score_miss,
+            'Short_Suggestibility_Scale_(SSS)': self.score_sss,
+            'Warwick-Edinburgh_Mental_Wellbeing_Scale_(WEMWBS)': self.score_wemwbs,
+            'Cognitive_and_Affective_Mindfulness_Scale_Revised_(CAMS-R)': self.score_cams_r,
+            # Measuring Experience-Drive Trait Changes
+            'DPES-Joy': self.score_dpes_joy,
+            'DPES-Love': self.score_dpes_love,
+            'DPES-Pride': self.score_dpes_pride,
+            'DPES-Awe': self.score_dpes_awe,
+            'DPES-Amusement': self.score_dpes_amusement,
+            'DPES-Compassion': self.score_dpes_compassion,
+            'MODTAS': self.score_modtas,
+            'KAMF': self.score_kamf,
+            'MAAS': self.score_maas,
+            'Five_Facet_Mindfulness_Questionnaire_(FFMQ)': self.score_ffmq,
+            'Positive_Negative_Affect_Schedule_(PANAS)': self.score_panas,
+            # Outcome Measures
+            'Toronto_Mindfulness_Scale': self.score_toronto_mind_scale
         }
 
     def calculate_all_scales(self, mid_processing=False):
@@ -337,8 +358,6 @@ class ScaleScorer:
         if len(columns) != 19:
             raise ValueError(f"Expected 19 columns, but got {len(columns)}")
 
-        print(f"\n\n[DEBUG] Columns passed in: {columns}")
-
         # Split the columns into the three categories
         self_columns = columns[:6]  # First 6 columns
         others_columns = columns[6:12]  # Next 6 columns
@@ -358,15 +377,15 @@ class ScaleScorer:
 
         # Combine all scores into a DataFrame
         scores_df = pd.DataFrame({
-            'WCS-Connectedness-To-Self': self_score,
-            'WCS-Connectedness-To-Others': others_score,
-            'WCS-Connectedness-To-World-Spirituality': world_score,
+            'WCS_Connectedness_To-Self': self_score,
+            'WCS_Connectedness_To_Others': others_score,
+            'WCS_Connectedness_To_World_Spirituality': world_score,
             'Total WCS': total_score
         })
 
         return scores_df
 
-    def score_big_five(self, columns):
+    def score_neo_ffi_3(self, columns):
         """
         Calculate subcategory and main Big Five scores.
 
@@ -381,21 +400,11 @@ class ScaleScorer:
 
         # Unpack the 60 columns directly
         (
-            c1, c2, c3, c4, c5,
-            c6, c7, c8, c9, c10, c11, c12,
-            c13, c14,
-            c15, c16, c17, c18,
-            c19, c20, c21, c22,
-            c23, c24, c25, c26,
-            c27, c28, c29,
-            c30, c31, c32,
-            c33, c34, c35,
-            c36, c37, c38, c39,
-            c40, c41, c42,
-            c43, c44, c45, c46, c47, c48, c49, c50,
-            c51, c52, c53, c54,
-            c55, c56,
-            c57, c58, c59, c60
+            c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14,
+            c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26,
+            c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39,
+            c40, c41, c42, c43, c44, c45, c46, c47, c48, c49, c50, c51, c52, c53, c54,
+            c55, c56, c57, c58, c59, c60
         ) = columns
 
         # Calculate subcategory scores
@@ -434,18 +443,18 @@ class ScaleScorer:
         # Create a DataFrame with all subcategories and main categories
         scores_df = pd.DataFrame({
             'Negative Affect': negative_affect,
-            'Self-Reproach': self_reproach,
+            'Self_Reproach': self_reproach,
             'Neuroticism': neuroticism,
-            'Positive-Affect': positive_affect,
+            'Positive_Affect': positive_affect,
             'Sociability': sociability,
             'Activity': activity,
             'Extraversion': extraversion,
-            'Aesthetic Interest': aesthetic_interest,
-            'Intellectual Interest': intellectual_interest,
+            'Aesthetic_Interest': aesthetic_interest,
+            'Intellectual_Interest': intellectual_interest,
             'Unconventionality': unconventionality,
             'Openness': openness,
-            'Nonantagonistic-Orientation': nonantagonistic_orientation,
-            'Prosocial-Orientation': prosocial_orientation,
+            'Nonantagonistic_Orientation': nonantagonistic_orientation,
+            'Prosocial_Orientation': prosocial_orientation,
             'Agreeableness': agreeableness,
             'Orderliness': orderliness,
             'Goal-Striving': goal_striving,
@@ -476,5 +485,566 @@ class ScaleScorer:
 
         return self.df[columns].sum(axis=1)
 
+    def score_kamf(self, columns):
+        """
+        Calculate the KAMF score for each question and apply transformations as specified.
 
-    # TODO - add more scoring functions
+        Parameters:
+        ----------
+        columns : list
+            List of column names in the following order:
+            - KAMF_1 (When was the last time you felt moved or touched?)
+            - KAMF_2 (How often do you feel moved or touched?)
+            - KAMF_3_1, KAMF_3_2, KAMF_3_3, KAMF_3_4 (Sub-questions of item 3)
+            - KAMF_4 (How easily do you get moved or touched?)
+
+        Returns:
+        -------
+        pd.DataFrame
+            DataFrame with calculated KAMF scores for each row.
+        """
+        # Ensure the correct number of columns are passed
+        if len(columns) != 7:
+            raise ValueError(f"Expected 7 columns, but got {len(columns)}")
+
+        # Extract each question into variables
+        kamf_1 = self.df[columns[0]]
+        kamf_2 = self.df[columns[1]]
+        kamf_3_1 = self.df[columns[2]]
+        kamf_3_2 = self.df[columns[3]]
+        kamf_3_3 = self.df[columns[4]]
+        kamf_3_4 = self.df[columns[5]]
+        kamf_4 = self.df[columns[6]]
+
+        # Apply transformations for KAMF_1r and KAMF_4r
+        kamf_1r = (kamf_1 * 1.75) - 0.75
+        kamf_4r = (kamf_4 * 1.166) - 0.166
+
+        # Compute the KAMF total, which is the average amongst the items
+        total_items = pd.concat([
+            kamf_1, kamf_1r, kamf_2, kamf_3_1, kamf_3_2, kamf_3_3, kamf_3_4, kamf_4, kamf_4r
+        ], axis=1)
+
+        kamf_total = total_items.mean(axis=1)
+
+        # Create a DataFrame to store all the calculated values
+        scores_df = pd.DataFrame({
+            'KAMF_1': kamf_1,
+            'KAMF_1r': kamf_1r,
+            'KAMF_2': kamf_2,
+            'KAMF_3_1': kamf_3_1,
+            'KAMF_3_2': kamf_3_2,
+            'KAMF_3_3': kamf_3_3,
+            'KAMF_3_4': kamf_3_4,
+            'KAMF_4': kamf_4,
+            'KAMF_4r': kamf_4r,
+            'KAMF_Total': kamf_total
+        })
+
+        return scores_df
+
+    def score_dpes_joy(self, columns):
+        """
+        Calculate the DPES Awe (Dispositional Positive Emotion Scale - Joy) score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names associated with the DPES Joy questions.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated sum of DPES Joy scores for each row.
+        """
+        return self.df[columns].sum(axis=1)
+
+    def score_dpes_love(self, columns):
+        """
+        Calculate the DPES Awe (Dispositional Positive Emotion Scale - Love) score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names associated with the DPES Love questions.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated sum of DPES Love scores for each row.
+        """
+        return self.df[columns].sum(axis=1)
+
+    def score_dpes_pride(self, columns):
+        """
+        Calculate the DPES Awe (Dispositional Positive Emotion Scale - Pride) score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names associated with the DPES Pride questions.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated sum of DPES Pride scores for each row.
+        """
+        return self.df[columns].sum(axis=1)
+
+    def score_dpes_amusement(self, columns):
+        """
+        Calculate the DPES Amusement (Dispositional Positive Emotion Scale - Amusement) score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names associated with the DPES Amusement questions.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated sum of DPES Amusement scores for each row.
+        """
+        return self.df[columns].sum(axis=1)
+
+    def score_dpes_compassion(self, columns):
+        """
+        Calculate the DPES Compassion (Dispositional Positive Emotion Scale - Compassion) score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names associated with the DPES Compassion questions.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated sum of DPES Compassion scores for each row.
+        """
+        return self.df[columns].sum(axis=1)
+
+    def score_maas(self, columns):
+        """
+        Calculate the MAAS (Mindful Attention Awareness Scale) score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names associated with the MAAS questions.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated MAAS scores for each row.
+        """
+        return self.df[columns].mean(axis=1)
+
+    def score_ffmq(self, columns):
+        """
+        Calculate subcategory and total FFMQ scores.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names corresponding to the FFMQ questions.
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing all subcategory scores and the total FFMQ score.
+        """
+        # Ensure the correct number of columns (39 questions expected)
+        if len(columns) != 39:
+            raise ValueError(f"Expected 39 columns, but got {len(columns)}")
+
+        # Unpack all 39 questions directly
+        (
+            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
+            q11, q12, q13, q14, q15, q16, q17, q18, q19, q20,
+            q21, q22, q23, q24, q25, q26, q27, q28, q29, q30,
+            q31, q32, q33, q34, q35, q36, q37, q38, q39
+        ) = columns
+
+        # Define helper for reverse scoring
+        def reverse(q):
+            return 6 - self.df[q]
+
+        # Calculate subscale scores
+        # Observing Score
+        observing = self.df[[q1, q6, q11, q15, q20, q26, q31, q36]].sum(axis=1)
+
+        # Describing Score
+        describing = (
+                self.df[[q2, q7, q27, q32, q37]]  # Regular scores
+                + reverse(q12) + reverse(q16) + reverse(q22)  # Reverse-scored
+        ).sum(axis=1)
+
+        # Acting With Awareness Score
+        acting_with_awareness = (
+                reverse(q5) + reverse(q8) + reverse(q13) + reverse(q18) +
+                reverse(q23) + reverse(q28) + reverse(q34) + reverse(q38)
+        ).sum(axis=1)
+
+        # Non-judging Score
+        nonjudging = (
+                reverse(q3) + reverse(q10) + reverse(q14) + reverse(q17) +
+                reverse(q25) + reverse(q30) + reverse(q35) + reverse(q39)
+        ).sum(axis=1)
+
+        # Non-reactivity score
+        nonreactivity = self.df[[q4, q9, q19, q21, q24, q29, q33]].sum(axis=1)
+
+        # Calculate the total FFMQ score
+        total_score = observing + describing + acting_with_awareness + nonjudging + nonreactivity
+
+        # Create a DataFrame with all subscale and total scores
+        scores_df = pd.DataFrame({
+            'Observing': observing,
+            'Describing': describing,
+            'Acting_with_Awareness': acting_with_awareness,
+            'Nonjudging': nonjudging,
+            'Nonreactivity': nonreactivity,
+            'Total_FFMQ_Score': total_score
+        })
+
+        return scores_df
+
+    def score_panas(self, columns):
+        """
+        Calculate subcategory and total PANAS (Positive Negative Affect Schedule) scores.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names corresponding to the PANAS questions.
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing all subcategory scores and the total PANAS score.
+        """
+        # Ensure the correct number of columns (39 questions expected)
+        if len(columns) != 20:
+            raise ValueError(f"Expected 20 columns, but got {len(columns)}")
+
+        # Unpack all 20 questions directly
+        (
+            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
+            q11, q12, q13, q14, q15, q16, q17, q18, q19, q20,
+        ) = columns
+
+        # Calculating sub scores
+        positive = self.df[q1, q3, q5, q10, q12, q14, q16, q17, q19].sum(axis=1)
+
+        negative = self.df[q2, q4, q6, q7, q8, q11, q13, q15, q18, q20].sum(axis=1)
+
+        total_panas = positive + negative
+
+        # Create a DataFrame with all subscale and total scores
+        scores_df = pd.DataFrame({
+            'Positive_PANAS': positive,
+            'Negative_PANAS': negative,
+            'PANAS': total_panas
+        })
+
+        return scores_df
+
+    def score_csts(self, columns):
+        """
+        Calculate Cloninger Self-Transcendence Subscale (CSTS) scores.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names corresponding to the CSTS questions.
+
+        Returns:
+        --------
+        pd.Series
+            Series containing CSTS score.
+        """
+        if len(columns) != 15:
+            raise ValueError(f"Expected 15 columns but got {len(columns)}")
+
+        return self.df[columns].sum(axis=1) / 10
+
+    def score_sts(self, columns):
+        """
+        Calculate Self-Transcendence Scale scores.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names corresponding to the STS questions.
+
+        Returns:
+        --------
+        pd.Series
+            Series containing STS score.
+        """
+        if len(columns) != 15:
+            raise ValueError(f"Expected 15 columns but got {len(columns)}")
+
+        return self.df[columns].sum(axis=1)
+
+    def score_ems_ysq3S3(self, columns):
+        """
+        Calculate the 18 EMS schema scores based on the YSQ-S3.
+
+        Parameters:
+        -----------
+        columns : list
+            A list containing the column names of the 90 YSQ-S3 questions.
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing the scores for each of the 18 schemas.
+        """
+        # Ensure that the correct number of columns is provided
+        if len(columns) != 90:
+            raise ValueError(f"Expected 90 columns, but got {len(columns)}")
+
+        # Unpack the 90 questions directly
+        (
+            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
+            q11, q12, q13, q14, q15, q16, q17, q18, q19, q20,
+            q21, q22, q23, q24, q25, q26, q27, q28, q29, q30,
+            q31, q32, q33, q34, q35, q36, q37, q38, q39, q40,
+            q41, q42, q43, q44, q45, q46, q47, q48, q49, q50,
+            q51, q52, q53, q54, q55, q56, q57, q58, q59, q60,
+            q61, q62, q63, q64, q65, q66, q67, q68, q69, q70,
+            q71, q72, q73, q74, q75, q76, q77, q78, q79, q80,
+            q81, q82, q83, q84, q85, q86, q87, q88, q89, q90
+        ) = columns
+
+        # Define the items belonging to each EMS schema
+        schema_map = {
+            "Abandonment": [q1, q2, q3, q4, q5],
+            "Mistrust/Abuse": [q6, q7, q8, q9, q10],
+            "Emotional_Deprivation": [q11, q12, q13, q14, q15],
+            "Defectiveness/Shame": [q16, q17, q18, q19, q20],
+            "Social_Isolation/Alienation": [q21, q22, q23, q24, q25],
+            "Dependence/Incompetence": [q26, q27, q28, q29, q30],
+            "Vulnerability_to_Harm_or_Illness": [q31, q32, q33, q34, q35],
+            "Enmeshment/Undeveloped_Self": [q36, q37, q38, q39, q40],
+            "Failure": [q41, q42, q43, q44, q45],
+            "Entitlement/Grandiosity": [q46, q47, q48, q49, q50],
+            "Insufficient_Self-Control": [q51, q52, q53, q54, q55],
+            "Subjugation": [q56, q57, q58, q59, q60],
+            "Self-Sacrifice": [q61, q62, q63, q64, q65],
+            "Approval-Seeking/Recognition-Seeking": [q66, q67, q68, q69, q70],
+            "Negativity/Pessimism": [q71, q72, q73, q74, q75],
+            "Emotional_Inhibition": [q76, q77, q78, q79, q80],
+            "Unrelenting_Standards/Hypercriticalness": [q81, q82, q83, q84, q85],
+            "Punitiveness": [q86, q87, q88, q89, q90]
+        }
+
+        # Calculate the mean score for each schema
+        schema_scores = {
+            schema: self.df[questions].mean(axis=1) for schema, questions in schema_map.items()
+        }
+
+        # Convert the scores into a DataFrame
+        scores_df = pd.DataFrame(schema_scores)
+
+        return scores_df
+
+    def score_sss(self, columns):
+        """
+        Calculate the Short Suggestibility Scale (SSS) score.
+
+        Parameters:
+        -----------
+        columns : list
+            List of column names corresponding to the 95 MISS questions.
+
+        Returns:
+        --------
+        pd.Series
+            Series containing the SSS scores.
+        """
+        if len(columns) != 21:
+            raise ValueError(f"Expected 21 columns but got {len(columns)}")
+
+        return self.df[columns].sum(axis=1)
+
+    def score_miss(self, columns):
+        """
+        Calculate the MISS scores for each subscale and the total suggestibility score.
+
+        Parameters:
+        -----------
+        columns : list
+            List of column names corresponding to the 95 MISS questions.
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing scores for each subscale and the total score.
+        """
+        # Ensure that the correct number of columns is provided
+        if len(columns) != 95:
+            raise ValueError(f"Expected 95 columns, but got {len(columns)}")
+
+        # Unpack the 90 questions directly
+        (
+            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
+            q11, q12, q13, q14, q15, q16, q17, q18, q19, q20,
+            q21, q22, q23, q24, q25, q26, q27, q28, q29, q30,
+            q31, q32, q33, q34, q35, q36, q37, q38, q39, q40,
+            q41, q42, q43, q44, q45, q46, q47, q48, q49, q50,
+            q51, q52, q53, q54, q55, q56, q57, q58, q59, q60,
+            q61, q62, q63, q64, q65, q66, q67, q68, q69, q70,
+            q71, q72, q73, q74, q75, q76, q77, q78, q79, q80,
+            q81, q82, q83, q84, q85, q86, q87, q88, q89, q90,
+            q91, q92, q93, q94, q95
+        ) = columns
+
+        # Define subscale calculations
+        # Consumer Suggestibility
+        consumer = self.df[[q2, q10, q14, q20, q24, q32, q45, q51, q57, q63, q70]].sum(axis=1)
+        # Persuadability
+        persuadability = self.df[[q1, q5, q13, q22, q35, q44, q47, q62, q69, q75, q76, q82, q88, q89]].sum(axis=1)
+        # Physiological Suggestibility
+        physiological = self.df[[q11, q15, q25, q33, q52, q58, q64, q66, q68, q71, q77, q94]].sum(axis=1)
+
+        # Physiological Reactivity
+        physiological_reactivity = self.df[[q3, q12, q17, q21, q27, q31, q40, q43, q50, q60, q73, q85, q91]].sum(axis=1)
+
+        # Peer Conformity
+        peer_conformity = (
+                self.df[[q4, q16, q29, q46, q53, q59, q65, q72, q78, q84, q90, q95]].sum(axis=1)
+                - self.df[[q34, q39]].sum(axis=1) + 12
+        )
+
+        # Mental Control
+        mental_control = self.df[[q6, q8, q18, q23, q28, q36, q41, q48, q55, q67, q74, q79, q80, q83, q92]].sum(axis=1)
+
+        # Unpersuabability
+        unpersuadability = self.df[[q7, q9, q19, q26, q30, q37, q38, q42, q49, q54, q56, q61, q81, q86, q87, q93]].sum(axis=1)
+
+        # Short Suggestibility Scale (SSS)
+        # Check if SSS is already in the DataFrame
+        if 'Short_Suggestibility_Scale_(SSS)' in self.df.columns:
+            print("SSS already exists in the DataFrame. Skipping SSS calculation.")
+            sss = self.df['Short_Suggestibility_Scale_(SSS)']
+        else:
+            # Calculate the SSS if not present
+            sss_columns = [q1, q14, q15, q27, q45, q51, q57, q58, q63, q66, q69, q73,
+                           q75, q76, q77, q78, q84, q85, q90, q94, q95]
+            sss = self.score_sss(sss_columns)
+
+        # Total Suggestibility Score
+        total_suggestibility = consumer + physiological + physiological_reactivity + persuadability + peer_conformity
+
+        # Create a DataFrame with all scores
+        scores_df = pd.DataFrame({
+            'Consumer_Suggestibility': consumer,
+            'Persuadability': persuadability,
+            'Physiological_Suggestibility': physiological,
+            'Physiological_Reactivity': physiological_reactivity,
+            'Peer_Conformity': peer_conformity,
+            'Mental_Control': mental_control,
+            'Unpersuadability': unpersuadability,
+            'Short_Suggestibility_Scale_(SSS)': sss,
+            'Total_Suggestibility': total_suggestibility
+        })
+
+        return scores_df
+
+    def score_wemwbs(self, columns):
+        """
+        Calculate the WEMWBS score.
+
+        Parameters:
+        -----------
+        columns : list
+            List of column names corresponding to the 14 WEMWBS questions.
+
+        Returns:
+        --------
+        pd.Series
+            Series containing the WEMWBS scores.
+        """
+        # Ensure correct number of columns
+        if len(columns) != 14:
+            raise ValueError(f"Expected 14 columns but got {len(columns)}")
+
+        # Sum the responses to get the total WEMWBS score
+        return self.df[columns].sum(axis=1)
+
+    def score_cams_r(self, columns):
+        """
+        Calculate the CAMS-R score.
+
+        Parameters:
+        -----------
+        columns : list
+            List of column names corresponding to the 12 CAMS-R questions.
+
+        Returns:
+        --------
+        pd.Series
+            Series containing the CAMS-R scores.
+        """
+        # Ensure correct number of columns
+        if len(columns) != 12:
+            raise ValueError(f"Expected 12 columns but got {len(columns)}")
+
+        # Unpack the 12 questions directly
+        (
+            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12
+        ) = columns
+
+        # Reverse-scoring for items 2, 6, and 7: new_score = 6 - original_score
+        reverse_scored = self.df[[q2, q6, q7]].apply(lambda x: 5 - x)
+
+        # Replace original scores for these items with reversed scores
+        df_corrected = self.df.copy()
+        df_corrected[[q2, q6, q7]] = reverse_scored
+
+        # Calculate total CAMS-R score by summing all 12 items
+        cams_r_score = df_corrected[columns].sum(axis=1)
+
+        return cams_r_score
+
+    def score_toronto_mind_scale(self, columns):
+        """
+        Calculate the MISS scores for each subscale and the total suggestibility score.
+
+        Parameters:
+        -----------
+        columns : list
+            List of column names corresponding to the 95 MISS questions.
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing scores for each subscale and the total score.
+        """
+        if len(columns) != 13:
+            raise ValueError(f"Expected 13 columns but got {len(columns)}")
+
+        # Unpack the 12 questions directly
+        (
+            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12, q13
+        ) = columns
+
+        # Scoring subscales
+        curiosity = self.df[[q3, q5, q6, q10, q12, q13]].sum(axis=1)
+        decentering = self.df[[q1, q2, q4, q7, q8, q9, q11]].sum(axis=1)
+        # Calculate total
+        total = curiosity + decentering
+
+        scores_df = pd.DataFrame({
+            'Curiosity': curiosity,
+            'De-Centering': decentering,
+            'Toronto_Mindfulness_Scale_Total': total
+        })
+
+        return scores_df
+
+
+# TODO - add more scoring functions
+# TODO - add multi dimensional health locus, POMS, NEOPI

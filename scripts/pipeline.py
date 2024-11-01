@@ -4,46 +4,65 @@ from sklearn.preprocessing import OrdinalEncoder, StandardScaler, LabelEncoder
 from scripts.scoring_functions import ScaleScorer
 from scripts.helpers import normalize_column_name
 import torch
+import streamlit as st
 from sklearn.metrics.pairwise import cosine_similarity
 from transformers import AutoTokenizer, AutoModel
 
 
-# Load BERT tokenizer and model
-tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
-model = AutoModel.from_pretrained('bert-base-uncased')
+@st.cache_resource
+def load_model():
+    """Load BERT tokenizer and model."""
+    tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
+    model = AutoModel.from_pretrained('bert-base-uncased', torch_dtype=torch.float32).to('cpu')
+    return tokenizer, model
+
+
+# Use the cached resources within your functions when needed.
+tokenizer, model = load_model()
 
 
 def get_embedding(text):
     """
     Get the BERT-based embedding for a given text.
-
-    Parameters:
-    ----------
-    text : str
-        The input text for which the embedding needs to be generated.
-
-    Returns:
-    -------
-    np.ndarray
-        The embedding vector for the input text.
     """
     tokens = tokenizer(text, return_tensors='pt')
     with torch.no_grad():
         output = model(**tokens)
+
     # Use the [CLS] token as the sentence embedding
-    embedding = output.last_hidden_state[:, 0, :].numpy().flatten()
+    embedding = output.last_hidden_state[:, 0, :].cpu().numpy().flatten()
     return embedding
 
 
-# Define the ordered categories for known ordinal scales
-PREDEFINED_ORDINAL_CATEGORIES = {
-    'HARDY': ['Not true at all', 'A little true', 'Quite true', 'Completely true'],
-    'CD-RISC': ['Not True at All', 'True Nearly All the Time'],
-    'BRS': ['Strongly disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly agree'],
-    'ARS-30': ['Never', 'Rarely', 'Sometimes', 'Often', 'Always'],
-    'STAI': ['Not at all', 'Somewhat', 'Moderately so', 'Very much so'],
-    'ASI': ['Very little', 'A little', 'Some', 'Much', 'Very much'],
-    'Cloninger': ['Definitely False', 'Definitely True']
+# Define multiple ordered keyword lists for different types of scales
+ORDERED_KEYWORD_SET = {
+    # Recency Scales
+    'recency': ['cannot remember', 'within the last year', 'within the last month', 'within the last 24 hours'],
+    # Frequency Scales
+    'frequency_01': ['never', 'rarely', 'sometimes', 'often', 'always'],
+    'frequency_02': ['never', 'less than once a month', 'once a month',
+                     '2-3 times a month', 'once a week', '2-3 times a week',
+                     'about once a day', 'two or more times per day'],
+    'frequency_03': ['never', 'rarely', 'occasionally', 'often', 'very often'],
+    'frequency_04': ['almost always', 'very frequently', 'somewhat frequently',
+                     'somewhat infrequently', 'very infrequently', 'almost never'],
+    'frequency_05': ['never or very rarely true', 'rarely true', 'sometimes true', 'often true',
+                     'very often or always true'],
+    'frequency_06': ['none of the time', 'rarely', 'some of the time', 'often', 'all of the time'],
+    'frequency_07': ['rarely/not at all', 'sometimes', 'often', 'almost always'],
+    # Agreement Scales
+    'agreement_01': ['strongly disagree', 'disagree', 'neither agree nor disagree', 'agree', 'strongly agree'],
+    'agreement_02': ['strongly disagree', 'disagree', 'somewhat disagree', 'neutral', 'somewhat agree', 'agree',
+                     'strongly agree'],
+    'agreement_03': ['completely untrue of me', 'mostly untrue of me', 'slightly more true than untrue',
+                     'moderately true of me', 'mostly true of me', 'describes me perfectly'],
+    # Intensity Scales
+    'intensity_01': ['not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
+    'intensity_02': ['not at all', 'somewhat', 'extremely'],
+    'intensity_03': ['very slightly or not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
+    'intensity_04': ['not at all', 'a little', 'somewhat', 'very much'],
+    # Mood Scales
+    'positivity': ['poor', 'fair', 'good', 'very good', 'excellent']
 }
 
 
@@ -84,36 +103,26 @@ def detect_column_types(df):
     dict
         Dictionary with column classifications.
     """
-    column_types = {
-        'nominal': [],
-        'ordinal': [],
-        'free_text': [],
-    }
-
+    column_types = {'nominal': [], 'ordinal': [], 'free_text': []}
     cat_cols = df.select_dtypes(include='object')
 
-    # Heuristic to classify free text or categorical columns
     for col in cat_cols.columns:
         unique_values = df[col].nunique()
         total_rows = len(df)
 
+        # Classify as 'free_text' if many unique values
         if unique_values / total_rows > 0.3:
             column_types['free_text'].append(col)
         else:
-            # Determine if a column is ordinal using ordered keywords or known categories
-            if col in PREDEFINED_ORDINAL_CATEGORIES:
+            # Check if the column values match any known scale in ORDERED_KEYWORD_SET
+            if any(
+                    keyword in [normalize_column_name(val) for val in df[col].unique()]
+                    for scale in ORDERED_KEYWORD_SET.values()
+                    for keyword in scale
+            ):
                 column_types['ordinal'].append(col)
             else:
-                ordered_keywords = ['never', 'rarely', 'sometimes', 'often', 'always',
-                                    'strongly disagree', 'disagree', 'disagree somewhat',
-                                    'neither agree nor disagree', 'agree somewhat',
-                                    'agree', 'strongly agree', 'not at all', 'a little',
-                                    'moderately', 'quite a bit', 'extremely', 'somewhat', 'neutral']
-
-                if any(keyword in [str(val).lower() for val in df[col].unique()] for keyword in ordered_keywords):
-                    column_types['ordinal'].append(col)
-                else:
-                    column_types['nominal'].append(col)
+                column_types['nominal'].append(col)
 
     return column_types
 
@@ -132,67 +141,32 @@ def determine_category_order(col_values):
     list
         Sorted list of categories in the determined order.
     """
-
-    # Define multiple ordered keyword lists for different types of scales
-    ordered_keywords_sets = {
-        'frequency': ['never', 'rarely', 'sometimes', 'often', 'always'],
-        'recency': ['within the last year', 'within the last month', 'within the last 24 hours'],
-        'frequency_01': ['never', 'less than once a month', 'once a month',
-                         '2-3 times a month', 'once a week', '2-3 times a week',
-                         'about once a day', 'two or more times per day'],
-        'frequency_02': ['never', 'rarely', 'occasionally', 'often', 'very often'],
-        'agreement': ['strongly disagree', 'disagree', 'neither agree nor disagree', 'agree', 'strongly agree'],
-        'agreement_1': ['strongly disagree', 'disagree', 'somewhat disagree', 'neutral', 'somewhat agree', 'agree',
-                        'strongly agree'],
-        'intensity': ['not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
-        'positivity': ['poor', 'fair', 'good', 'very good', 'excellent']
-    }
-
-    # Convert column values to lowercase for easier comparison
-    lower_col_values = [str(value).lower() for value in col_values]
-
-    # Attempt to match column values to one of the ordered keyword sets
+    lower_col_values = [normalize_column_name(val) for val in col_values]
     best_match = None
     best_match_count = 0
 
-    for scale_name, keywords in ordered_keywords_sets.items():
-        # Count how many values from the column match the current keyword list
-        match_count = sum(1 for value in lower_col_values if value in keywords)
-
-        # Keep track of the best match (most matches with the keywords)
+    # Try to match the column values with the known ordered keyword sets
+    for scale_name, keywords in ORDERED_KEYWORD_SET.items():
+        match_count = sum(1 for val in lower_col_values if val in keywords)
         if match_count > best_match_count:
             best_match = keywords
             best_match_count = match_count
 
-    # If a matching scale is found, use it to sort the categories
+    # Sort based on the matched order, or use semantic similarity if no match
     if best_match:
-        sorted_categories = sorted(col_values,
-                                   key=lambda x: best_match.index(x.lower()) if x.lower() in best_match else float(
-                                       'inf'))
+        print(f"[DEBUG] Best Match Found: {best_match}")
+        return sorted(col_values,
+                      key=lambda x: best_match.index(x.lower()) if x.lower() in best_match else float('inf'))
     else:
-        # Fallback to semantic similarity-based sorting
-        # Generate embeddings for each category
-        embeddings = {value: get_embedding(value) for value in col_values}
+        print("[WARN] No predefined match found. Using semantic similarity.")
+        embeddings = {val: get_embedding(val) for val in col_values}
+        ref_min = get_embedding("least")
+        ref_max = get_embedding("most")
 
-        # Define a reference point for ordering, like "least" or "most"
-        reference_min = get_embedding("least")
-        reference_max = get_embedding("most")
-
-        # Calculate similarity to reference points
-        scores = {}
-        for value, embedding in embeddings.items():
-            # Similarity to "least" reference
-            similarity_to_min = cosine_similarity([embedding], [reference_min])[0][0]
-            # Similarity to "most" reference
-            similarity_to_max = cosine_similarity([embedding], [reference_max])[0][0]
-
-            # Calculate a combined score (the difference helps capture ordering)
-            scores[value] = similarity_to_max - similarity_to_min
-
-        # Sort categories based on their calculated score
-        sorted_categories = sorted(col_values, key=lambda x: scores[x])
-
-    return sorted_categories
+        scores = {val: cosine_similarity([embedding], [ref_max])[0][0] -
+                       cosine_similarity([embedding], [ref_min])[0][0]
+                  for val, embedding in embeddings.items()}
+        return sorted(col_values, key=lambda x: scores[x])
 
 
 def encode_columns(df, column_types):
@@ -214,13 +188,14 @@ def encode_columns(df, column_types):
     # Step 1: Handle ordinal columns (using predefined or dynamically detected categories)
     for col in column_types['ordinal']:
         try:
-            if col in PREDEFINED_ORDINAL_CATEGORIES:
+            if col in ORDERED_KEYWORD_SET:
                 # Use predefined categories for known ordinal columns
-                categories = [PREDEFINED_ORDINAL_CATEGORIES[col]]
+                categories = [ORDERED_KEYWORD_SET[col]]
             else:
                 # Dynamically determine categories for unseen ordinal columns
                 unique_values = df[col].dropna().unique()
                 categories = [determine_category_order(unique_values)]
+                print(f"\n\n[DEBUG] Determined Order for {col}: {categories}")  # Track category order
 
             encoder = OrdinalEncoder(categories=categories)
             df[col] = encoder.fit_transform(df[[col]]) + 1  # +1 to avoid 0-based indexing
@@ -235,7 +210,6 @@ def encode_columns(df, column_types):
             # Use LabelEncoder for other nominal columns
             le = LabelEncoder()
             df[col] = le.fit_transform(df[col].astype(str))  # Convert to string to handle non-string categories
-
 
     return df
 
@@ -373,7 +347,7 @@ def detect_outliers(df, column_name, threshold=3):
 
 
 # Full pipeline
-def process_data_pipeline(input_df, chills_column, chills_intensity_column, intensity_threshold=0, mode='flag',
+def process_data_pipeline(input_df, chills_column=None, chills_intensity_column=None, intensity_threshold=0, mode='flag',
                           user_column_mappings=None):
     """
     Main pipeline function that handles QA, sanity checks, encoding, and scoring.
@@ -413,8 +387,9 @@ def process_data_pipeline(input_df, chills_column, chills_intensity_column, inte
     # Step 2: Run automated QA and generate QA report
     qa_report = generate_qa_report(df)
 
-    # Step 3: Perform sanity check for chills response using dynamic columns
-    df = sanity_check_chills(df, chills_column, chills_intensity_column, intensity_threshold)
+    # Step 3: Perform sanity check for chills response if present in data
+    if chills_column and chills_intensity_column:
+        df = sanity_check_chills(df, chills_column, chills_intensity_column, intensity_threshold)
 
     # Step 4: Preprocess data
     intermediate_df = preprocess_data(df.copy())
@@ -425,48 +400,51 @@ def process_data_pipeline(input_df, chills_column, chills_intensity_column, inte
 
     return final_df, intermediate_df, str(qa_report)
 
-# Testing Semantic Analysis
+
+# Testing Ground
 if __name__ == "__main__":
     from scipy.stats import kendalltau
-    # Step 1: Create Test Data
-    test_data = {
-        "Intensity": ["not at all", "extremely", "quite a bit", "moderately", "a little"],
-        "Frequency": ["never", "sometimes", "often", "always", "rarely"],
-        "Custom Scale": ["minimal", "extreme", "moderate", "low", "high"]
+
+    data = {
+        "When was the last time you felt moved or touched?": [
+            "Within the last month", "Within the last year", "Within the last month",
+            "Within the last month", "Within the last 24 hours", "Within the last month",
+            "Within the last month", "Within the last month", "Within the last 24 hours",
+            "Within the last year", "Within the last month", "Within the last month",
+            "Within the last 24 hours", "Within the last month", "Within the last month",
+            "Within the last month", "Within the last month", "Within the last month",
+            "Within the last 24 hours", "Cannot remember", "Within the last 24 hours",
+            "Within the last year", "Within the last year", "Within the last 24 hours",
+            "Within the last year", "Within the last 24 hours", "Cannot remember",
+            "Within the last 24 hours", "Within the last month", "Within the last 24 hours",
+            "Within the last month", "Cannot remember", "Within the last month",
+            "Within the last month", "Within the last month", "Within the last month",
+            "Within the last month", "Within the last month", "Cannot remember",
+            "Within the last year", "Within the last 24 hours", "Within the last 24 hours",
+            "Within the last 24 hours", "Within the last year", "Within the last month",
+            "Within the last year", "Within the last 24 hours", "Within the last month",
+            "Within the last 24 hours", "Within the last month", "Within the last month",
+            "Within the last month", "Within the last month", "Within the last year",
+            "Within the last 24 hours", "Within the last month", "Within the last month",
+            "Within the last 24 hours", "Within the last month", "Within the last 24 hours",
+            "Cannot remember", "Within the last year", "Within the last 24 hours",
+            "Within the last month", "Within the last month", "Within the last month",
+            "Cannot remember", "Within the last month", "Within the last 24 hours",
+            "Within the last month", "Within the last year", "Within the last year",
+            "Within the last month", "Within the last month", "Within the last month",
+            "Within the last month", "Within the last month", "Within the last year",
+            "Within the last month", "Within the last 24 hours", "Within the last month",
+            "Within the last year", "Within the last month", "Within the last month",
+            "Within the last year", "Within the last 24 hours", "Within the last month",
+            "Within the last year", "Within the last month", "Within the last year",
+            "Within the last month", "Within the last month", "Within the last year",
+            "Within the last year", "Within the last month", "Within the last year",
+            "Within the last 24 hours", "Within the last year", "Within the last month"
+        ]
     }
 
-    df = pd.DataFrame(test_data)
+    df_test = pd.DataFrame(data)
 
-    # Step 2: Run Semantic Ranking
-    for column in df.columns:
-        col_values = df[column].unique()
-        ordered_categories = determine_category_order(col_values)
-        print(f"Column: {column}")
-        print(f"Original Categories: {col_values}")
-        print(f"Determined Order: {ordered_categories}\n")
+    encoded_df = preprocess_data(df_test)
 
-    # Step 3: Qualitative Analysis
-    # Manually verify the determined order by looking at the printed output
-
-    # Step 4: Quantitative Evaluation using Kendall's Tau
-    for column in df.columns:
-        if column == "Intensity":
-            expected_order = ["not at all", "a little", "moderately", "quite a bit", "extremely"]
-        elif column == "Frequency":
-            expected_order = ["never", "rarely", "sometimes", "often", "always"]
-        else:
-            continue  # Skip Custom Scale since it has no defined order for comparison
-
-        ranked_order = determine_category_order(df[column].unique())
-
-        # Convert categories to numeric rank based on expected and actual order
-        expected_ranks = [expected_order.index(x) for x in expected_order]
-        actual_ranks = [ranked_order.index(x) for x in expected_order]
-
-        # Calculate Kendall's Tau
-        tau, p_value = kendalltau(expected_ranks, actual_ranks)
-        print(f"Kendall's Tau for '{column}': {tau}, P-value: {p_value}")
-
-    # Step 5: Iterate based on findings (manual iteration step)
-    # If Kendall's Tau value is low or p-value indicates poor correlation,
-    # consider modifying the semantic ranking fallback or adding more predefined sets.
+    print("[TEST] Encoded DataFrame:\n", encoded_df)
