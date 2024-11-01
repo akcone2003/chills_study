@@ -1073,12 +1073,16 @@ class ScaleScorer:
                 return 'frequency_09'
             else:
                 raise ValueError(f"Unexpected values in column '{column}'")
+        # Unpack columns
+        (
+            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12, q13, q14, q15, q16, q17, q18, q19
+        ) = columns
 
         # Define subscale columns
         subscales = {
-            'Personal_Burnout': columns[:6],
-            'Work_Related_Burnout': columns[6:10],
-            'Client_Related_Burnout': columns[10:]
+            'Personal_Burnout': self.df[[q1, q2, q3, q4, q5, q6]],
+            'Work_Related_Burnout': self.df[[q7, q8, q9, q10, q13, q14, q15]],
+            'Client_Related_Burnout': self.df[[q11, q12, q16, q17, q18, q19]]
         }
 
         # Calculate scores
