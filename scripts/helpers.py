@@ -1,4 +1,5 @@
 import pandas as pd
+from pipeline import ORDERED_KEYWORD_SET
 
 
 def normalize_column_name(df_or_name):
@@ -85,3 +86,7 @@ def normalize_column_input(pasted_text):
     columns = [col.strip() for col in clean_text.splitlines() if col.strip()]
     return columns
 
+
+def get_score_from_mapping(value, scale_type):
+    """Retrieve the score from a mapping based on the scale type."""
+    return ORDERED_KEYWORD_SET[scale_type].get(value.lower(), None)

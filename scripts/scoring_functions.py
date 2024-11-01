@@ -1,6 +1,8 @@
-from scripts.helpers import normalize_column_name
+from scripts.helpers import normalize_column_name, get_score_from_mapping
 import pandas as pd
 import numpy as np
+
+from scripts.pipeline import ORDERED_KEYWORD_SET
 
 
 class ScaleScorer:
@@ -60,7 +62,9 @@ class ScaleScorer:
             'Five_Facet_Mindfulness_Questionnaire_(FFMQ)': self.score_ffmq,
             'Positive_Negative_Affect_Schedule_(PANAS)': self.score_panas,
             # Outcome Measures
-            'Toronto_Mindfulness_Scale': self.score_toronto_mind_scale
+            'Toronto_Mindfulness_Scale': self.score_toronto_mind_scale,
+            # Resilience, Flexibility, Burnout
+            'Copenhagen_Burnout_Inventory_(CBI)': self.score_cbi,
         }
 
     def calculate_all_scales(self, mid_processing=False):
@@ -1044,6 +1048,51 @@ class ScaleScorer:
         })
 
         return scores_df
+
+    def score_cbi(self, columns):
+        """
+        Score the Copenhagen Burnout Inventory (CBI) with inferred mappings.
+
+        Parameters:
+        ----------
+        columns : list
+            List of column names for the CBI questions.
+
+        Returns:
+        -------
+        pd.DataFrame
+            DataFrame with averaged scores for each CBI subscale and total.
+        """
+
+        # Infer mappings based on column content
+        def infer_scale_mapping(column):
+            sample_values = self.df[column].dropna().unique()
+            if all(val.lower() in ORDERED_KEYWORD_SET['frequency_08'] for val in sample_values):
+                return 'frequency_08'
+            elif all(val.lower() in ORDERED_KEYWORD_SET['frequency_09'] for val in sample_values):
+                return 'frequency_09'
+            else:
+                raise ValueError(f"Unexpected values in column '{column}'")
+
+        # Define subscale columns
+        subscales = {
+            'Personal_Burnout': columns[:6],
+            'Work_Related_Burnout': columns[6:10],
+            'Client_Related_Burnout': columns[10:]
+        }
+
+        # Calculate scores
+        scored_subscales = {}
+        for subscale, cols in subscales.items():
+            # Use the inferred scale for the first column in each subscale
+            scale_key = infer_scale_mapping(cols[0])
+            scores = self.df[cols].applymap(lambda x: get_score_from_mapping(x, scale_key))
+            scored_subscales[subscale] = scores.mean(axis=1)
+
+        # Calculate total average
+        scored_subscales['CBI_Total'] = pd.DataFrame(scored_subscales).mean(axis=1)
+
+        return pd.DataFrame(scored_subscales)
 
 
 # TODO - add more scoring functions
