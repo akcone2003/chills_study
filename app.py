@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from collections import OrderedDict
-from scripts.helpers import normalize_column_input
+from scripts.utils import normalize_column_input
 from scripts.pipeline import process_data_pipeline
 
 

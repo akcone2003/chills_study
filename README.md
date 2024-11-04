@@ -2,12 +2,27 @@
 
 ## Data Pipeline Web Application
 
-### Overview
+## Overview
 This project provides a streamlined solution for processing survey datasets using a data pipeline script (`pipeline.py`) integrated with a user-friendly GUI built using Streamlit (`app.py`). The application allows users to upload their CSV survey data, perform data quality assurance, preprocess the data, and download the processed results. It also includes a dedicated feature for handling survey-specific nuances like identifying and aggregating questionnaire scales and conducting sanity checks for certain response patterns.
 
-### Project Structure
-- **`pipeline.py`**: This is the core data pipeline script that handles data cleaning, outlier detection, QA reporting, and data preprocessing.
-- **`app.py`**: The Streamlit app script that provides an interactive GUI, allowing users to run the pipeline on their datasets, review text responses, flag problematic entries, and download the processed data.
+## Project Structure
+
+- **`pipeline.py`**: Core data pipeline script that handles:
+  - Data cleaning, normalization, and preprocessing.
+  - Outlier detection and QA reporting.
+  - Scoring survey scales with customizable mappings.
+  - Data transformation using models (e.g., BERT-based embeddings for text analysis).
+
+- **`app.py`**: Streamlit app that provides an interactive GUI, allowing users to:
+  - Upload datasets for analysis.
+  - Interact with preprocessing steps, including text responses review and scoring.
+  - Download processed data or reports.
+
+- **`scoring_functions.py`**: Contains class and functions for scoring specific survey scales. The main `ScaleScorer` class calculates scores based on user-defined mappings, enabling flexible scale aggregation.
+
+- **`helpers.py`**: Utility functions for data normalization and processing, such as:
+  - `normalize_column_name`: Standardizes column names across different datasets.
+  - `get_score_from_mapping`: Calculates scale scores based on mapping definitions provided by the user.
 
 ### Pipeline Design & Logic
 
@@ -30,6 +45,7 @@ The pipeline is designed to handle various data quality and preprocessing steps 
 4. **`detect_column_types(df)`**:
     - Automatically detects column types (`nominal`, `ordinal`, `free text`, `timestamp`) based on heuristic rules.
     - This function is essential for dynamically determining how to preprocess various column types.
+    - Utilizes
 
 5. **`preprocess_for_output(df)`**:
     - Encodes ordinal columns with `OrdinalEncoder` to preserve order.
@@ -68,10 +84,10 @@ The Streamlit app (`app.py`) provides a step-by-step interface for users to inte
 
 5. **Aggregation of Questionnaire Scales (Future Feature)**:
    - The pipeline is designed to identify and aggregate columns belonging to known questionnaire scales (e.g., MODTAS, VVIQ).
-   - Users can specify aggregation methods (`mean`, `sum`, `max`) for these scales.
+   - Data is ready for use in statistical analysis software such as JAMOVI
 
 6. **Processed Data Preview and Download**:
-   - The app displays a preview of the processed data and provides a download option for the final cleaned dataset.
+   - The app displays a preview of the processed data and provides a download option for the encoded dataset and the final cleaned dataset, which includes aggregated behavioral measure scores.
 
 7. **QA Report Download**:
    - Users can view and download a detailed QA report that includes information on missing values, outliers, and any flagged entries.

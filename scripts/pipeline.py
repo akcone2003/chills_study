@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler, LabelEncoder
 from scripts.scoring_functions import ScaleScorer
-from scripts.helpers import normalize_column_name
+from scripts.utils import normalize_column_name, ORDERED_KEYWORD_SET
 import torch
 import streamlit as st
 from sklearn.metrics.pairwise import cosine_similarity
@@ -32,42 +32,6 @@ def get_embedding(text):
     # Use the [CLS] token as the sentence embedding
     embedding = output.last_hidden_state[:, 0, :].cpu().numpy().flatten()
     return embedding
-
-
-# Define multiple ordered keyword lists for different types of scales
-ORDERED_KEYWORD_SET = {
-    # Recency Scales
-    'recency': ['cannot remember', 'within the last year', 'within the last month', 'within the last 24 hours'],
-    # Frequency Scales
-    'frequency_01': ['never', 'rarely', 'sometimes', 'often', 'always'],
-    'frequency_02': ['never', 'less than once a month', 'once a month',
-                     '2-3 times a month', 'once a week', '2-3 times a week',
-                     'about once a day', 'two or more times per day'],
-    'frequency_03': ['never', 'rarely', 'occasionally', 'often', 'very often'],
-    'frequency_04': ['almost always', 'very frequently', 'somewhat frequently',
-                     'somewhat infrequently', 'very infrequently', 'almost never'],
-    'frequency_05': ['never or very rarely true', 'rarely true', 'sometimes true', 'often true',
-                     'very often or always true'],
-    'frequency_06': ['none of the time', 'rarely', 'some of the time', 'often', 'all of the time'],
-    'frequency_07': ['rarely/not at all', 'sometimes', 'often', 'almost always'],
-    # Dictionaries for Burnout Scales
-    'frequency_08': {'always': 100, 'often': 75, 'sometimes': 50, 'seldom': 25, 'never/almost never': 0},
-    'frequency_09': {'to a very high degree': 100, 'to a high degree': 75,
-                     'somewhat': 50, 'to a low degree': 25, 'to a very low degree': 0},
-    # Agreement Scales
-    'agreement_01': ['strongly disagree', 'disagree', 'neither agree nor disagree', 'agree', 'strongly agree'],
-    'agreement_02': ['strongly disagree', 'disagree', 'somewhat disagree', 'neutral', 'somewhat agree', 'agree',
-                     'strongly agree'],
-    'agreement_03': ['completely untrue of me', 'mostly untrue of me', 'slightly more true than untrue',
-                     'moderately true of me', 'mostly true of me', 'describes me perfectly'],
-    # Intensity Scales
-    'intensity_01': ['not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
-    'intensity_02': ['not at all', 'somewhat', 'extremely'],
-    'intensity_03': ['very slightly or not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
-    'intensity_04': ['not at all', 'a little', 'somewhat', 'very much'],
-    # Mood Scales
-    'positivity': ['poor', 'fair', 'good', 'very good', 'excellent']
-}
 
 
 def handle_missing_values(df):
