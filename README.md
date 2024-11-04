@@ -93,7 +93,7 @@ The Streamlit app (`app.py`) provides a step-by-step interface for users to inte
    - Users can view and download a detailed QA report that includes information on missing values, outliers, and any flagged entries.
 
 ### How to Run the Application on the Cloud
-1. Navigate to the link [here](https://chillsstudy-yozgj2rhs4uiz6rr8zuhzu.streamlit.app/)
+1. Navigate to the link [here](https://behavioral-survey-processing-app.streamlit.app/)
 2. Follow the steps in the app
 
 ### How to Run the Application Locally
