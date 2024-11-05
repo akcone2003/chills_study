@@ -147,3 +147,30 @@ The Streamlit app (`app.py`) provides a step-by-step interface for users to inte
 
 4. **Interactive Review of Text Responses**:
    - Implement a more interactive interface for reviewing and categorizing open-ended survey responses.
+
+### Adding New Functionalities
+If you'd like to add your own functionalities to this web app, you can easily do so by following these steps:
+
+1. **Fork the Repository**: Click the "Fork" button on the GitHub repository to create a copy of the project in your own GitHub account.
+
+2. **Clone Your Fork**:
+      ```bash
+      git clone <your_forked_repository_url>
+      cd chills_study
+      ```
+3. **Modify the code**: 
+* New functionalities can be added by creating additional functions or modules. 
+* For instance:
+  * Add new data processing utilities in helpers.py or similar modules.
+  * Integrate new models or scoring functions in scoring_functions.py.
+  
+4. **Test Locally**: Run the app locally to make sure it works as expected
+   ```bash
+   streamlit run app.py                  
+   ```                      
+
+5. **Submit a Pull Request**:
+* Once you've tested your modifications, commit and push your changes.
+* Go to the original repository and submit a pull request. Describe your new functionality in detail and request a review.
+
+By following these steps, you can add new functionalities and improve the app’s features. Contributions are highly valued!
