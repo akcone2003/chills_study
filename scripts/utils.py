@@ -94,7 +94,7 @@ def get_score_from_mapping(value, scale_type):
     elif isinstance(scale_mapping, list):
         # For lists, return the index as a score, if the value is in the list
         try:
-            return scale_mapping.index(value.lower()) * 25  # Example scale
+            return scale_mapping.index(value.lower())
         except ValueError:
             return None
     return None
