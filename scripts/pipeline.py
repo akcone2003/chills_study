@@ -371,48 +371,45 @@ def process_data_pipeline(input_df, chills_column=None, chills_intensity_column=
 
 # Testing Ground
 if __name__ == "__main__":
-    from scipy.stats import kendalltau
 
-    data = {
+    # Sample subset of data for testing
+    sample_data = {
         "When was the last time you felt moved or touched?": [
             "Within the last month", "Within the last year", "Within the last month",
             "Within the last month", "Within the last 24 hours", "Within the last month",
-            "Within the last month", "Within the last month", "Within the last 24 hours",
-            "Within the last year", "Within the last month", "Within the last month",
-            "Within the last 24 hours", "Within the last month", "Within the last month",
-            "Within the last month", "Within the last month", "Within the last month",
-            "Within the last 24 hours", "Cannot remember", "Within the last 24 hours",
-            "Within the last year", "Within the last year", "Within the last 24 hours",
-            "Within the last year", "Within the last 24 hours", "Cannot remember",
-            "Within the last 24 hours", "Within the last month", "Within the last 24 hours",
-            "Within the last month", "Cannot remember", "Within the last month",
-            "Within the last month", "Within the last month", "Within the last month",
-            "Within the last month", "Within the last month", "Cannot remember",
-            "Within the last year", "Within the last 24 hours", "Within the last 24 hours",
-            "Within the last 24 hours", "Within the last year", "Within the last month",
-            "Within the last year", "Within the last 24 hours", "Within the last month",
-            "Within the last 24 hours", "Within the last month", "Within the last month",
-            "Within the last month", "Within the last month", "Within the last year",
-            "Within the last 24 hours", "Within the last month", "Within the last month",
-            "Within the last 24 hours", "Within the last month", "Within the last 24 hours",
-            "Cannot remember", "Within the last year", "Within the last 24 hours",
-            "Within the last month", "Within the last month", "Within the last month",
-            "Cannot remember", "Within the last month", "Within the last 24 hours",
-            "Within the last month", "Within the last year", "Within the last year",
-            "Within the last month", "Within the last month", "Within the last month",
-            "Within the last month", "Within the last month", "Within the last year",
-            "Within the last month", "Within the last 24 hours", "Within the last month",
-            "Within the last year", "Within the last month", "Within the last month",
-            "Within the last year", "Within the last 24 hours", "Within the last month",
-            "Within the last year", "Within the last month", "Within the last year",
-            "Within the last month", "Within the last month", "Within the last year",
-            "Within the last year", "Within the last month", "Within the last year",
-            "Within the last 24 hours", "Within the last year", "Within the last month"
+            "Within the last month"
+        ],
+        "How often do you feel moved or touched?": [
+            "Once a month", "Less than once a month", "2-3 times a week",
+            "Once a month", "Once a month", "2-3 times a week", "2-3 times a month"
+        ],
+        "How often do you get: [Choked-up from a moving or touching experience?]": [
+            "Less than once a month", "Less than once a month", "2-3 times a month",
+            "Less than once a month", "Once a week", "Once a month", "Once a month"
+        ],
+        "How often do you get: [Tears or moist eyes from a moving or touching experience?]": [
+            "2-3 times a month", "Less than once a month", "2-3 times a month",
+            "Less than once a month", "About once a day", "Once a month", "2-3 times a week"
+        ],
+        "How often do you get: [Shivers (chills) or goosebumps from a moving or touching experience?]": [
+            "Less than once a month", "Less than once a month", "2-3 times a month",
+            "Less than once a month", "Once a month", "Once a month", "Once a week"
+        ],
+        "How often do you get: [A warmth in your chest from a moving or touching experience?]": [
+            "2-3 times a month", "Less than once a month", "2-3 times a month",
+            "Less than once a month", "About once a day", "Once a week", "Once a week"
+        ],
+        "Would you describe yourself as someone who gets easily moved or touched?": [
+            "Somewhat", "Not at all", "Extremely", "Somewhat", "Somewhat", "Somewhat", "Extremely"
         ]
     }
 
-    df_test = pd.DataFrame(data)
+    # Convert dictionary to DataFrame
+    test_df = pd.DataFrame(sample_data)
 
-    encoded_df = preprocess_data(df_test)
-
-    print("[TEST] Encoded DataFrame:\n", encoded_df)
+    # Run through normalization to test functionality
+    try:
+        processed_df = process_data_pipeline(test_df)
+        print("Processed DataFrame:\n", processed_df)
+    except Exception as e:
+        print(f"An error occurred: {e}")

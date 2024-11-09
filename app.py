@@ -1,29 +1,9 @@
 import streamlit as st
 import pandas as pd
 from collections import OrderedDict
-from scripts.utils import normalize_column_input
+from scripts.utils import (normalize_column_input, reconcile_columns,
+                           save_dataframe_to_csv, rebuild_qa_report, combine_csv_files)
 from scripts.pipeline import process_data_pipeline
-
-
-def save_dataframe_to_csv(df):
-    """Convert a DataFrame to CSV format in-memory and return as a string."""
-    return df.to_csv(index=False)
-
-
-def rebuild_qa_report():
-    """Rebuild the QA report with the current flagged rows."""
-    qa_report = "Quality Assurance Report\n\n"
-    qa_report += f"Missing Values: {st.session_state.get('missing_values', {})}\n\n"
-    qa_report += f"Outliers: {st.session_state.get('outliers', {})}\n\n"
-
-    flagged_info = "Flagged Rows Information:\n\n"
-    for col, flags in st.session_state.flagged_rows.items():
-        flagged_info += f"Column: {col}\n"
-        for idx, reason in flags:
-            flagged_info += f" - Row {idx + 1}: {reason if reason else 'No reason provided'}\n"
-
-    qa_report += flagged_info
-    st.session_state.qa_report = qa_report  # Rebuild the QA report from scratch
 
 
 # Streamlit App Interface
@@ -47,19 +27,31 @@ if 'sanity_check_drops' not in st.session_state:
     st.session_state.sanity_check_drops = set()
 
 
-# Step 1: File Upload for Input CSV
-input_file = st.file_uploader("Upload your Input CSV File", type=["csv"])
+# Step 1: Upload multiple CSV files or a single CSV file
+st.write("### Upload Files")
+uploaded_files = st.file_uploader("Upload one or more CSV files for combining or a single file for direct processing",
+                                  accept_multiple_files=True, type=["csv"])
 
-# Step 2: Run the Pipeline if a file is uploaded
-if input_file is not None:
+# Check if files were uploaded
+if uploaded_files:
     try:
-        # Read the uploaded file into a temporary dataframe
-        input_df = pd.read_csv(input_file)
+        try:
+            # Combine files or process a single file
+            if len(uploaded_files) > 1:
+                st.write("Combining multiple CSV files into one DataFrame.")
+                input_df = combine_csv_files(uploaded_files)
+            else:
+                input_df = pd.read_csv(uploaded_files[0])
+        except Exception as e:
+            st.error(f"An error occurred while combining files: {e}")
+
+        st.write("Data Preview:")
+        st.dataframe(input_df.head())
 
         # Step 3: Let the user select columns they want to drop
-        st.write("### Select Columns to Drop Before Downloading")
+        st.write("### Select Columns to Drop")
         drop_columns = st.multiselect(
-            "Select columns you want to exclude from the analysis:",
+            "Select columns you want to exclude from the processing:",
             options=input_df.columns.tolist(),
             help="These columns will be removed before you download the processed dataset."
         )
@@ -290,3 +282,4 @@ if st.session_state.processed_df is not None:
         file_name="qa_report.txt",
         mime='text/plain'
     )
+

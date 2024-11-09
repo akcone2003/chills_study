@@ -1,4 +1,5 @@
 import pandas as pd
+import streamlit as st
 
 
 def normalize_column_name(df_or_name):
@@ -36,6 +37,8 @@ def normalize_column_name(df_or_name):
     elif isinstance(df_or_name, str):
         return _normalize(df_or_name)
     else:
+        print(f"[DEBUG] Invalid input type for normalize_column_name: {type(df_or_name)}")
+        print(f"[DEBUG] Input value: {df_or_name}")
         raise TypeError("Input must be a DataFrame or a column name string.")
 
 
@@ -98,6 +101,61 @@ def get_score_from_mapping(value, scale_type):
         except ValueError:
             return None
     return None
+
+
+def save_dataframe_to_csv(df):
+    """Convert a DataFrame to CSV format in-memory and return as a string."""
+    return df.to_csv(index=False)
+
+
+def rebuild_qa_report():
+    """Rebuild the QA report with the current flagged rows."""
+    qa_report = "Quality Assurance Report\n\n"
+    qa_report += f"Missing Values: {st.session_state.get('missing_values', {})}\n\n"
+    qa_report += f"Outliers: {st.session_state.get('outliers', {})}\n\n"
+
+    flagged_info = "Flagged Rows Information:\n\n"
+    for col, flags in st.session_state.flagged_rows.items():
+        flagged_info += f"Column: {col}\n"
+        for idx, reason in flags:
+            flagged_info += f" - Row {idx + 1}: {reason if reason else 'No reason provided'}\n"
+
+    qa_report += flagged_info
+    st.session_state.qa_report = qa_report  # Rebuild the QA report from scratch
+
+
+def reconcile_columns(dataframes):
+    """
+    Align columns across DataFrames by filling missing columns with NaN.
+    """
+    # Collect all unique columns across dataframes
+    all_columns = set(col for df in dataframes for col in df.columns)
+
+    # Ensure each DataFrame has all columns, filling missing with NaN
+    for i, df in enumerate(dataframes):
+        missing_cols = all_columns - set(df.columns)
+        if missing_cols:
+            st.write(f"File {i + 1} missing columns: {missing_cols}")
+        for col in missing_cols:
+            df[col] = pd.NA
+        # Reorder columns to have a consistent order
+        dataframes[i] = df.reindex(columns=sorted(all_columns))
+
+    return dataframes
+
+
+def combine_csv_files(uploaded_files):
+    """
+    Combine multiple CSV files, ensuring all columns match and filling in any missing columns.
+    """
+    dataframes = [pd.read_csv(file) for file in uploaded_files]
+
+    # Reconcile columns
+    dataframes = reconcile_columns(dataframes)
+
+    # Concatenate the dataframes
+    combined_df = pd.concat(dataframes, ignore_index=True)
+    return combined_df
 
 # Define multiple ordered keyword lists for different types of scales
 ORDERED_KEYWORD_SET = {
