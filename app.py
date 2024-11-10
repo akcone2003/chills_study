@@ -39,7 +39,7 @@ if uploaded_files:
             # Combine files or process a single file
             if len(uploaded_files) > 1:
                 st.write("Combining multiple CSV files into one DataFrame.")
-                input_df = combine_csv_files(uploaded_files)
+                input_df = combine_csv_files(uploaded_files, threshold=80)
             else:
                 input_df = pd.read_csv(uploaded_files[0])
         except Exception as e:

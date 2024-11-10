@@ -1,5 +1,6 @@
 import pandas as pd
 import streamlit as st
+from fuzzywuzzy import fuzz, process
 
 
 def normalize_column_name(df_or_name):
@@ -144,16 +145,70 @@ def reconcile_columns(dataframes):
     return dataframes
 
 
-def combine_csv_files(uploaded_files):
-    """
-    Combine multiple CSV files, ensuring all columns match and filling in any missing columns.
-    """
-    dataframes = [pd.read_csv(file) for file in uploaded_files]
+def auto_align_columns(dataframes, threshold=80):
+    """Automatically align similar columns across DataFrames."""
+    # Identify all unique columns across all DataFrames
+    all_columns = set(col for df in dataframes for col in df.columns)
+    aligned_columns = {col: col for col in all_columns}  # Initial mapping to self
 
-    # Reconcile columns
-    dataframes = reconcile_columns(dataframes)
+    # Apply fuzzy matching for column alignment
+    for df in dataframes:
+        for col in df.columns:
+            match, score = process.extractOne(col, all_columns)
+            if score >= threshold and match != col:
+                aligned_columns[col] = match  # Map to the closest matching column
 
-    # Concatenate the dataframes
+    # Apply the automatic alignment to each DataFrame
+    for df in dataframes:
+        df.rename(columns=aligned_columns, inplace=True)
+        # Add any missing columns as empty columns for consistency
+        for col in all_columns - set(df.columns):
+            df[col] = None
+
+    return dataframes, aligned_columns
+
+
+def manual_column_alignment(dataframes, all_columns, aligned_columns):
+    """Provide an interface for users to manually resolve column discrepancies."""
+    # Track unresolved columns in each DataFrame
+    column_discrepancies = {i: all_columns - set(df.columns) for i, df in enumerate(dataframes)}
+
+    st.write("Manual Column Resolution")
+    for i, missing_cols in column_discrepancies.items():
+        if missing_cols:
+            st.write(f"File {i + 1} is missing columns: {missing_cols}")
+            for col in missing_cols:
+                # Allow users to manually input a matching column or add as a new blank column
+                rename_col = st.text_input(f"Provide matching column name for '{col}' in File {i + 1}",
+                                           key=f"manual_{i}_{col}")
+                if rename_col and rename_col in dataframes[i].columns:
+                    dataframes[i].rename(columns={rename_col: col}, inplace=True)
+                else:
+                    # Add the missing column if no match was provided
+                    dataframes[i][col] = None
+
+    # Update aligned columns mapping with any manual changes
+    aligned_columns.update({col: col for df in dataframes for col in df.columns})
+    return dataframes
+
+
+def combine_csv_files(files, threshold=80):
+    """Load multiple CSV files, align columns automatically, and allow manual resolution if needed."""
+    dataframes = [pd.read_csv(file) for file in files]
+    all_columns = set(col for df in dataframes for col in df.columns)
+
+    # Step 1: Attempt automatic alignment
+    dataframes, aligned_columns = auto_align_columns(dataframes, threshold=threshold)
+
+    # Check if any unresolved column discrepancies remain
+    discrepancies = any(all_columns - set(df.columns) for df in dataframes)
+
+    # Step 2: Fall back to manual alignment if needed
+    if discrepancies:
+        st.warning("Automatic column alignment incomplete. Please manually resolve column discrepancies.")
+        dataframes = manual_column_alignment(dataframes, all_columns, aligned_columns)
+
+    # Step 3: Combine DataFrames with resolved columns
     combined_df = pd.concat(dataframes, ignore_index=True)
     return combined_df
 
