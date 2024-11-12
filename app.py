@@ -141,6 +141,11 @@ if input_file is not None:
             help="Select 'Yes' if your study recorded data about chills."
         )
 
+        chills_column = None
+        chills_intensity_column = None
+        intensity_threshold = 0
+        mode = 'flag'
+
         # Conditionally show the chills-related options only if "Yes" is selected
         if include_chills == "Yes":
             # Step 5.1: Let the user select columns for the sanity check
@@ -178,8 +183,8 @@ if input_file is not None:
         if st.button("Run Pipeline"):
             st.session_state.processed_df, st.session_state.intermediate_df, st.session_state.qa_report = process_data_pipeline(
                 input_df,
-                chills_column=chills_column if chills_column else None,
-                chills_intensity_column=chills_intensity_column if chills_intensity_column else None,
+                chills_column=chills_column,
+                chills_intensity_column=chills_intensity_column,
                 intensity_threshold=intensity_threshold,
                 mode=mode,
                 user_column_mappings=st.session_state.user_column_mappings
