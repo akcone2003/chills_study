@@ -3,6 +3,9 @@ import pandas as pd
 from collections import OrderedDict
 from scripts.utils import normalize_column_input
 from scripts.pipeline import process_data_pipeline
+import gspread
+from google.oauth2.service_account import Credentials
+import datetime
 
 
 def save_dataframe_to_csv(df):
@@ -295,3 +298,16 @@ if st.session_state.processed_df is not None:
         file_name="qa_report.txt",
         mime='text/plain'
     )
+
+    # --- Streamlit UI for Feedback Section Using Google Form Link ---
+    st.write("## Suggest Improvements")
+    st.write(
+        "We'd love to hear your feedback to help us improve this application. "
+        "Please click the link below to submit your suggestions via Google Form."
+    )
+
+    # Add a link to the Google Form
+    google_form_url = "https://forms.gle/LeXMZkkhJ5D3gdLw8"  # Replace with your actual form link
+    st.markdown(f"[Submit Your Suggestion]({google_form_url})", unsafe_allow_html=True)
+
+
