@@ -103,8 +103,7 @@ if input_file is not None:
             # Option 1: Text area for pasting column names (newline-separated)
             pasted_columns = st.text_area(
                 f"Paste the columns for {scale}:",
-                placeholder="Paste column names here, "
-                            "separated by new lines (pressing 'enter' at the beginning of each new question)...",
+                placeholder="Paste column names here",
                 key=f"{scale}_paste"
             )
 
