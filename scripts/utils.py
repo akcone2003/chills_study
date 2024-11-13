@@ -135,3 +135,5 @@ ORDERED_KEYWORD_SET = {
     # Mood Scales
     'positivity': ['poor', 'fair', 'good', 'very good', 'excellent']
 }
+
+# TODO - add more scales as you encounter them

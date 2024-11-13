@@ -1095,5 +1095,5 @@ class ScaleScorer:
         return pd.DataFrame(scored_subscales)
 
 
-# TODO - add more scoring functions
 # TODO - add multi dimensional health locus, POMS, NEOPI
+# TODO - add burnout study behavioral surveys
