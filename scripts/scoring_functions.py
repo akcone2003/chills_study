@@ -1,6 +1,7 @@
 from scripts.utils import normalize_column_name, get_score_from_mapping, ORDERED_KEYWORD_SET
 import pandas as pd
 
+
 class ScaleScorer:
     """
     A class to encapsulate the logic for detecting and scoring behavioral scales.
@@ -62,6 +63,7 @@ class ScaleScorer:
             'Toronto_Mindfulness_Scale': self.score_toronto_mind_scale,
             # Resilience, Flexibility, Burnout
             'Copenhagen_Burnout_Inventory_(CBI)': self.score_cbi,
+            'Dispositional_Resilience_\'Hardiness\'_Scale_(HARDY)': self.score_hardy,
         }
 
     def calculate_all_scales(self, mid_processing=False):
@@ -1154,8 +1156,23 @@ class ScaleScorer:
 
         return pd.DataFrame(scored_subscales)
 
+    def score_hardy(self, columns):
+        """
+        Score the Dispositional Resilience 'Hardiness' Scale (HARDY) with inferred mappings.
+
+        Parameters:
+        ----------
+        columns : list
+            List of column names for the HARDY questions.
+
+        Returns:
+        -------
+        pd.DataFrame
+            DataFrame with averaged scores for each HARDY subscale and total.
+        """
+        pass
 
 
 
-# TODO - add multi dimensional health locus, POMS, NEOPI
+# TODO - add multi dimensional health locus, POMS
 # TODO - add burnout study behavioral surveys

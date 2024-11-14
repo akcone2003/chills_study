@@ -84,7 +84,8 @@ if input_file is not None:
                             "Multidimensional_Iowa_Suggestibility_Scale_(MISS)", "Short_Suggestibility_Scale_(SSS)",
                             "Cloninger_Self_Transcendence_Subscale", "Warwick-Edinburgh_Mental_Wellbeing_Scale_(WEMWBS)",
                             "Cognitive_and_Affective_Mindfulness_Scale_Revised_(CAMS-R)", "Toronto_Mindfulness_Scale",
-                            "Copenhagen_Burnout_Inventory_(CBI)", "NEO-PI-3_(Openness_to_Experience)"]
+                            "Copenhagen_Burnout_Inventory_(CBI)", "NEO-PI-3_(Openness_to_Experience)",
+                            "Dispositional_Resilience_\'Hardiness\'_Scale_(HARDY)"]
 
         # User selects the scales they want to include in the analysis
         selected_scales = st.multiselect(
