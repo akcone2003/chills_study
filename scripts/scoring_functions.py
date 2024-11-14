@@ -501,7 +501,7 @@ class ScaleScorer:
                    (6 - self.df[c4]) + self.df[c5] + (6 - self.df[c6]) + (6 - self.df[c7])
                    + (6 - self.df[c8]))
         aesthetics = (6 - self.df[c9] + self.df[c10] + (6 - self.df[c11])
-                      + self.df[c12] (6 - self.df[c13]) + self.df[c14] + self.df[c15] + self.df[c16])
+                      + self.df[c12] + (6 - self.df[c13]) + self.df[c14] + self.df[c15] + self.df[c16])
         feelings = (self.df[c17] + (6 - self.df[c18]) + self.df[c19] + (6 - self.df[c20]) + self.df[c21]
                     + (6 - self.df[c22]) + self.df[c23] + self.df[c24])
         actions = ((6 - self.df[c25]) + self.df[c26])
