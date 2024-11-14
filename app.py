@@ -3,9 +3,6 @@ import pandas as pd
 from collections import OrderedDict
 from scripts.utils import normalize_column_input
 from scripts.pipeline import process_data_pipeline
-import gspread
-from google.oauth2.service_account import Credentials
-import datetime
 
 
 def save_dataframe_to_csv(df):
