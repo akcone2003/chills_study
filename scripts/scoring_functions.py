@@ -45,6 +45,7 @@ class ScaleScorer:
             'Short_Suggestibility_Scale_(SSS)': self.score_sss,
             'Warwick-Edinburgh_Mental_Wellbeing_Scale_(WEMWBS)': self.score_wemwbs,
             'Cognitive_and_Affective_Mindfulness_Scale_Revised_(CAMS-R)': self.score_cams_r,
+            'NEO-PI-3_(Openness_to_Experience)': self.score_neo_pi_3,
             # Measuring Experience-Drive Trait Changes
             'DPES-Joy': self.score_dpes_joy,
             'DPES-Love': self.score_dpes_love,
@@ -389,6 +390,11 @@ class ScaleScorer:
         """
         Calculate subcategory and main Big Five scores.
 
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names.
+
         Returns:
         --------
         pd.DataFrame
@@ -464,6 +470,41 @@ class ScaleScorer:
 
         # Return the final DataFrame with all scores
         return scores_df
+
+    def score_neo_pi_3(self, columns):
+        """
+        Calculate the Openness to Experience scale
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names.
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing the scores for scale
+        """
+        # Ensure the columns are correctly passed
+        if len(columns) != 40:
+            raise ValueError(f"Expected 60 columns, but got {len(columns)}")
+
+        # Unpack questions
+        (
+            c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14,
+            c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26,
+            c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39,
+            c40
+        ) = columns
+
+        fantasy = (self.df[c1] + (6 - self.df[c2]) + self.df[c3] +
+                   (6 - self.df[c4]) + self.df[c5] + (6 - self.df[c6]) + (6 - self.df[c7])
+                   + (6 - self.df[c8]))
+        aesthetics = (6 - self.df[c9] + self.df[c10] + (6 - self.df[c11])
+                      + self.df[c12] (6 - self.df[c13]) + self.df[c14] + self.df[c15] + self.df[c16])
+        feelings = (self.df[c17] + (6 - self.df[c18]) + self.df[c19] + (6 - self.df[c20]) + self.df[c21]
+                    + (6 - self.df[c22]) + self.df[c23] + self.df[c24])
+        actions = ((6 - self.df[c25]) + self.df[c26])
 
     def score_religiosity(self, columns):
         """
@@ -1093,6 +1134,8 @@ class ScaleScorer:
         scored_subscales['CBI_Total'] = pd.DataFrame(scored_subscales).mean(axis=1)
 
         return pd.DataFrame(scored_subscales)
+
+
 
 
 # TODO - add multi dimensional health locus, POMS, NEOPI

@@ -127,6 +127,9 @@ ORDERED_KEYWORD_SET = {
                      'moderately true of me', 'mostly true of me', 'describes me perfectly'],
     'agreement_04': ['strongly disagree', 'disagree', 'disagree somewhat',
                      'neither agree nor disagree', 'agree somewhat', 'agree', 'strongly agree'],
+    'agreement_05': ['definitely false / strongly disagree', 'mostly false / disagree',
+                     'equally true or false / neutral / can\'t decide',
+                     'mostly true / agree', 'definitely true / strongly agree'],
     # Intensity Scales
     'intensity_01': ['not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
     'intensity_02': ['not at all', 'somewhat', 'extremely'],
