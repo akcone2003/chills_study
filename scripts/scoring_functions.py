@@ -494,9 +494,10 @@ class ScaleScorer:
             c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14,
             c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26,
             c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39,
-            c40
+            c40, c41, c42, c43, c44, c45, c46, c47, c48
         ) = columns
 
+        # Calculate subscales
         fantasy = (self.df[c1] + (6 - self.df[c2]) + self.df[c3] +
                    (6 - self.df[c4]) + self.df[c5] + (6 - self.df[c6]) + (6 - self.df[c7])
                    + (6 - self.df[c8]))
@@ -504,7 +505,25 @@ class ScaleScorer:
                       + self.df[c12] + (6 - self.df[c13]) + self.df[c14] + self.df[c15] + self.df[c16])
         feelings = (self.df[c17] + (6 - self.df[c18]) + self.df[c19] + (6 - self.df[c20]) + self.df[c21]
                     + (6 - self.df[c22]) + self.df[c23] + self.df[c24])
-        actions = ((6 - self.df[c25]) + self.df[c26])
+        actions = ((6 - self.df[c25]) + self.df[c26] + (6 - self.df[c27]) + self.df[c28] + (6- self.df[c29])
+                   + self.df[c30] + (6 - self.df[c31]) + (6 - self.df[c32]))
+        ideas = (self.df[c33] + (6 - self.df[c34]) + self.df[c35] + (6 - self.df[c36]) + self.df[c37]
+                 + (6 - self.df[c38]) + self.df[c39] + self.df[c40])
+        values = ((6 - self.df[c41]) + self.df[c42] + (6 - self.df[c43]) + self.df[c44]
+                  + (6 - self.df[c45]) + self.df[c46] + (6 - self.df[c47]) + self.df[c48])
+
+        # Create dataframe with subscales
+        scores_df = pd.DataFrame({
+            'Fantasy': fantasy,
+            'Aesthetics': aesthetics,
+            'Feelings': feelings,
+            'Actions': actions,
+            'Ideas': ideas,
+            'Values': values
+        })
+
+        # Return dataframe
+        return scores_df
 
     def score_religiosity(self, columns):
         """
