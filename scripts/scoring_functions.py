@@ -59,6 +59,7 @@ class ScaleScorer:
             'MAAS': self.score_maas,
             'Five_Facet_Mindfulness_Questionnaire_(FFMQ)': self.score_ffmq,
             'Positive_Negative_Affect_Schedule_(PANAS)': self.score_panas,
+            'PANAS_X': self.score_panas_x,
             # Outcome Measures
             'Toronto_Mindfulness_Scale': self.score_toronto_mind_scale,
             # Resilience, Flexibility, Burnout

@@ -79,7 +79,7 @@ if input_file is not None:
                             "Psychological_Insight", "DPES-Joy", "DPES-Love", "DPES-Pride", "DPES-Awe",
                             "DPES-Amusement", "DPES-Compassion",
                             "MAAS", "Five_Facet_Mindfulness_Questionnaire_(FFMQ)", "Positive_Negative_Affect_Schedule_(PANAS)",
-                            "Self-Transcendence_Scale",
+                            "PANAS_X", "Self-Transcendence_Scale",
                             "Early_Maladaptive_Schema_(EMS)_Young_Schema_Questionnaire_Short_Form_3_(YSQ-S3)",
                             "Multidimensional_Iowa_Suggestibility_Scale_(MISS)", "Short_Suggestibility_Scale_(SSS)",
                             "Cloninger_Self_Transcendence_Subscale", "Warwick-Edinburgh_Mental_Wellbeing_Scale_(WEMWBS)",
