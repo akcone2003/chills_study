@@ -119,6 +119,7 @@ ORDERED_KEYWORD_SET = {
     'frequency_08': {'always': 100, 'often': 75, 'sometimes': 50, 'seldom': 25, 'never/almost never': 0},
     'frequency_09': {'to a very high degree': 100, 'to a high degree': 75,
                      'somewhat': 50, 'to a low degree': 25, 'to a very low degree': 0},
+    'maia': {'never': 0, 'rarely': 1, 'sometimes': 2, 'often': 3, 'very often': 4, 'always': 5},
     # Agreement Scales
     'agreement_01': ['strongly disagree', 'disagree', 'neither agree nor disagree', 'agree', 'strongly agree'],
     'agreement_02': ['strongly disagree', 'disagree', 'somewhat disagree', 'neutral', 'somewhat agree', 'agree',

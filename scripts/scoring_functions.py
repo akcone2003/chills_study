@@ -204,19 +204,58 @@ class ScaleScorer:
 
     def score_maia(self, columns):
         """
-       Calculate the MAIA (Multidimensional Assessment of Interoceptive Awareness) score.
+        Calculate the subscale scores for the Multidimensional Assessment of Interoceptive Awareness (MAIA).
 
-       Parameters:
-       -----------
-       columns : list
-           A list with the column names associated with the MAIA questions.
+        Parameters:
+        -----------
+        columns : list
+            A list of column names corresponding to the 32 MAIA items, in the correct order.
 
-       Returns:
-       --------
-       pd.Series
-           A series containing the calculated sum of MAIA scores for each row.
-       """
-        return self.df[columns].sum(axis=1)
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing the subscale scores for each MAIA subscale.
+        """
+        # Ensure the correct number of columns (32 items for MAIA expected)
+        if len(columns) != 32:
+            raise ValueError(f"Expected 32 columns, but got {len(columns)}")
+
+        # Unpack the column names directly as q1, q2, ..., q32
+        (
+            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
+            q11, q12, q13, q14, q15, q16, q17, q18, q19, q20,
+            q21, q22, q23, q24, q25, q26, q27, q28, q29, q30,
+            q31, q32
+        ) = columns
+
+        # Define subscales
+        subscales = {
+            'Noticing': [q1, q2, q3, q4],
+            'Not-Distracting': [q5, q6, q7],  # Reverse q5, q6, q7
+            'Not-Worrying': [q8, q9, q10],   # Reverse q8, q9
+            'Attention Regulation': [q11, q12, q13, q14, q15, q16, q17],
+            'Emotional Awareness': [q18, q19, q20, q21, q22],
+            'Self-Regulation': [q23, q24, q25, q26],
+            'Body Listening': [q27, q28, q29],
+            'Trusting': [q30, q31, q32]
+        }
+
+        # Reverse-score the specified items
+        reversed_items = [q5, q6, q7, q8, q9]
+        self.df[reversed_items] = 5 - self.df[reversed_items]
+
+        # Calculate the average for each subscale
+        subscale_scores = {
+            subscale: self.df[items].mean(axis=1)
+            for subscale, items in subscales.items()
+        }
+
+        # Create a DataFrame with the subscale scores
+        scores_df = pd.DataFrame(subscale_scores)
+
+        return scores_df
+
+
 
     def score_ego_dissolution(self, columns):
         """

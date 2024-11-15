@@ -167,29 +167,40 @@ def encode_columns(df, column_types):
     for col in column_types['ordinal']:
         try:
             if col in ORDERED_KEYWORD_SET:
-                # Use predefined categories for known ordinal columns
-                categories = [ORDERED_KEYWORD_SET[col]]
+                # Check if the scale is a dictionary or list
+                if isinstance(ORDERED_KEYWORD_SET[col], dict):
+                    # Directly map the dictionary values
+                    df[col] = df[col].map(ORDERED_KEYWORD_SET[col])
+                else:
+                    # Use predefined list-based categories for known ordinal columns
+                    categories = [ORDERED_KEYWORD_SET[col]]
+                    encoder = OrdinalEncoder(categories=categories)
+                    df[col] = encoder.fit_transform(df[[col]]) + 1  # +1 to avoid 0-based indexing
             else:
-                # Dynamically determine categories for unseen ordinal columns
+                # Dynamically determine categories for unseen ordinal columns (assume list)
                 unique_values = df[col].dropna().unique()
                 categories = [determine_category_order(unique_values)]
                 print(f"\n\n[DEBUG] Determined Order for {col}: {categories}")  # Track category order
 
-            encoder = OrdinalEncoder(categories=categories)
-            df[col] = encoder.fit_transform(df[[col]]) + 1  # +1 to avoid 0-based indexing
+                encoder = OrdinalEncoder(categories=categories)
+                df[col] = encoder.fit_transform(df[[col]]) + 1  # +1 to avoid 0-based indexing
         except Exception as e:
             print(f"[ERROR] Ordinal encoding failed for '{col}': {e}")
 
     # Step 2: Handle nominal columns (label encoding to keep single column structure)
     for col in column_types['nominal']:
-        if df[col].nunique() == 2:  # Handle binary columns explicitly
-            df[col] = df[col].map({'No': 0, 'Yes': 1})  # Adjust based on actual values
-        else:
-            # Use LabelEncoder for other nominal columns
-            le = LabelEncoder()
-            df[col] = le.fit_transform(df[col].astype(str))  # Convert to string to handle non-string categories
+        try:
+            if df[col].nunique() == 2:  # Handle binary columns explicitly
+                df[col] = df[col].map({'No': 0, 'Yes': 1})  # Adjust based on actual values
+            else:
+                # Use LabelEncoder for other nominal columns
+                le = LabelEncoder()
+                df[col] = le.fit_transform(df[col].astype(str))  # Convert to string to handle non-string categories
+        except Exception as e:
+            print(f"[ERROR] Nominal encoding failed for '{col}': {e}")
 
     return df
+
 
 
 def sanity_check_chills(df, chills_column, chills_intensity_column, threshold=0):
