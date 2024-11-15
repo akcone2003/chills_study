@@ -115,7 +115,11 @@ def determine_category_order(col_values):
 
     # Try to match the column values with the known ordered keyword sets
     for scale_name, keywords in ORDERED_KEYWORD_SET.items():
-        match_count = sum(1 for val in lower_col_values if val in keywords)
+        # Convert dictionary keys to list if `keywords` is a dictionary
+        keyword_list = list(keywords.keys()) if isinstance(keywords, dict) else keywords
+        match_count = sum(1 for val in lower_col_values if val in keyword_list)
+
+        # Update best match if this keyword set has more matches
         if match_count > best_match_count:
             best_match = keywords
             best_match_count = match_count
@@ -123,8 +127,14 @@ def determine_category_order(col_values):
     # Sort based on the matched order, or use semantic similarity if no match
     if best_match:
         print(f"[DEBUG] Best Match Found: {best_match}")
-        return sorted(col_values,
-                      key=lambda x: best_match.index(x.lower()) if x.lower() in best_match else float('inf'))
+
+        # If best_match is a dictionary, sort col_values based on dictionary values
+        if isinstance(best_match, dict):
+            return sorted(col_values, key=lambda x: best_match.get(x.lower(), float('inf')))
+        else:
+            return sorted(col_values,
+                          key=lambda x: best_match.index(x.lower()) if x.lower() in best_match else float('inf'))
+
     else:
         print("[WARN] No predefined match found. Using semantic similarity.")
         embeddings = {val: get_embedding(val) for val in col_values}
