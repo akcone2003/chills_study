@@ -29,6 +29,7 @@ class ScaleScorer:
             'TIPI': self.score_tipi,
             'VVIQ': self.score_vviq,
             'MAIA': self.score_maia,
+            'MAIA-S': self.score_maia_s,
             'Ego-Dissolution': self.score_ego_dissolution,
             'SMES': self.score_smes,
             'Emotional_Breakthrough': self.score_emotional_breakthrough,
