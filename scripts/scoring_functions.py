@@ -1400,53 +1400,76 @@ class ScaleScorer:
 
     def score_stai(self, columns):
         """
-        Calculate the total scores for the State Anxiety Inventory (SAI) and Trait Anxiety Inventory (TAI).
+        Calculate the total scores for the State Anxiety Inventory (SAI) and Trait Anxiety Inventory (TAI)
+        based on the number of items provided.
 
         Parameters:
         -----------
         columns : list
-            A list of 40 column names corresponding to the STAI items, in the correct order.
+            A list of column names corresponding to the STAI items. If 20 columns are provided, it calculates
+            only the STAI-State score. If 40 columns are provided, it calculates both STAI-State and STAI-Trait scores.
 
         Returns:
         --------
         pd.DataFrame
-            DataFrame containing the total scores for SAI and TAI.
+            DataFrame containing the total score(s) for SAI and/or TAI.
         """
-        # Ensure the correct number of columns (40 items for STAI expected: 20 for SAI, 20 for TAI)
-        if len(columns) != 40:
-            raise ValueError(f"Expected 40 columns, but got {len(columns)}")
+        # If only 20 columns are provided, assume they are STAI-State items
+        if len(columns) == 20:
+            (
+                q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
+                q11, q12, q13, q14, q15, q16, q17, q18, q19, q20
+            ) = columns
 
-        # Unpack the column names directly as q1, q2, ..., q40
-        (
-            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
-            q11, q12, q13, q14, q15, q16, q17, q18, q19, q20,
-            q21, q22, q23, q24, q25, q26, q27, q28, q29, q30,
-            q31, q32, q33, q34, q35, q36, q37, q38, q39, q40
-        ) = columns
+            # Define reversed items for STAI-State
+            reversed_sai_items = [q1, q2, q5, q8, q10, q11, q15, q16, q19, q20]
 
-        # Define reversed items for SAI and TAI
-        reversed_sai_items = [q1, q2, q5, q8, q10, q11, q15, q16, q19, q20]
-        reversed_tai_items = [q21, q26, q27, q30, q33, q36, q39]
+            # Adjust reversed items: Transform `x` to `5 - x` (since the scale is 1 to 4)
+            self.df[reversed_sai_items] = 5 - self.df[reversed_sai_items]
 
-        # Adjust reversed items: Transform `x` to `5 - x` (since the scale is 1 to 4)
-        self.df[reversed_sai_items] = 5 - self.df[reversed_sai_items]
-        self.df[reversed_tai_items] = 5 - self.df[reversed_tai_items]
+            # Calculate STAI-State total score
+            stai_state_total = self.df[columns].sum(axis=1) + 50
 
-        # Calculate SAI and TAI total scores
-        sai_columns = [q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
-                       q11, q12, q13, q14, q15, q16, q17, q18, q19, q20]
-        tai_columns = [q21, q22, q23, q24, q25, q26, q27, q28, q29, q30,
-                       q31, q32, q33, q34, q35, q36, q37, q38, q39, q40]
+            # Return a DataFrame with only the STAI-State score
+            scores_df = pd.DataFrame({
+                'STAI_State_Total_Score': stai_state_total
+            })
 
-        # Add constant scores for SAI and TAI
-        sai_total = self.df[sai_columns].sum(axis=1) + 50
-        tai_total = self.df[tai_columns].sum(axis=1) + 35
+        # If 40 columns are provided, calculate both STAI-State and STAI-Trait scores
+        elif len(columns) == 40:
+            (
+                q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
+                q11, q12, q13, q14, q15, q16, q17, q18, q19, q20,
+                q21, q22, q23, q24, q25, q26, q27, q28, q29, q30,
+                q31, q32, q33, q34, q35, q36, q37, q38, q39, q40
+            ) = columns
 
-        # Create a DataFrame with the total scores
-        scores_df = pd.DataFrame({
-            'SAI_Total_Score': sai_total,
-            'TAI_Total_Score': tai_total
-        })
+            # Define reversed items for both STAI-State and STAI-Trait
+            reversed_sai_items = [q1, q2, q5, q8, q10, q11, q15, q16, q19, q20]
+            reversed_tai_items = [q21, q26, q27, q30, q33, q36, q39]
+
+            # Adjust reversed items
+            self.df[reversed_sai_items] = 5 - self.df[reversed_sai_items]
+            self.df[reversed_tai_items] = 5 - self.df[reversed_tai_items]
+
+            # Calculate STAI-State and STAI-Trait total scores
+            sai_columns = [q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
+                           q11, q12, q13, q14, q15, q16, q17, q18, q19, q20]
+            tai_columns = [q21, q22, q23, q24, q25, q26, q27, q28, q29, q30,
+                           q31, q32, q33, q34, q35, q36, q37, q38, q39, q40]
+
+            # Add constant scores for SAI and TAI
+            stai_state_total = self.df[sai_columns].sum(axis=1) + 50
+            stai_trait_total = self.df[tai_columns].sum(axis=1) + 35
+
+            # Return a DataFrame with both scores
+            scores_df = pd.DataFrame({
+                'STAI_State_Total_Score': stai_state_total,
+                'STAI_Trait_Total_Score': stai_trait_total
+            })
+
+        else:
+            raise ValueError("Expected either 20 or 40 columns for scoring.")
 
         return scores_df
 
