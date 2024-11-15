@@ -1195,7 +1195,10 @@ class ScaleScorer:
 
         # Reverse scoring function
         def reverse_score(items):
-            return 5 - pd.Series(items)  # reverse mapping for range 1-4
+            # Assuming range [1,4], use 5 - item; for [0,3], use 3 - item
+            max_val = 4 if max(items) == 4 else 3
+            min_val = 1 if max(items) == 4 else 0
+            return max_val + min_val - pd.Series(items)
 
         # Compute scores for each subscale with correction factor
         hardy_comm = pd.Series(comm_forward).sum() + reverse_score(comm_reverse).sum() - 15
