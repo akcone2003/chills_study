@@ -233,10 +233,10 @@ class ScaleScorer:
             'Noticing': [q1, q2, q3, q4],
             'Not-Distracting': [q5, q6, q7],  # Reverse q5, q6, q7
             'Not-Worrying': [q8, q9, q10],   # Reverse q8, q9
-            'Attention Regulation': [q11, q12, q13, q14, q15, q16, q17],
-            'Emotional Awareness': [q18, q19, q20, q21, q22],
+            'Attention_Regulation': [q11, q12, q13, q14, q15, q16, q17],
+            'Emotional_Awareness': [q18, q19, q20, q21, q22],
             'Self-Regulation': [q23, q24, q25, q26],
-            'Body Listening': [q27, q28, q29],
+            'Body_Listening': [q27, q28, q29],
             'Trusting': [q30, q31, q32]
         }
 
@@ -254,6 +254,25 @@ class ScaleScorer:
         scores_df = pd.DataFrame(subscale_scores)
 
         return scores_df
+
+    def score_maia_s(self, df, columns):
+        """
+        Calculate the subscale scores for the MAIA-S using the MAIA scoring function.
+
+        Parameters:
+        ----------
+        df : pd.DataFrame
+            The input DataFrame.
+        columns : dict
+            Dictionary mapping subscale names to their corresponding column names (shared with MAIA).
+
+        Returns:
+        -------
+        pd.DataFrame
+            DataFrame containing the subscale scores for MAIA-S.
+        """
+        # Simply call score_maia with the same columns
+        return self.score_maia(df, columns)
 
 
 
