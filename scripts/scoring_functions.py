@@ -47,6 +47,9 @@ class ScaleScorer:
             'Warwick-Edinburgh_Mental_Wellbeing_Scale_(WEMWBS)': self.score_wemwbs,
             'Cognitive_and_Affective_Mindfulness_Scale_Revised_(CAMS-R)': self.score_cams_r,
             'NEO-PI-3_(Openness_to_Experience)': self.score_neo_pi_3,
+            'Montgomery-Åsberg_Depression_Rating_Scale_(MADRS)': self.score_madrs,
+            'Hamilton_Anxiety_Rating_Scale_(HAM-A)': self.score_ham_a,
+            'State-Trait_Anxiety_Inventory_(STAI-State_Form)': self.score_stai,
             # Measuring Experience-Drive Trait Changes
             'DPES-Joy': self.score_dpes_joy,
             'DPES-Love': self.score_dpes_love,
@@ -1297,6 +1300,155 @@ class ScaleScorer:
             'HARDY_Control': [hardy_cont],
             'HARDY_Total': [hardy_tot]
         })
+
+    def score_madrs(self, columns):
+        """
+        Calculate the total MADRS score based on individual item scores.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names corresponding to the MADRS items, in the correct order.
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing the total MADRS score.
+        """
+        # Ensure the correct number of columns (10 items for MADRS expected)
+        if len(columns) != 10:
+            raise ValueError(f"Expected 10 columns, but got {len(columns)}")
+
+        # Unpack the column names directly as q1, q2, ..., q10
+        (
+            q1,  # Apparent Sadness
+            q2,  # Reported Sadness
+            q3,  # Inner Tension
+            q4,  # Reduced Sleep
+            q5,  # Reduced Appetite
+            q6,  # Concentration Difficulties
+            q7,  # Lassitude
+            q8,  # Inability to Feel
+            q9,  # Pessimistic Thoughts
+            q10  # Suicidal Thoughts
+        ) = columns
+
+        # Calculate the total score as the sum of all items
+        total_score = self.df[[q1, q2, q3, q4, q5, q6, q7, q8, q9, q10]].sum(axis=1)
+
+        # Create a DataFrame to hold the score
+        scores_df = pd.DataFrame({
+            'MADRS_Total_Score': total_score
+        })
+
+        return scores_df
+
+    def score_ham_a(self, columns):
+        """
+        Calculate the total HAM-A score based on individual item scores.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names corresponding to the HAM-A items, in the correct order.
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing the total HAM-A score and severity classification.
+        """
+        # Ensure the correct number of columns (14 items for HAM-A expected)
+        if len(columns) != 14:
+            raise ValueError(f"Expected 14 columns, but got {len(columns)}")
+
+        # Unpack the column names directly as q1, q2, ..., q14
+        (
+            q1,  # Anxious mood
+            q2,  # Tension
+            q3,  # Fears
+            q4,  # Insomnia
+            q5,  # Intellectual
+            q6,  # Depressed mood
+            q7,  # Somatic complaints (muscular)
+            q8,  # Somatic (sensory)
+            q9,  # Cardiovascular symptoms
+            q10,  # Respiratory symptoms
+            q11,  # Gastrointestinal symptoms
+            q12,  # Genitourinary symptoms
+            q13,  # Autonomic symptoms
+            q14  # Behavior at interview
+        ) = columns
+
+        # Calculate the total score as the sum of all items
+        total_score = self.df[[q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12, q13, q14]].sum(axis=1)
+
+        # Classify severity based on the total score
+        severity = total_score.apply(
+            lambda x: 'Mild' if x < 17 else
+            'Mild to Moderate' if 18 <= x <= 24 else
+            'Moderate to Severe' if 25 <= x <= 30 else
+            'Severe'
+        )
+
+        # Create a DataFrame to hold the total score and severity classification
+        scores_df = pd.DataFrame({
+            'HAM-A_Total_Score': total_score,
+            'HAM-A_Severity': severity
+        })
+
+        return scores_df
+
+    def score_stai(self, columns):
+        """
+        Calculate the total scores for the State Anxiety Inventory (SAI) and Trait Anxiety Inventory (TAI).
+
+        Parameters:
+        -----------
+        columns : list
+            A list of 40 column names corresponding to the STAI items, in the correct order.
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing the total scores for SAI and TAI.
+        """
+        # Ensure the correct number of columns (40 items for STAI expected: 20 for SAI, 20 for TAI)
+        if len(columns) != 40:
+            raise ValueError(f"Expected 40 columns, but got {len(columns)}")
+
+        # Unpack the column names directly as q1, q2, ..., q40
+        (
+            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
+            q11, q12, q13, q14, q15, q16, q17, q18, q19, q20,
+            q21, q22, q23, q24, q25, q26, q27, q28, q29, q30,
+            q31, q32, q33, q34, q35, q36, q37, q38, q39, q40
+        ) = columns
+
+        # Define reversed items for SAI and TAI
+        reversed_sai_items = [q1, q2, q5, q8, q10, q11, q15, q16, q19, q20]
+        reversed_tai_items = [q21, q26, q27, q30, q33, q36, q39]
+
+        # Adjust reversed items: Transform `x` to `5 - x` (since the scale is 1 to 4)
+        self.df[reversed_sai_items] = 5 - self.df[reversed_sai_items]
+        self.df[reversed_tai_items] = 5 - self.df[reversed_tai_items]
+
+        # Calculate SAI and TAI total scores
+        sai_columns = [q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
+                       q11, q12, q13, q14, q15, q16, q17, q18, q19, q20]
+        tai_columns = [q21, q22, q23, q24, q25, q26, q27, q28, q29, q30,
+                       q31, q32, q33, q34, q35, q36, q37, q38, q39, q40]
+
+        # Add constant scores for SAI and TAI
+        sai_total = self.df[sai_columns].sum(axis=1) + 50
+        tai_total = self.df[tai_columns].sum(axis=1) + 35
+
+        # Create a DataFrame with the total scores
+        scores_df = pd.DataFrame({
+            'SAI_Total_Score': sai_total,
+            'TAI_Total_Score': tai_total
+        })
+
+        return scores_df
 
 # TODO - add multi dimensional health locus, POMS
 # TODO - add burnout study behavioral surveys

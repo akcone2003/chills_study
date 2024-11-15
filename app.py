@@ -85,7 +85,8 @@ if input_file is not None:
                             "Cloninger_Self_Transcendence_Subscale", "Warwick-Edinburgh_Mental_Wellbeing_Scale_(WEMWBS)",
                             "Cognitive_and_Affective_Mindfulness_Scale_Revised_(CAMS-R)", "Toronto_Mindfulness_Scale",
                             "Copenhagen_Burnout_Inventory_(CBI)", "NEO-PI-3_(Openness_to_Experience)",
-                            "Dispositional_Resilience_\'Hardiness\'_Scale_(HARDY)"]
+                            "Dispositional_Resilience_\'Hardiness\'_Scale_(HARDY)", "Montgomery-Åsberg_Depression_Rating_Scale_(MADRS)",
+                            "Hamilton_Anxiety_Rating_Scale_(HAM-A)", "State-Trait_Anxiety_Inventory_(STAI-State_Form)"]
 
         # User selects the scales they want to include in the analysis
         selected_scales = st.multiselect(

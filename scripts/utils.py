@@ -131,11 +131,13 @@ ORDERED_KEYWORD_SET = {
                      'equally true or false / neutral / can\'t decide',
                      'mostly true / agree', 'definitely true / strongly agree'],
     'agreement_06': {'not true at all': 0, 'a little true': 1, 'quite true': 2, 'completely true': 3},
+    'agreement_07': ['not at all', 'somewhat', 'moderately so', 'very much so'],
     # Intensity Scales
     'intensity_01': ['not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
     'intensity_02': ['not at all', 'somewhat', 'extremely'],
     'intensity_03': ['very slightly or not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
     'intensity_04': ['not at all', 'a little', 'somewhat', 'very much'],
+    'intensity_05': {'not present': 0, 'mild': 1, 'moderate': 2, 'severe': 3, 'very severe': 4},
     # Mood Scales
     'positivity': ['poor', 'fair', 'good', 'very good', 'excellent']
 }
