@@ -949,7 +949,7 @@ class ScaleScorer:
         if len(columns) != 95:
             raise ValueError(f"Expected 95 columns, but got {len(columns)}")
 
-        # Unpack the 90 questions directly
+        # Unpack the 95 questions directly
         (
             q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
             q11, q12, q13, q14, q15, q16, q17, q18, q19, q20,
@@ -1163,16 +1163,55 @@ class ScaleScorer:
         Parameters:
         ----------
         columns : list
-            List of column names for the HARDY questions.
+            List of column values for the HARDY questions (should be numerical values for scoring).
 
         Returns:
         -------
         pd.DataFrame
-            DataFrame with averaged scores for each HARDY subscale and total.
+            DataFrame with corrected scores for each HARDY subscale and total.
         """
-        pass
+        # Ensure that the correct number of columns is provided
+        if len(columns) != 45:
+            raise ValueError(f"Expected 45 columns, but got {len(columns)}")
 
+        # Unpack the questions directly
+        (
+            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
+            q11, q12, q13, q14, q15, q16, q17, q18, q19, q20,
+            q21, q22, q23, q24, q25, q26, q27, q28, q29, q30,
+            q31, q32, q33, q34, q35, q36, q37, q38, q39, q40,
+            q41, q42, q43, q44, q45
+        ) = columns
 
+        # Define forward and reverse lists for each subscale
+        comm_forward = [q1, q8, q17, q25, q39]
+        comm_reverse = [q7, q9, q18, q23, q24, q31, q37, q41, q44, q45]
+
+        chal_forward = [q15, q21, q30, q33, q36]
+        chal_reverse = [q5, q6, q12, q16, q20, q27, q32, q35, q38, q40]
+
+        cont_forward = [q2, q13, q19, q22, q42]
+        cont_reverse = [q3, q4, q10, q11, q14, q26, q28, q29, q34, q43]
+
+        # Reverse scoring function
+        def reverse_score(items):
+            return 5 - pd.Series(items)  # reverse mapping for range 1-4
+
+        # Compute scores for each subscale with correction factor
+        hardy_comm = pd.Series(comm_forward).sum() + reverse_score(comm_reverse).sum() - 15
+        hardy_chal = pd.Series(chal_forward).sum() + reverse_score(chal_reverse).sum() - 15
+        hardy_cont = pd.Series(cont_forward).sum() + reverse_score(cont_reverse).sum() - 15
+
+        # Compute total score with separate correction factor for total score
+        hardy_tot = hardy_comm + hardy_chal + hardy_cont - 45
+
+        # Return as DataFrame for each subscale and total
+        return pd.DataFrame({
+            'HARDY_Communication': [hardy_comm],
+            'HARDY_Challenge': [hardy_chal],
+            'HARDY_Control': [hardy_cont],
+            'HARDY_Total': [hardy_tot]
+        })
 
 # TODO - add multi dimensional health locus, POMS
 # TODO - add burnout study behavioral surveys
