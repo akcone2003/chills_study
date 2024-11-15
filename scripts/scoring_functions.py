@@ -804,10 +804,91 @@ class ScaleScorer:
 
         # Create a DataFrame with all subscale and total scores
         scores_df = pd.DataFrame({
-            'Positive_PANAS': positive,
-            'Negative_PANAS': negative,
-            'PANAS': total_panas
+            'PANAS_Positive': positive,
+            'PANAS_Negative': negative,
+            'PANAS_Total': total_panas
         })
+
+        return scores_df
+
+    def score_panas_x(self, columns):
+        """
+        Calculate subcategory and total PANAS-X scores.
+
+        Parameters:
+        -----------
+        columns : list
+            A list of column names corresponding to the PANAS-X questions, in the correct order.
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing all subcategory scores and the higher-order Positive and Negative Affect scores.
+        """
+        # Ensure the correct number of columns (60 items for PANAS-X expected)
+        if len(columns) != 60:
+            raise ValueError(f"Expected 60 columns, but got {len(columns)}")
+
+        # Unpack columns directly
+        (
+            cheerful, sad, active, angry_at_self,
+            disgusted, calm, guilty, enthusiastic,
+            attentive, afraid, joyful, downhearted,
+            bashful, tired, nervous, sheepish,
+            sluggish, amazed, lonely, distressed,
+            daring, shaky, sleepy, blameworthy,
+            surprised, happy, excited, determined,
+            strong, timid, hostile, frightened,
+            scornful, alone, proud, astonished,
+            relaxed, alert, jittery, interested,
+            irritable, upset, lively, loathing,
+            delighted, angry, ashamed, confident,
+            inspired, bold, at_ease, energetic,
+            fearless, blue, scared, concentrating,
+            disgusted_with_self, shy, drowsy, dissatisfied_with_self
+        ) = columns
+
+        # Define the PANAS-X scales based on question names in the specified order
+        positive_affect = [active, alert, attentive, determined, enthusiastic, excited, inspired, interested, proud, strong]
+        negative_affect = [afraid, scared, nervous, jittery, irritable, hostile, guilty, ashamed, upset, distressed]
+
+        fear = [afraid, scared, frightened, nervous, jittery, shaky]
+        hostility = [angry, hostile, irritable, scornful, disgusted, loathing]
+        guilt = [guilty, ashamed, blameworthy, angry_at_self, disgusted_with_self, dissatisfied_with_self]
+        sadness = [sad, blue, downhearted, alone, lonely]
+        joviality = [happy, joyful, delighted, cheerful, excited, enthusiastic, lively, energetic]
+        self_assurance = [proud, strong, confident, bold, daring, fearless]
+        attentiveness = [alert, attentive, concentrating, determined]
+        shyness = [shy, bashful, sheepish, timid]
+        fatigue = [sleepy, tired, sluggish, drowsy]
+        serenity = [calm, relaxed, at_ease]
+        surprise = [amazed, surprised, astonished]
+
+        # Store scale definitions in a dictionary
+        scales = {
+            'Positive Affect': positive_affect,
+            'Negative Affect': negative_affect,
+            'Fear': fear,
+            'Hostility': hostility,
+            'Guilt': guilt,
+            'Sadness': sadness,
+            'Joviality': joviality,
+            'Self-Assurance': self_assurance,
+            'Attentiveness': attentiveness,
+            'Shyness': shyness,
+            'Fatigue': fatigue,
+            'Serenity': serenity,
+            'Surprise': surprise
+        }
+
+        # Calculate scores for each scale
+        scores = {
+            scale_name: self.df[items].sum(axis=1)
+            for scale_name, items in scales.items()
+        }
+
+        # Create a DataFrame from the scores
+        scores_df = pd.DataFrame(scores)
 
         return scores_df
 
