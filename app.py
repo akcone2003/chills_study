@@ -73,7 +73,7 @@ if input_file is not None:
         st.write("### Map Columns to Scale Questions")
 
         # TODO - Extend this list as more scales are added
-        available_scales = ["MODTAS", "TIPI", "VVIQ", "KAMF", "MAIA", "MAIA-S"
+        available_scales = ["MODTAS", "TIPI", "VVIQ", "KAMF", "MAIA", "MAIA-S",
                             "Ego-Dissolution", "SMES",
                             "Emotional_Breakthrough", "WCS", "Religiosity", "NEO-FFI-3_Five_Factor_Inventory",
                             "Psychological_Insight", "DPES-Joy", "DPES-Love", "DPES-Pride", "DPES-Awe",

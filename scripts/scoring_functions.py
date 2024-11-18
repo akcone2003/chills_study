@@ -87,6 +87,7 @@ class ScaleScorer:
         pd.DataFrame
             DataFrame with calculated scale scores and question columns removed unless mid_processing is True.
         """
+        print("\n[DEBUG] Function: calculate_all_scales entered\n")
         results = []  # Store individual scale DataFrames for concatenation
 
         for scale_name, scoring_fn in self.scoring_functions.items():
@@ -112,11 +113,22 @@ class ScaleScorer:
                 score_result = scoring_fn(matching_columns)
 
                 if isinstance(score_result, pd.DataFrame):
-                    # If the scoring function returns a DataFrame, store it for concatenation
+                    # Drop duplicate columns if they already exist
+                    overlapping_columns = set(self.df.columns) & set(score_result.columns)
+                    if overlapping_columns:
+                        print(f"[INFO] Dropping overlapping columns: {overlapping_columns}")
+                        self.df = self.df.drop(columns=list(overlapping_columns), errors='ignore')
+
+                    # Append the new scores DataFrame
                     results.append(score_result)
                     self.question_columns_to_drop.extend(matching_columns)
                 else:
                     # If it returns a Series, add it directly to the DataFrame
+                    column_name = scale_name
+                    if column_name in self.df.columns:
+                        print(f"[INFO] Dropping existing column: {column_name}")
+                        self.df = self.df.drop(columns=[column_name], errors='ignore')
+
                     self.df[scale_name] = score_result
                     self.question_columns_to_drop.extend(matching_columns)
             else:
@@ -132,6 +144,8 @@ class ScaleScorer:
         if not mid_processing:
             # Drop question columns from the DataFrame unless mid-processing is active
             self.df = self.df.drop(columns=self.question_columns_to_drop, errors='ignore')
+
+        print("\n[DEBUG] Function: calculate_all_scales completed\n")
 
         return self.df
 
@@ -1621,7 +1635,53 @@ class ScaleScorer:
         return pd.DataFrame(result, index=[0])
 
     def score_asi3(self, columns):
-        pass
+        """
+        Scores the Anxiety Sensitivity Index-3 (ASI-3) questionnaire.
+
+        Parameters:
+        ----------
+        responses : list
+            List of responses (0-4) corresponding to the 18 ASI-3 items.
+
+        Returns:
+        -------
+        pd.DataFrame
+            DataFrame with scores for ASI-3 Total and the three subscales (Physical, Cognitive, Social).
+        """
+        print("\n[DEBUG] Entered function score_asi3\n")
+        # Ensure the correct number of responses
+        if len(columns) != 18:
+            raise ValueError(f"Expected 18 responses, but got {len(columns)}")
+
+        # Unpack responses into individual question variables
+        (
+            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
+            q11, q12, q13, q14, q15, q16, q17, q18
+        ) = columns
+
+        # Define subscale item mappings
+        physical_concerns_items = [q4, q12, q8, q7, q15, q3]
+        cognitive_concerns_items = [q14, q18, q10, q16, q2, q5]
+        social_concerns_items = [q9, q6, q11, q13, q17, q1]
+        # Calculate subscale scores row-wise
+        self.df['Physical_Concerns_Score'] = self.df[physical_concerns_items].sum(axis=1)
+        self.df['Cognitive_Concerns_Score'] = self.df[cognitive_concerns_items].sum(axis=1)
+        self.df['Social_Concerns_Score'] = self.df[social_concerns_items].sum(axis=1)
+
+        # Calculate total score row-wise
+        self.df['Total_Score'] = (
+                self.df['Physical_Concerns_Score'] +
+                self.df['Cognitive_Concerns_Score'] +
+                self.df['Social_Concerns_Score']
+        )
+
+        # Return scores as a DataFrame
+        return self.df[[
+            'Total_Score',
+            'Physical_Concerns_Score',
+            'Cognitive_Concerns_Score',
+            'Social_Concerns_Score'
+        ]]
 
 # TODO - add multi dimensional health locus, POMS
 # TODO - add burnout study behavioral surveys

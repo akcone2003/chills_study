@@ -54,6 +54,8 @@ def handle_missing_values(df):
 
     cat_cols = df.select_dtypes(include='object')
     df[cat_cols.columns] = df[cat_cols.columns].fillna('Missing')
+
+    print("\n[DEBUG] Function: handle_missing_values Completed")
     return df
 
 
@@ -78,8 +80,8 @@ def detect_column_types(df):
         unique_values = df[col].nunique()
         total_rows = len(df)
 
-        # Classify as 'free_text' if many unique values
-        if unique_values / total_rows > 0.3:
+        # Check conditions
+        if (unique_values / total_rows > 0.3) and (unique_values > 8):
             column_types['free_text'].append(col)
         else:
             # Check if the column values match any known scale in ORDERED_KEYWORD_SET
@@ -92,6 +94,7 @@ def detect_column_types(df):
             else:
                 column_types['nominal'].append(col)
 
+    print("\n[DEBUG] Function: detect_column_types Completed")
     return column_types
 
 
@@ -130,8 +133,12 @@ def determine_category_order(col_values):
 
         # If best_match is a dictionary, sort col_values based on dictionary values
         if isinstance(best_match, dict):
+            print("\n[DEBUG] Function: determine_category_order Completed")
+
             return sorted(col_values, key=lambda x: best_match.get(x.lower(), float('inf')))
         else:
+            print("\n[DEBUG] Function: determine_category_order Completed")
+
             return sorted(col_values,
                           key=lambda x: best_match.index(x.lower()) if x.lower() in best_match else float('inf'))
 
@@ -144,6 +151,9 @@ def determine_category_order(col_values):
         scores = {val: cosine_similarity([embedding], [ref_max])[0][0] -
                        cosine_similarity([embedding], [ref_min])[0][0]
                   for val, embedding in embeddings.items()}
+
+        print("\n[DEBUG] Function: determine_category_order Completed")
+
         return sorted(col_values, key=lambda x: scores[x])
 
 
@@ -166,24 +176,13 @@ def encode_columns(df, column_types):
     # Step 1: Handle ordinal columns (using predefined or dynamically detected categories)
     for col in column_types['ordinal']:
         try:
-            if col in ORDERED_KEYWORD_SET:
-                # Check if the scale is a dictionary or list
-                if isinstance(ORDERED_KEYWORD_SET[col], dict):
-                    # Directly map the dictionary values
-                    df[col] = df[col].map(ORDERED_KEYWORD_SET[col])
-                else:
-                    # Use predefined list-based categories for known ordinal columns
-                    categories = [ORDERED_KEYWORD_SET[col]]
-                    encoder = OrdinalEncoder(categories=categories)
-                    df[col] = encoder.fit_transform(df[[col]]) + 1  # +1 to avoid 0-based indexing
-            else:
-                # Dynamically determine categories for unseen ordinal columns (assume list)
-                unique_values = df[col].dropna().unique()
-                categories = [determine_category_order(unique_values)]
-                print(f"\n\n[DEBUG] Determined Order for {col}: {categories}")  # Track category order
+            # Dynamically determine categories for unseen ordinal columns (assume list)
+            unique_values = df[col].dropna().unique()
+            categories = [determine_category_order(unique_values)]
+            print(f"\n\n[DEBUG] Determined Order for {col}: {categories}")  # Track category order
 
-                encoder = OrdinalEncoder(categories=categories)
-                df[col] = encoder.fit_transform(df[[col]]) + 1  # +1 to avoid 0-based indexing
+            encoder = OrdinalEncoder(categories=categories)
+            df[col] = encoder.fit_transform(df[[col]]) + 1  # +1 to avoid 0-based indexing
         except Exception as e:
             print(f"[ERROR] Ordinal encoding failed for '{col}': {e}")
 
@@ -198,6 +197,8 @@ def encode_columns(df, column_types):
                 df[col] = le.fit_transform(df[col].astype(str))  # Convert to string to handle non-string categories
         except Exception as e:
             print(f"[ERROR] Nominal encoding failed for '{col}': {e}")
+
+    print("\n[DEBUG] Function: encode_columns Completed")
 
     return df
 
@@ -231,6 +232,9 @@ def sanity_check_chills(df, chills_column, chills_intensity_column, threshold=0)
     """
     inconsistent_rows = (df[chills_column] == 0) & (df[chills_intensity_column] > threshold)
     df['Sanity_Flag'] = inconsistent_rows.astype(int)
+
+    print("\n[DEBUG] Function: sanity_check_chills Completed")
+
     return df
 
 
@@ -259,6 +263,9 @@ def preprocess_data(df):
 
     # Ensure numeric columns are consistent in type (float64)
     df = df.astype({col: 'float64' for col in df.select_dtypes(include=[np.int64, np.float64]).columns})
+
+    print("\n[DEBUG] Function: preprocess_data Completed\n")
+
     return df
 
 
@@ -387,53 +394,144 @@ def process_data_pipeline(input_df, chills_column=None, chills_intensity_column=
     scorer = ScaleScorer(intermediate_df, user_column_mappings)
     final_df = scorer.calculate_all_scales()
 
+    print("\n[DEBUG] Function: process_data_pipeline Completed")
+
     return final_df, intermediate_df, str(qa_report)
 
 
 # Testing Ground
 if __name__ == "__main__":
-    from scipy.stats import kendalltau
 
-    data = {
-        "When was the last time you felt moved or touched?": [
-            "Within the last month", "Within the last year", "Within the last month",
-            "Within the last month", "Within the last 24 hours", "Within the last month",
-            "Within the last month", "Within the last month", "Within the last 24 hours",
-            "Within the last year", "Within the last month", "Within the last month",
-            "Within the last 24 hours", "Within the last month", "Within the last month",
-            "Within the last month", "Within the last month", "Within the last month",
-            "Within the last 24 hours", "Cannot remember", "Within the last 24 hours",
-            "Within the last year", "Within the last year", "Within the last 24 hours",
-            "Within the last year", "Within the last 24 hours", "Cannot remember",
-            "Within the last 24 hours", "Within the last month", "Within the last 24 hours",
-            "Within the last month", "Cannot remember", "Within the last month",
-            "Within the last month", "Within the last month", "Within the last month",
-            "Within the last month", "Within the last month", "Cannot remember",
-            "Within the last year", "Within the last 24 hours", "Within the last 24 hours",
-            "Within the last 24 hours", "Within the last year", "Within the last month",
-            "Within the last year", "Within the last 24 hours", "Within the last month",
-            "Within the last 24 hours", "Within the last month", "Within the last month",
-            "Within the last month", "Within the last month", "Within the last year",
-            "Within the last 24 hours", "Within the last month", "Within the last month",
-            "Within the last 24 hours", "Within the last month", "Within the last 24 hours",
-            "Cannot remember", "Within the last year", "Within the last 24 hours",
-            "Within the last month", "Within the last month", "Within the last month",
-            "Cannot remember", "Within the last month", "Within the last 24 hours",
-            "Within the last month", "Within the last year", "Within the last year",
-            "Within the last month", "Within the last month", "Within the last month",
-            "Within the last month", "Within the last month", "Within the last year",
-            "Within the last month", "Within the last 24 hours", "Within the last month",
-            "Within the last year", "Within the last month", "Within the last month",
-            "Within the last year", "Within the last 24 hours", "Within the last month",
-            "Within the last year", "Within the last month", "Within the last year",
-            "Within the last month", "Within the last month", "Within the last year",
-            "Within the last year", "Within the last month", "Within the last year",
-            "Within the last 24 hours", "Within the last year", "Within the last month"
+    # Test data for the ASI-3 questionnaire
+    test_data = {
+        "It is important for me not to appear nervous.": [
+            "Very little", "Some", "A little", "A little", "Very little", "Some", "A little", "A little",
+            "Very little", "Some", "A little", "A little", "Very little", "Some", "A little", "A little",
+            "Very little", "Some", "A little", "A little", "Very little", "Some", "A little", "A little",
+            "Very little", "Some", "A little", "A little", "Very little", "Some", "A little", "A little"
+        ],
+        "When I cannot keep my mind on a task, I worry that I might be going crazy.": [
+            "Some", "Very much", "Some", "Very little", "Some", "Very much", "Some", "Very little",
+            "Some", "Very much", "Some", "Very little", "Some", "Very much", "Some", "Very little",
+            "Some", "Very much", "Some", "Very little", "Some", "Very much", "Some", "Very little",
+            "Some", "Very much", "Some", "Very little", "Some", "Very much", "Some", "Very little"
+        ],
+        "It scares me when my heart beats rapidly.": [
+            "A little", "Much", "Some", "Very little", "A little", "Much", "Some", "Very little",
+            "A little", "Much", "Some", "Very little", "A little", "Much", "Some", "Very little",
+            "A little", "Much", "Some", "Very little", "A little", "Much", "Some", "Very little",
+            "A little", "Much", "Some", "Very little", "A little", "Much", "Some", "Very little"
+        ],
+        "When my stomach is upset, I worry that I might be seriously ill.": [
+            "Very much", "A little", "Some", "Much", "Very much", "A little", "Some", "Much",
+            "Very much", "A little", "Some", "Much", "Very much", "A little", "Some", "Much",
+            "Very much", "A little", "Some", "Much", "Very much", "A little", "Some", "Much",
+            "Very much", "A little", "Some", "Much", "Very much", "A little", "Some", "Much"
+        ],
+        "It scares me when I am unable to keep my mind on a task.": [
+            "Some", "Some", "Very much", "A little", "Some", "Some", "Very much", "A little",
+            "Some", "Some", "Very much", "A little", "Some", "Some", "Very much", "A little",
+            "Some", "Some", "Very much", "A little", "Some", "Some", "Very much", "A little",
+            "Some", "Some", "Very much", "A little", "Some", "Some", "Very much", "A little"
+        ],
+        "When I tremble in the presence of others, I fear what people might think of me.": [
+            "Much", "Some", "Very little", "Some", "Much", "Some", "Very little", "Some",
+            "Much", "Some", "Very little", "Some", "Much", "Some", "Very little", "Some",
+            "Much", "Some", "Very little", "Some", "Much", "Some", "Very little", "Some",
+            "Much", "Some", "Very little", "Some", "Much", "Some", "Very little", "Some"
+        ],
+        "When my chest feels tight, I get scared that I won't be able to breathe properly.": [
+            "Very much", "Much", "A little", "Some", "Very much", "Much", "A little", "Some",
+            "Very much", "Much", "A little", "Some", "Very much", "Much", "A little", "Some",
+            "Very much", "Much", "A little", "Some", "Very much", "Much", "A little", "Some",
+            "Very much", "Much", "A little", "Some", "Very much", "Much", "A little", "Some"
+        ],
+        "When I feel pain in my chest, I worry that I'm going to have a heart attack.": [
+            "Some", "Very much", "Much", "A little", "Some", "Very much", "Much", "A little",
+            "Some", "Very much", "Much", "A little", "Some", "Very much", "Much", "A little",
+            "Some", "Very much", "Much", "A little", "Some", "Very much", "Much", "A little",
+            "Some", "Very much", "Much", "A little", "Some", "Very much", "Much", "A little"
+        ],
+        "I worry that other people will notice my anxiety.": [
+            "Much", "Some", "A little", "Very little", "Much", "Some", "A little", "Very little",
+            "Much", "Some", "A little", "Very little", "Much", "Some", "A little", "Very little",
+            "Much", "Some", "A little", "Very little", "Much", "Some", "A little", "Very little",
+            "Much", "Some", "A little", "Very little", "Much", "Some", "A little", "Very little"
+        ],
+        "When I feel 'spacey' or spaced out I worry that I may be mentally ill.": [
+            "Very little", "Much", "Some", "Some", "Very little", "Much", "Some", "Some",
+            "Very little", "Much", "Some", "Some", "Very little", "Much", "Some", "Some",
+            "Very little", "Much", "Some", "Some", "Very little", "Much", "Some", "Some",
+            "Very little", "Much", "Some", "Some", "Very little", "Much", "Some", "Some"
+        ],
+        "It scares me when I blush in front of people.": [
+            "A little", "Some", "Very little", "Much", "A little", "Some", "Very little", "Much",
+            "A little", "Some", "Very little", "Much", "A little", "Some", "Very little", "Much",
+            "A little", "Some", "Very little", "Much", "A little", "Some", "Very little", "Much",
+            "A little", "Some", "Very little", "Much", "A little", "Some", "Very little", "Much"
+        ],
+        "When I notice my heart skipping a beat, I worry that there is something seriously wrong with me.": [
+            "Some", "Very little", "Much", "A little", "Some", "Very little", "Much", "A little",
+            "Some", "Very little", "Much", "A little", "Some", "Very little", "Much", "A little",
+            "Some", "Very little", "Much", "A little", "Some", "Very little", "Much", "A little",
+            "Some", "Very little", "Much", "A little", "Some", "Very little", "Much", "A little"
+        ],
+        "When I begin to sweat in a social situation, I fear people will think negatively of me.": [
+            "Very much", "Some", "Some", "A little", "Very much", "Some", "Some", "A little",
+            "Very much", "Some", "Some", "A little", "Very much", "Some", "Some", "A little",
+            "Very much", "Some", "Some", "A little", "Very much", "Some", "Some", "A little",
+            "Very much", "Some", "Some", "A little", "Very much", "Some", "Some", "A little"
+        ],
+        "When my thoughts seem to speed up, I worry that I might be going crazy.": [
+            "Some", "Much", "Very much", "Some", "Some", "Much", "Very much", "Some",
+            "Some", "Much", "Very much", "Some", "Some", "Much", "Very much", "Some",
+            "Some", "Much", "Very much", "Some", "Some", "Much", "Very much", "Some",
+            "Some", "Much", "Very much", "Some", "Some", "Much", "Very much", "Some"
+        ],
+        "When my throat feels tight, I worry that I could choke to death.": [
+            "A little", "Very much", "Much", "Very little", "A little", "Very much", "Much", "Very little",
+            "A little", "Very much", "Much", "Very little", "A little", "Very much", "Much", "Very little",
+            "A little", "Very much", "Much", "Very little", "A little", "Very much", "Much", "Very little",
+            "A little", "Very much", "Much", "Very little", "A little", "Very much", "Much", "Very little"
+        ],
+        "When I have trouble thinking clearly, I worry that there is something wrong with me.": [
+            "Very much", "Some", "A little", "Some", "Very much", "Some", "A little", "Some",
+            "Very much", "Some", "A little", "Some", "Very much", "Some", "A little", "Some",
+            "Very much", "Some", "A little", "Some", "Very much", "Some", "A little", "Some",
+            "Very much", "Some", "A little", "Some", "Very much", "Some", "A little", "Some"
+        ],
+        "I think it would be horrible for me to faint in public.": [
+            "Some", "Some", "Very much", "Much", "Some", "Some", "Very much", "Much",
+            "Some", "Some", "Very much", "Much", "Some", "Some", "Very much", "Much",
+            "Some", "Some", "Very much", "Much", "Some", "Some", "Very much", "Much",
+            "Some", "Some", "Very much", "Much", "Some", "Some", "Very much", "Much"
+        ],
+        "When my mind goes blank, I worry there is something terribly wrong with me.": [
+            "A little", "Very little", "Some", "Much", "A little", "Very little", "Some", "Much",
+            "A little", "Very little", "Some", "Much", "A little", "Very little", "Some", "Much",
+            "A little", "Very little", "Some", "Much", "A little", "Very little", "Some", "Much",
+            "A little", "Very little", "Some", "Much", "A little", "Very little", "Some", "Much"
         ]
     }
 
-    df_test = pd.DataFrame(data)
+    # Convert the test data to a DataFrame
+    test_df = pd.DataFrame(test_data)
 
-    encoded_df = preprocess_data(df_test)
+    print(test_df.head())
 
-    print("[TEST] Encoded DataFrame:\n", encoded_df)
+    # User-defined column mappings
+    user_column_mappings = test_df.columns
+
+    # Run the pipeline
+    final_df, intermediate_df, qa_report = process_data_pipeline(
+        input_df=test_df,  # Input DataFrame
+        chills_column=None,  # No chills columns provided
+        chills_intensity_column=None,
+        intensity_threshold=0,  # Not used here
+        user_column_mappings=user_column_mappings  # Response mappings for scoring
+    )
+
+    # Print outputs
+    print("Final DataFrame:\n", final_df)
+    print("\nIntermediate DataFrame:\n", intermediate_df)
+    print("\nQA Report:\n", qa_report)
