@@ -75,6 +75,7 @@ class ScaleScorer:
             # Misc
             'Karolinska_Sleepiness_Scale_(KSS)': self.score_kss,
             'Wong-Baker_Pain_Scale': self.score_wb_pain,
+            'Overall_Anxiety_Severity_and_Impairment_Scale_(OASIS)': self.score_oasis
         }
 
     def calculate_all_scales(self, mid_processing=False):
@@ -1707,17 +1708,64 @@ class ScaleScorer:
         Returns:
         -------
         pd.DataFrame
-            DataFrame containing the KSS score and a description of the sleepiness level.
+            DataFrame containing the KSS score.
         """
         kss_score = self.df[column]
 
         return kss_score
 
     def score_wb_pain(self, column):
-        pass
+        """
+        Score the Wong-Baker Pain Scale.
 
+        Parameters:
+        ----------
+        column : str
+            The column name containing the WB Pain scores.
 
+        Returns:
+        -------
+        pd.DataFrame
+            DataFrame containing the WB Pain score.
+        """
+        pain_score = self.df[column]
 
+        return pain_score
+
+    def score_oasis(self, columns):
+        """
+        Scores the Overall Anxiety Severity and Impairment Scale (OASIS).
+
+        Parameters:
+        ----------
+        columns : list
+            List of column names corresponding to the 5 OASIS items.
+
+        Returns:
+        -------
+        pd.DataFrame
+            DataFrame containing the OASIS total score and severity classification.
+        """
+        # Ensure the correct number of columns
+        if len(columns) != 5:
+            raise ValueError(f"Expected 5 columns, but got {len(columns)}")
+
+        # Calculate the total OASIS score
+        total_score = self.df[columns].sum(axis=1)
+
+        # Severity classification based on the total score
+        severity = total_score.apply(
+            lambda x: "Minimal" if x < 8 else
+            "Elevated"
+        )
+
+        # Create a DataFrame to store the results
+        result_df = pd.DataFrame({
+            'OASIS_Total_Score': total_score,
+            'OASIS_Severity': severity
+        })
+
+        return result_df
 
 # TODO - add multi dimensional health locus, POMS
 # TODO - add burnout study behavioral surveys
