@@ -75,7 +75,10 @@ class ScaleScorer:
             # Misc
             'Karolinska_Sleepiness_Scale_(KSS)': self.score_kss,
             'Wong-Baker_Pain_Scale': self.score_wb_pain,
-            'Overall_Anxiety_Severity_and_Impairment_Scale_(OASIS)': self.score_oasis
+            'Overall_Anxiety_Severity_and_Impairment_Scale_(OASIS)': self.score_oasis,
+            'Sheehan_Disability_Scale_(SDS)': self.score_sds,
+            'Brief_Symptom_Inventory-18_(BSI-18)': self.score_bsi_18,
+            'Adverse_Childhood_Experience_(ACE)': self.score_ace,
         }
 
     def calculate_all_scales(self, mid_processing=False):
@@ -1766,6 +1769,114 @@ class ScaleScorer:
         })
 
         return result_df
+
+    def score_phq9(self, columns):
+        """
+        Scores the Patient Health Questionnaire (PHQ-9).
+
+        Parameters:
+        ----------
+        columns : list
+            List of column names corresponding to the 9 PHQ-9 items.
+
+        Returns:
+        -------
+        pd.DataFrame
+            DataFrame containing the PHQ-9 total score and severity classification.
+        """
+        # Ensure the correct number of columns
+        if len(columns) != 9:
+            raise ValueError(f"Expected 9 columns, but got {len(columns)}")
+
+        # Calculate the total PHQ-9 score
+        total_score = self.df[columns].sum(axis=1)
+
+        # Classify severity based on the total score
+        severity = total_score.apply(
+            lambda x: 'Minimal depression' if 0 <= x <= 4 else
+            'Mild depression' if 5 <= x <= 9 else
+            'Moderate depression' if 10 <= x <= 14 else
+            'Moderately severe depression' if 15 <= x <= 19 else
+            'Severe depression'
+        )
+
+        # Create a DataFrame to store the results
+        result_df = pd.DataFrame({
+            'PHQ9_Total_Score': total_score,
+            'PHQ9_Severity': severity
+        })
+
+        return result_df
+
+    def score_sds(self, columns):
+        """
+        Scores the Sheehan Disability Scale (SDS).
+
+        Parameters:
+        ----------
+        columns : list
+            List of column names corresponding to the 3 SDS items: work/school, social life, and family life.
+
+        Returns:
+        -------
+        pd.DataFrame
+            DataFrame containing the total SDS score and flags for significant functional impairment in each domain.
+        """
+        # Ensure the correct number of columns
+        if len(columns) != 3:
+            raise ValueError(f"Expected 3 columns, but got {len(columns)}")
+
+        # Extract the individual columns
+        work_school = self.df[columns[0]]
+        social_life = self.df[columns[1]]
+        family_life = self.df[columns[2]]
+
+        # Calculate the total SDS score
+        total_score = work_school + social_life + family_life
+
+        # Flag significant functional impairment (score ≥ 5 in any domain)
+        work_school_flag = work_school.apply(lambda x: 1 if x >= 5 else 0)
+        social_life_flag = social_life.apply(lambda x: 1 if x >= 5 else 0)
+        family_life_flag = family_life.apply(lambda x: 1 if x >= 5 else 0)
+
+        # Combine the results into a DataFrame
+        result_df = pd.DataFrame({
+            'SDS_Work_School': work_school,
+            'SDS_Social_Life': social_life,
+            'SDS_Family_Life': family_life,
+            'SDS_Total_Score': total_score,
+            'SDS_Work_School_Impairment': work_school_flag,
+            'SDS_Social_Life_Impairment': social_life_flag,
+            'SDS_Family_Life_Impairment': family_life_flag
+        })
+
+        return result_df
+
+    def score_bsi_18(self, columns):
+        # TODO
+        pass
+
+    def score_ace(self, columns):
+        """
+        Score the Adverse Childhood Experiences (ACE) Questionnaire.
+
+        Parameters:
+        ----------
+        columns : list
+            List of 10 column names corresponding to the ACE questionnaire items.
+
+        Returns:
+        -------
+        pd.DataFrame
+            DataFrame containing the ACE total score.
+       """
+        # Ensure the correct number of columns
+        if len(columns) != 10:
+            raise ValueError(f"Expected 10 columns, but got {len(columns)}")
+
+        ace_score = self.df[columns].sum(axis=1)
+
+        return ace_score
 
 # TODO - add multi dimensional health locus, POMS
 # TODO - add burnout study behavioral surveys

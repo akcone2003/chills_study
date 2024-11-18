@@ -89,7 +89,7 @@ if input_file is not None:
                             "Hamilton_Anxiety_Rating_Scale_(HAM-A)", "State-Trait_Anxiety_Inventory_(STAI-State_Form)",
                             "5-Dimensional_Altered States_of_Consciousness_Questionnaire_(5DASC)", "Anxiety_Sensitivity_Index-3_(ASI-3_ASI-R)",
                             "Karolinska_Sleepiness_Scale_(KSS)", "Wong-Baker_Pain_Scale", "Overall_Anxiety_Severity_and_Impairment_Scale_(OASIS)",
-                            ]
+                            "PHQ-9", "Sheehan_Disability_Scale_(SDS)", "Brief_Symptom_Inventory-18_(BSI-18)"]
 
         # User selects the scales they want to include in the analysis
         selected_scales = st.multiselect(

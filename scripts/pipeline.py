@@ -190,7 +190,7 @@ def encode_columns(df, column_types):
     for col in column_types['nominal']:
         try:
             if df[col].nunique() == 2:  # Handle binary columns explicitly
-                df[col] = df[col].map({'No': 0, 'Yes': 1})  # Adjust based on actual values
+                df[col] = df[col].map({'no': 0, 'yes': 1})  # Adjust based on actual values
             else:
                 # Use LabelEncoder for other nominal columns
                 le = LabelEncoder()
