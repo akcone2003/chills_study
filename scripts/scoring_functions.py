@@ -1709,7 +1709,7 @@ class ScaleScorer:
         pd.DataFrame
             DataFrame containing the KSS score and a description of the sleepiness level.
         """
-        kss_score = self.df[columns]
+        kss_score = self.df[column]
 
         return kss_score
 
