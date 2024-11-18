@@ -72,6 +72,8 @@ class ScaleScorer:
             # Resilience, Flexibility, Burnout
             'Copenhagen_Burnout_Inventory_(CBI)': self.score_cbi,
             'Dispositional_Resilience_\'Hardiness\'_Scale_(HARDY)': self.score_hardy,
+            # Misc
+            'Karolinska_Sleepiness_Scale_(KSS)': self.score_kss,
         }
 
     def calculate_all_scales(self, mid_processing=False):
@@ -1691,6 +1693,11 @@ class ScaleScorer:
             'Cognitive_Concerns_Score',
             'Social_Concerns_Score'
         ]]
+
+    def score_kss(self, columns):
+        pass
+
+
 
 
 

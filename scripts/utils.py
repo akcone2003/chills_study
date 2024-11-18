@@ -119,7 +119,6 @@ ORDERED_KEYWORD_SET = {
     'frequency_08': {'always': 100, 'often': 75, 'sometimes': 50, 'seldom': 25, 'never/almost never': 0},
     'frequency_09': {'to a very high degree': 100, 'to a high degree': 75,
                      'somewhat': 50, 'to a low degree': 25, 'to a very low degree': 0},
-    'maia': {'never': 0, 'rarely': 1, 'sometimes': 2, 'often': 3, 'very often': 4, 'always': 5},
     # Agreement Scales
     'agreement_01': ['strongly disagree', 'disagree', 'neither agree nor disagree', 'agree', 'strongly agree'],
     'agreement_02': ['strongly disagree', 'disagree', 'somewhat disagree', 'neutral', 'somewhat agree', 'agree',
@@ -141,7 +140,14 @@ ORDERED_KEYWORD_SET = {
     'intensity_04': ['not at all', 'a little', 'somewhat', 'very much'],
     'intensity_05': {'not present': 0, 'mild': 1, 'moderate': 2, 'severe': 3, 'very severe': 4},
     # Mood Scales
-    'positivity': ['poor', 'fair', 'good', 'very good', 'excellent']
+    'positivity': ['poor', 'fair', 'good', 'very good', 'excellent'],
+    # Specialty scales
+    # Only converted if the raw data has strings, otherwise it's left alone
+    'maia': {'never': 0, 'rarely': 1, 'sometimes': 2, 'often': 3, 'very often': 4, 'always': 5},
+    'KSS': ['extremely alert', 'very alert', 'alert', 'rather alert',
+            'neither alert nor sleepy', 'some signs of sleepiness', 'sleepy, but no effort to keep awake',
+            'sleepy, but some great effort to keep awake', 'very sleepy, great effort to keep awake, fighting sleep',
+            'extremely sleepy, can\'t keep awake']
 }
 
 # TODO - add more scales as you encounter them
