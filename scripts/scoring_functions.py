@@ -74,6 +74,7 @@ class ScaleScorer:
             'Dispositional_Resilience_\'Hardiness\'_Scale_(HARDY)': self.score_hardy,
             # Misc
             'Karolinska_Sleepiness_Scale_(KSS)': self.score_kss,
+            'Wong-Baker_Pain_Scale': self.score_wb_pain,
         }
 
     def calculate_all_scales(self, mid_processing=False):
@@ -1694,9 +1695,26 @@ class ScaleScorer:
             'Social_Concerns_Score'
         ]]
 
-    def score_kss(self, columns):
-        pass
+    def score_kss(self, column):
+        """
+        Score the Karolinska Sleepiness Scale (KSS).
 
+        Parameters:
+        ----------
+        column : str
+            The column name containing the KSS scores.
+
+        Returns:
+        -------
+        pd.DataFrame
+            DataFrame containing the KSS score and a description of the sleepiness level.
+        """
+        kss_score = self.df[columns]
+
+        return kss_score
+
+    def score_wb_pain(self, column):
+        pass
 
 
 
