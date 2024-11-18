@@ -1,5 +1,6 @@
 from scripts.utils import normalize_column_name, get_score_from_mapping, ORDERED_KEYWORD_SET
 import pandas as pd
+import numpy as np
 
 
 class ScaleScorer:
@@ -1360,10 +1361,16 @@ class ScaleScorer:
             min_val = 1 if max(items) == 4 else 0
             return max_val + min_val - pd.Series(items)
 
-        # Compute scores for each subscale with correction factor
-        hardy_comm = pd.Series(comm_forward).sum() + reverse_score(comm_reverse).sum() - 15
-        hardy_chal = pd.Series(chal_forward).sum() + reverse_score(chal_reverse).sum() - 15
-        hardy_cont = pd.Series(cont_forward).sum() + reverse_score(cont_reverse).sum() - 15
+            # Compute subscale scores
+        hardy_comm = (
+                self.df[comm_forward].sum(axis=1) + reverse_score(comm_reverse, self.df).sum(axis=1) - 15
+        )
+        hardy_chal = (
+                self.df[chal_forward].sum(axis=1) + reverse_score(chal_reverse, self.df).sum(axis=1) - 15
+        )
+        hardy_cont = (
+                self.df[cont_forward].sum(axis=1) + reverse_score(cont_reverse, self.df).sum(axis=1) - 15
+        )
 
         # Compute total score with separate correction factor for total score
         hardy_tot = hardy_comm + hardy_chal + hardy_cont - 45
@@ -1457,13 +1464,14 @@ class ScaleScorer:
         # Calculate the total score as the sum of all items
         total_score = self.df[[q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12, q13, q14]].sum(axis=1)
 
-        # Classify severity based on the total score
-        severity = total_score.apply(
-            lambda x: 'Mild' if x < 17 else
-            'Mild to Moderate' if 18 <= x <= 24 else
-            'Moderate to Severe' if 25 <= x <= 30 else
-            'Severe'
-        )
+        conditions = [
+            total_score < 17,
+            (total_score >= 17) & (total_score <= 24),
+            (total_score >= 25) & (total_score <= 30),
+            total_score > 30
+        ]
+        choices = ['Mild', 'Mild to Moderate', 'Moderate to Severe', 'Severe']
+        severity = np.select(conditions, choices, default='Unknown')
 
         # Create a DataFrame to hold the total score and severity classification
         scores_df = pd.DataFrame({
@@ -1616,23 +1624,24 @@ class ScaleScorer:
             }
         }
 
-        # Calculate subscale scores
+        # Calculate subscale scores row-wise
         subscale_scores = {}
         for subscale, items in subscale_items.items():
-            subscale_scores[subscale] = sum(items) / len(items)  # Mean score
+            subscale_scores[subscale] = self.df[items].mean(axis=1)  # Mean score for each row
 
         # Calculate main scale scores (sum of subscale scores)
         main_scale_scores = {}
         for scale, subscales in main_scale_subscales.items():
             subscale_scores_in_scale = []
             for subscale_name, items in subscales.items():
-                score = sum(items) / len(items)  # Mean score for subscale
-                subscale_scores_in_scale.append(score)
-            main_scale_scores[scale] = sum(subscale_scores_in_scale)  # Sum of subscales
+                subscale_scores_in_scale.append(self.df[items].mean(axis=1))  # Mean score for subscale
+            main_scale_scores[scale] = sum(subscale_scores_in_scale)  # Sum of subscale scores for each row
 
-        # Combine scores into a single DataFrame
+        # Combine subscale and main scale scores
         result = {**subscale_scores, **main_scale_scores}
-        return pd.DataFrame(result, index=[0])
+
+        # Return scores as a DataFrame
+        return pd.DataFrame(result)
 
     def score_asi3(self, columns):
         """
