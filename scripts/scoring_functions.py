@@ -64,6 +64,8 @@ class ScaleScorer:
             'Five_Facet_Mindfulness_Questionnaire_(FFMQ)': self.score_ffmq,
             'Positive_Negative_Affect_Schedule_(PANAS)': self.score_panas,
             'PANAS_X': self.score_panas_x,
+            '5-Dimensional_Altered States_of_Consciousness_Questionnaire_(5DASC)': self.score_5dasc,
+            'Anxiety_Sensitivity_Index-3_(ASI-3_ASI-R)': self.score_asi3,
             # Outcome Measures
             'Toronto_Mindfulness_Scale': self.score_toronto_mind_scale,
             # Resilience, Flexibility, Burnout
@@ -1531,6 +1533,95 @@ class ScaleScorer:
             raise ValueError("Expected either 20 or 40 columns for scoring.")
 
         return scores_df
+
+    def score_5dasc(self, columns):
+        """
+        Scores the 5D-ASC questionnaire, including subscales and main scales.
+
+        Parameters:
+        ----------
+        columns : list
+            List of column names corresponding to the 5D-ASC questions (Q1 to Q94).
+
+        Returns:
+        -------
+        pd.DataFrame
+            DataFrame with scores for all subscales and main scales.
+        """
+        # Ensure the correct number of columns
+        if len(columns) != 94:
+            raise ValueError(f"Expected 94 columns, but got {len(columns)}")
+
+        # Unpack the question columns
+        (
+            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12, q13, q14, q15, q16,
+            q17, q18, q19, q20, q21, q22, q23, q24, q25, q26, q27, q28, q29, q30,
+            q31, q32, q33, q34, q35, q36, q37, q38, q39, q40, q41, q42, q43, q44,
+            q45, q46, q47, q48, q49, q50, q51, q52, q53, q54, q55, q56, q57, q58,
+            q59, q60, q61, q62, q63, q64, q65, q66, q67, q68, q69, q70, q71, q72,
+            q73, q74, q75, q76, q77, q78, q79, q80, q81, q82, q83, q84, q85, q86,
+            q87, q88, q89, q90, q91, q92, q93, q94
+        ) = columns
+
+        # Define subscale items
+        subscale_items = {
+            'Experience_of_Unity': [q18, q34, q41, q42, q52],
+            'Spiritual_Experience': [q9, q81, q94],
+            'Blissful_State': [q12, q86, q91],
+            'Insightfulness': [q50, q69, q77],
+            'Disembodiment': [q26, q62, q63],
+            'Impaired_Control_and_Cognition': [q8, q27, q38, q47, q64, q67, q78],
+            'Anxiety': [q32, q43, q44, q46, q56, q89],
+            'Complex_Imagery': [q39, q72, q82],
+            'Elementary_Imagery': [q14, q22, q33],
+            'Audio-Visual_Synesthesiae': [q20, q23, q75],
+            'Changed_Meaning_of_Percepts': [q28, q31, q54]
+        }
+
+        # Define main scale subscales
+        main_scale_subscales = {
+            'Oceanic_Boundlessness_(OB)': {
+                'Positive_Derealization': [q1, q9, q18, q34, q57, q71, q87],
+                'Positive_Depersonalization': [q16, q26, q62, q63],
+                'Altered_Perception_of_Time_and_Space': [q36, q41, q52]
+            },
+            'Anxious_Ego_Dissolution_(AED)': {
+                'Negative_Derealization': [q21, q43, q44, q46, q64, q85],
+                'Thought_Disorder': [q27, q38, q67, q88],
+                'Paranoid_Ideation': [q6, q56, q89]
+            },
+            'Visual_Restructuralization_(VR)': {
+                'Simple_Hallucinations': [q14, q22, q33, q83],
+                'Complex_Hallucinations': [q7, q39]
+            },
+            'Auditory_Alterations': {  # Items directly
+                'Auditory_Alterations': [q10, q11, q15, q24, q47, q60]
+            },
+            'Reduction_of_Vigilance': {  # Items directly
+                'Reduction_of_Vigilance': [q3, q5, q25, q30, q40, q61, q66, q76]
+            }
+        }
+
+        # Calculate subscale scores
+        subscale_scores = {}
+        for subscale, items in subscale_items.items():
+            subscale_scores[subscale] = sum(items) / len(items)  # Mean score
+
+        # Calculate main scale scores (sum of subscale scores)
+        main_scale_scores = {}
+        for scale, subscales in main_scale_subscales.items():
+            subscale_scores_in_scale = []
+            for subscale_name, items in subscales.items():
+                score = sum(items) / len(items)  # Mean score for subscale
+                subscale_scores_in_scale.append(score)
+            main_scale_scores[scale] = sum(subscale_scores_in_scale)  # Sum of subscales
+
+        # Combine scores into a single DataFrame
+        result = {**subscale_scores, **main_scale_scores}
+        return pd.DataFrame(result, index=[0])
+
+    def score_asi3(self, columns):
+        pass
 
 # TODO - add multi dimensional health locus, POMS
 # TODO - add burnout study behavioral surveys

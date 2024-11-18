@@ -133,6 +133,7 @@ ORDERED_KEYWORD_SET = {
                      'mostly true / agree', 'definitely true / strongly agree'],
     'agreement_06': {'not true at all': 0, 'a little true': 1, 'quite true': 2, 'completely true': 3},
     'agreement_07': ['not at all', 'somewhat', 'moderately so', 'very much so'],
+    'agreement_08': {'very little': 0, 'a little': 1, 'some': 2, 'much': 3, 'very much': 4},
     # Intensity Scales
     'intensity_01': ['not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
     'intensity_02': ['not at all', 'somewhat', 'extremely'],

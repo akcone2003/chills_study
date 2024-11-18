@@ -86,7 +86,8 @@ if input_file is not None:
                             "Cognitive_and_Affective_Mindfulness_Scale_Revised_(CAMS-R)", "Toronto_Mindfulness_Scale",
                             "Copenhagen_Burnout_Inventory_(CBI)", "NEO-PI-3_(Openness_to_Experience)",
                             "Dispositional_Resilience_\'Hardiness\'_Scale_(HARDY)", "Montgomery-Åsberg_Depression_Rating_Scale_(MADRS)",
-                            "Hamilton_Anxiety_Rating_Scale_(HAM-A)", "State-Trait_Anxiety_Inventory_(STAI-State_Form)"]
+                            "Hamilton_Anxiety_Rating_Scale_(HAM-A)", "State-Trait_Anxiety_Inventory_(STAI-State_Form)",
+                            "5-Dimensional_Altered States_of_Consciousness_Questionnaire_(5DASC)", "Anxiety_Sensitivity_Index-3_(ASI-3_ASI-R)"]
 
         # User selects the scales they want to include in the analysis
         selected_scales = st.multiselect(
