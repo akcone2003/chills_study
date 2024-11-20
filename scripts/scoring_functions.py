@@ -280,7 +280,7 @@ class ScaleScorer:
 
         return scores_df
 
-    def score_maia_s(self, df, columns):
+    def score_maia_s(self, columns):
         """
         Calculate the subscale scores for the MAIA-S using the MAIA scoring function.
 
@@ -297,7 +297,7 @@ class ScaleScorer:
             DataFrame containing the subscale scores for MAIA-S.
         """
         # Simply call score_maia with the same columns
-        return self.score_maia(df, columns)
+        return self.score_maia(columns)
 
 
 
