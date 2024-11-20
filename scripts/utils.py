@@ -35,8 +35,7 @@ def normalize_column_name(df_or_name):
         return df_or_name
     elif isinstance(df_or_name, str):
         return _normalize(df_or_name)
-    else:
-        raise TypeError("Input must be a DataFrame or a column name string.")
+
 
 
 def add_behavioral_score_prefix(df, behavioral_score_mappings):
