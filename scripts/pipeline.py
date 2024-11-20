@@ -34,29 +34,29 @@ def get_embedding(text):
     return embedding
 
 
-def handle_missing_values(df):
-    """
-    Fill missing values in numerical columns with their mean and in
-    categorical columns with 'Missing'.
-
-    Parameters:
-    ----------
-    df : pd.DataFrame
-        The input DataFrame with potential missing values.
-
-    Returns:
-    -------
-    pd.DataFrame
-        DataFrame with filled missing values.
-    """
-    num_cols = df.select_dtypes(include=np.number)
-    df[num_cols.columns] = df[num_cols.columns].fillna(num_cols.mean())
-
-    cat_cols = df.select_dtypes(include='object')
-    df[cat_cols.columns] = df[cat_cols.columns].fillna('Missing')
-
-    print("\n[DEBUG] Function: handle_missing_values Completed")
-    return df
+# def handle_missing_values(df):
+#     """
+#     Fill missing values in numerical columns with their mean and in
+#     categorical columns with 'Missing'.
+#
+#     Parameters:
+#     ----------
+#     df : pd.DataFrame
+#         The input DataFrame with potential missing values.
+#
+#     Returns:
+#     -------
+#     pd.DataFrame
+#         DataFrame with filled missing values.
+#     """
+#     num_cols = df.select_dtypes(include=np.number)
+#     df[num_cols.columns] = df[num_cols.columns].fillna(num_cols.mean())
+#
+#     cat_cols = df.select_dtypes(include='object')
+#     df[cat_cols.columns] = df[cat_cols.columns].fillna('Missing')
+#
+#     print("\n[DEBUG] Function: handle_missing_values Completed")
+#     return df
 
 
 def detect_column_types(df):
@@ -296,11 +296,11 @@ def generate_qa_report(df):
 
     outliers_report = {}
     num_cols = df.select_dtypes(include=np.number)
-    for col in num_cols:
-        outliers_count = detect_outliers(df, col)
-        if outliers_count > 0:
-            outliers_report[col] = outliers_count
-    report['outliers'] = outliers_report
+    # for col in num_cols:
+    #     outliers_count = detect_outliers(df, col)
+    #     if outliers_count > 0:
+    #         outliers_report[col] = outliers_count
+    # report['outliers'] = outliers_report
 
     rows_with_many_missing = df[df.isnull().sum(axis=1) >= 3]
     report['rows_with_3_or_more_missing_values'] = {
@@ -311,35 +311,35 @@ def generate_qa_report(df):
     return report
 
 
-def detect_outliers(df, column_name, threshold=3):
-    """
-    Detect outliers in a numerical column using Z-scores.
-
-    This function calculates Z-scores for each value in a specified column.
-    Outliers are defined as values with an absolute Z-score greater than the
-    given threshold.
-
-    Parameters:
-    ----------
-    df : pd.DataFrame
-        The DataFrame containing the column to analyze.
-    column_name : str
-        The name of the numerical column to check for outliers.
-    threshold : int, optional
-        The Z-score threshold to identify outliers. Default is 3.
-
-    Returns:
-    -------
-    int
-        The number of outliers found in the specified column.
-    """
-    col_data = df[[column_name]].dropna()
-    if col_data.std().iloc[0] == 0:
-        return 0
-
-    scaler = StandardScaler()
-    z_scores = scaler.fit_transform(col_data)
-    return (np.abs(z_scores) > threshold).sum()
+# def detect_outliers(df, column_name, threshold=3):
+#     """
+#     Detect outliers in a numerical column using Z-scores.
+#
+#     This function calculates Z-scores for each value in a specified column.
+#     Outliers are defined as values with an absolute Z-score greater than the
+#     given threshold.
+#
+#     Parameters:
+#     ----------
+#     df : pd.DataFrame
+#         The DataFrame containing the column to analyze.
+#     column_name : str
+#         The name of the numerical column to check for outliers.
+#     threshold : int, optional
+#         The Z-score threshold to identify outliers. Default is 3.
+#
+#     Returns:
+#     -------
+#     int
+#         The number of outliers found in the specified column.
+#     """
+#     col_data = df[[column_name]].dropna()
+#     if col_data.std().iloc[0] == 0:
+#         return 0
+#
+#     scaler = StandardScaler()
+#     z_scores = scaler.fit_transform(col_data)
+#     return (np.abs(z_scores) > threshold).sum()
 
 
 # Full pipeline
@@ -378,7 +378,9 @@ def process_data_pipeline(input_df, chills_column=None, chills_intensity_column=
         - qa_report (str): JSON-like string representation of the QA report. This is downloaded as a .txt file in the application.
     """
     # Step 1: Handle missing values
-    df = handle_missing_values(input_df)
+    # df = handle_missing_values(input_df)
+
+    df = input_df
 
     # Step 2: Run automated QA and generate QA report
     qa_report = generate_qa_report(df)
