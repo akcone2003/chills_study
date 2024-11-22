@@ -47,26 +47,31 @@ def find_columns_for_scales(df, available_scales):
     df : pd.DataFrame
         Input DataFrame containing the data.
     available_scales : list
-        List of known scales (e.g., ["MODTAS", "TIPI", "VVIQ"]).
+        List of known scales (e.g., ["MODTAS", "TIPI", "DPES-Joy"]).
 
     Returns:
     -------
     dict
         A mapping of scales to their matched columns.
     """
-    # Preprocess available scales to create acronym patterns (e.g., "TIPI", "MODTAS")
-    available_acronyms = {scale: re.sub(r'[^A-Za-z0-9]', '', scale).upper() for scale in available_scales}
+    # Preprocess scales to extract acronyms (e.g., "DPES" from "DPES-Joy")
+    scale_acronyms = {}
+    for scale in available_scales:
+        # Extract the main acronym (up to first special character or space)
+        match = re.match(r'^[A-Za-z0-9\-]+', scale)
+        if match:
+            scale_acronyms[scale] = match.group(0).upper()
 
     # Initialize a dictionary to hold the mappings
     scale_mappings = {scale: [] for scale in available_scales}
 
     for col in df.columns:
         # Extract acronym from the beginning of the column name using regex
-        match = re.match(r'^([A-Za-z0-9_]+)', col)
+        match = re.match(r'^([A-Za-z0-9\-]+)', col)
         if match:
             col_acronym = match.group(1).upper()  # Normalize for case-insensitivity
-            # Find the best-matching scale
-            for scale, acronym in available_acronyms.items():
+            # Match column acronym with known scale acronyms
+            for scale, acronym in scale_acronyms.items():
                 if acronym in col_acronym:
                     scale_mappings[scale].append(col)
 

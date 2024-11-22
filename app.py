@@ -82,13 +82,13 @@ if input_file is not None:
                             "PANAS_X", "Self-Transcendence_Scale",
                             "Early_Maladaptive_Schema_(EMS)_Young_Schema_Questionnaire_Short_Form_3_(YSQ-S3)",
                             "Multidimensional_Iowa_Suggestibility_Scale_(MISS)", "Short_Suggestibility_Scale_(SSS)",
-                            "Cloninger_Self_Transcendence_Subscale", "Warwick-Edinburgh_Mental_Wellbeing_Scale_(WEMWBS)",
+                            "Cloninger_Self_Transcendence_Subscale(CSTS)", "Warwick-Edinburgh_Mental_Wellbeing_Scale_(WEMWBS)",
                             "Cognitive_and_Affective_Mindfulness_Scale_Revised_(CAMS-R)", "Toronto_Mindfulness_Scale",
                             "Copenhagen_Burnout_Inventory_(CBI)", "NEO-PI-3_(Openness_to_Experience)",
                             "Dispositional_Resilience_\'Hardiness\'_Scale_(HARDY)", "Montgomery-Åsberg_Depression_Rating_Scale_(MADRS)",
                             "Hamilton_Anxiety_Rating_Scale_(HAM-A)", "State-Trait_Anxiety_Inventory_(STAI-State_Form)",
                             "5-Dimensional_Altered States_of_Consciousness_Questionnaire_(5DASC)", "Anxiety_Sensitivity_Index-3_(ASI-3_ASI-R)",
-                            "Karolinska_Sleepiness_Scale_(KSS)", "Wong-Baker_Pain_Scale", "Overall_Anxiety_Severity_and_Impairment_Scale_(OASIS)",
+                            "Karolinska_Sleepiness_Scale_(KSS)", "Wong-Baker_Pain_Scale(WB_Pain)", "Overall_Anxiety_Severity_and_Impairment_Scale_(OASIS)",
                             "PHQ-9", "Sheehan_Disability_Scale_(SDS)", "Brief_Symptom_Inventory-18_(BSI-18)"]
 
         # User selects the scales they want to include in the analysis
