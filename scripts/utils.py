@@ -1,4 +1,5 @@
 import pandas as pd
+import re
 
 
 def normalize_column_name(df_or_name):
@@ -37,31 +38,42 @@ def normalize_column_name(df_or_name):
         return _normalize(df_or_name)
 
 
-def find_columns_for_scales(df, selected_scales):
+def find_columns_for_scales(df, available_scales):
     """
-    Automatically match columns to selected scales based on column names.
+    Automatically match columns to scales based on acronyms in column names.
 
     Parameters:
     ----------
     df : pd.DataFrame
         Input DataFrame containing the data.
-    selected_scales : list
-        List of user-selected scales (e.g., ["MODTAS", "TIPI"]).
+    available_scales : list
+        List of known scales (e.g., ["MODTAS", "TIPI", "VVIQ"]).
 
     Returns:
     -------
     dict
         A mapping of scales to their matched columns.
     """
-    scale_mappings = {scale: [] for scale in selected_scales}
+    # Preprocess available scales to create acronym patterns (e.g., "TIPI", "MODTAS")
+    available_acronyms = {scale: re.sub(r'[^A-Za-z0-9]', '', scale).upper() for scale in available_scales}
+
+    # Initialize a dictionary to hold the mappings
+    scale_mappings = {scale: [] for scale in available_scales}
 
     for col in df.columns:
-        for scale in selected_scales:
-            if scale in col:  # Check if the scale acronym appears in the column name
-                scale_mappings[scale].append(col)
+        # Extract acronym from the beginning of the column name using regex
+        match = re.match(r'^([A-Za-z0-9_]+)', col)
+        if match:
+            col_acronym = match.group(1).upper()  # Normalize for case-insensitivity
+            # Find the best-matching scale
+            for scale, acronym in available_acronyms.items():
+                if acronym in col_acronym:
+                    scale_mappings[scale].append(col)
 
     # Remove scales with no matched columns
-    return {scale: cols for scale, cols in scale_mappings.items() if cols}
+    scale_mappings = {scale: cols for scale, cols in scale_mappings.items() if cols}
+
+    return scale_mappings
 
 
 def normalize_column_input(pasted_text):
