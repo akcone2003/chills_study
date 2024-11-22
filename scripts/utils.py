@@ -37,39 +37,31 @@ def normalize_column_name(df_or_name):
         return _normalize(df_or_name)
 
 
-
-def add_behavioral_score_prefix(df, behavioral_score_mappings):
+def find_columns_for_scales(df, selected_scales):
     """
-    Add behavioral score prefixes to the questions in the DataFrame.
+    Automatically match columns to selected scales based on column names.
 
     Parameters:
     ----------
     df : pd.DataFrame
-        Input DataFrame containing survey questions.
-    behavioral_score_mappings : dict
-        A dictionary where the key is the behavioral score (e.g., "MODTAS")
-        and the value is a list of questions associated with that score.
+        Input DataFrame containing the data.
+    selected_scales : list
+        List of user-selected scales (e.g., ["MODTAS", "TIPI"]).
 
     Returns:
     -------
-    pd.DataFrame
-        DataFrame with updated column names, where each question is prefixed
-        with the respective behavioral score and question number.
+    dict
+        A mapping of scales to their matched columns.
     """
-    # Create a new dictionary to store updated column names
-    updated_columns = {}
+    scale_mappings = {scale: [] for scale in selected_scales}
 
-    # Loop through each behavioral score and its associated questions
-    for score, questions in behavioral_score_mappings.items():
-        for idx, question in enumerate(questions, 1):
-            # Build the new column name with prefix
-            new_column_name = f"{score} Question {idx}: {question}"
-            updated_columns[question] = new_column_name
+    for col in df.columns:
+        for scale in selected_scales:
+            if scale in col:  # Check if the scale acronym appears in the column name
+                scale_mappings[scale].append(col)
 
-    # Rename the DataFrame columns using the new mapping
-    df = df.rename(columns=updated_columns)
-
-    return df
+    # Remove scales with no matched columns
+    return {scale: cols for scale, cols in scale_mappings.items() if cols}
 
 
 def normalize_column_input(pasted_text):

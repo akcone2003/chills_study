@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from collections import OrderedDict
-from scripts.utils import normalize_column_input
+from scripts.utils import normalize_column_input, find_columns_for_scales
 from scripts.pipeline import process_data_pipeline
 
 
@@ -98,6 +98,13 @@ if input_file is not None:
             default=[]
         )
 
+        if selected_scales:
+            # Automatically find matching columns for the selected scales
+            scale_mappings = find_columns_for_scales(input_df, selected_scales)
+            st.write("### Matched Columns")
+            st.json(scale_mappings)  # Display matched columns for user review
+            st.session_state.user_column_mappings = scale_mappings
+
         # Initialize the user_column_mappings dictionary
         user_column_mappings = {}
 
@@ -190,6 +197,7 @@ if input_file is not None:
                 chills_column=chills_column,
                 chills_intensity_column=chills_intensity_column,
                 intensity_threshold=intensity_threshold,
+                available_scales=selected_scales,
                 mode=mode,
                 user_column_mappings=st.session_state.user_column_mappings
             )

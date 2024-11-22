@@ -203,14 +203,9 @@ def encode_columns(df, column_types):
     return df
 
 
-
-def sanity_check_chills(df, chills_column, chills_intensity_column, threshold=0):
+def sanity_check_chills(df, chills_column, chills_intensity_column, threshold=0, mode='flag'):
     """
-    Sanity check to flag inconsistencies between chills columns.
-
-    This function checks for inconsistencies where a subject reports no chills
-    (indicated by a 0 in the chills column) but records a non-zero intensity
-    (greater than the given threshold) in the chills intensity column.
+    Sanity check to flag or drop inconsistencies between chills columns.
 
     Parameters:
     ----------
@@ -223,18 +218,24 @@ def sanity_check_chills(df, chills_column, chills_intensity_column, threshold=0)
     threshold : int, optional
         The minimum value for chills intensity to flag an inconsistency.
         Default is 0, meaning any non-zero intensity will trigger the flag.
+    mode : str, optional
+        Determines whether to flag or drop inconsistent rows ('flag' or 'drop').
+        Default is 'flag'.
 
     Returns:
     -------
     pd.DataFrame
-        A copy of the input DataFrame with an additional column 'Sanity_Flag'.
-        This column contains 1 for inconsistent rows and 0 for consistent ones.
+        A modified DataFrame with either an additional 'Sanity_Flag' column (mode='flag')
+        or rows dropped (mode='drop').
     """
     inconsistent_rows = (df[chills_column] == 0) & (df[chills_intensity_column] > threshold)
-    df['Sanity_Flag'] = inconsistent_rows.astype(int)
 
-    print("\n[DEBUG] Function: sanity_check_chills Completed")
+    if mode == 'flag':
+        df['Sanity_Flag'] = inconsistent_rows.astype(int)
+    elif mode == 'drop':
+        df = df[~inconsistent_rows]  # Keep only consistent rows
 
+    print(f"\n[DEBUG] Function: sanity_check_chills Completed with mode='{mode}'")
     return df
 
 
@@ -294,14 +295,6 @@ def generate_qa_report(df):
 
     report = {'missing_values': df.isnull().sum().to_dict()}
 
-    outliers_report = {}
-    num_cols = df.select_dtypes(include=np.number)
-    # for col in num_cols:
-    #     outliers_count = detect_outliers(df, col)
-    #     if outliers_count > 0:
-    #         outliers_report[col] = outliers_count
-    # report['outliers'] = outliers_report
-
     rows_with_many_missing = df[df.isnull().sum(axis=1) >= 3]
     report['rows_with_3_or_more_missing_values'] = {
         'count': len(rows_with_many_missing),
@@ -311,39 +304,9 @@ def generate_qa_report(df):
     return report
 
 
-# def detect_outliers(df, column_name, threshold=3):
-#     """
-#     Detect outliers in a numerical column using Z-scores.
-#
-#     This function calculates Z-scores for each value in a specified column.
-#     Outliers are defined as values with an absolute Z-score greater than the
-#     given threshold.
-#
-#     Parameters:
-#     ----------
-#     df : pd.DataFrame
-#         The DataFrame containing the column to analyze.
-#     column_name : str
-#         The name of the numerical column to check for outliers.
-#     threshold : int, optional
-#         The Z-score threshold to identify outliers. Default is 3.
-#
-#     Returns:
-#     -------
-#     int
-#         The number of outliers found in the specified column.
-#     """
-#     col_data = df[[column_name]].dropna()
-#     if col_data.std().iloc[0] == 0:
-#         return 0
-#
-#     scaler = StandardScaler()
-#     z_scores = scaler.fit_transform(col_data)
-#     return (np.abs(z_scores) > threshold).sum()
-
-
 # Full pipeline
-def process_data_pipeline(input_df, chills_column=None, chills_intensity_column=None, intensity_threshold=0, mode='flag',
+def process_data_pipeline(input_df, chills_column=None, chills_intensity_column=None,
+                          intensity_threshold=0, mode='flag',
                           user_column_mappings=None):
     """
     Main pipeline function that handles QA, sanity checks, encoding, and scoring.
@@ -377,17 +340,14 @@ def process_data_pipeline(input_df, chills_column=None, chills_intensity_column=
         - intermediate_df (pd.DataFrame): Preprocessed DataFrame before scoring.
         - qa_report (str): JSON-like string representation of the QA report. This is downloaded as a .txt file in the application.
     """
-    # Step 1: Handle missing values
-    # df = handle_missing_values(input_df)
-
-    df = input_df
+    df = input_df.copy()
 
     # Step 2: Run automated QA and generate QA report
     qa_report = generate_qa_report(df)
 
     # Step 3: Perform sanity check for chills response if present in data
     if chills_column and chills_intensity_column:
-        df = sanity_check_chills(df, chills_column, chills_intensity_column, intensity_threshold)
+        df = sanity_check_chills(df, chills_column, chills_intensity_column, intensity_threshold, mode)
 
     # Step 4: Preprocess data
     intermediate_df = preprocess_data(df.copy())
