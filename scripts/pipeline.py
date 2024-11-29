@@ -115,8 +115,6 @@ def determine_category_order(col_values):
                           key=lambda x: best_match.index(x.lower()) if x.lower() in best_match else float('inf'))
 
 
-
-
 def encode_columns(df, column_types):
     """
     Encode ordinal and nominal columns to make them interpretable for statistical analysis.
@@ -161,7 +159,6 @@ def encode_columns(df, column_types):
     print("\n[DEBUG] Function: encode_columns Completed")
 
     return df
-
 
 
 def sanity_check_chills(df, chills_column, chills_intensity_column, threshold=0):
@@ -303,7 +300,8 @@ def generate_qa_report(df):
 
 
 # Full pipeline
-def process_data_pipeline(input_df, chills_column=None, chills_intensity_column=None, intensity_threshold=0, mode='flag',
+def process_data_pipeline(input_df, chills_column=None, chills_intensity_column=None, intensity_threshold=0,
+                          mode='flag',
                           user_column_mappings=None):
     """
     Main pipeline function that handles QA, sanity checks, encoding, and scoring.
@@ -363,7 +361,6 @@ def process_data_pipeline(input_df, chills_column=None, chills_intensity_column=
 
 # Testing Ground
 if __name__ == "__main__":
-
     # Test data for the ASI-3 questionnaire
     test_data = {
         "It is important for me not to appear nervous.": [
