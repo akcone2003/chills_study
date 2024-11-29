@@ -1624,10 +1624,10 @@ class ScaleScorer:
                 'Complex_Hallucinations': [q7, q39]
             },
             'Auditory_Alterations': {  # Items directly
-                'Auditory_Alterations': [q10, q11, q15, q24, q47, q60]
+                'Auditory_Alterations': [q4, q5, q11, q13, q19, q25, q30, q48, q49, q55, q65, q74, q76, q92, q93]
             },
             'Reduction_of_Vigilance': {  # Items directly
-                'Reduction_of_Vigilance': [q3, q5, q25, q30, q40, q61, q66, q76]
+                'Reduction_of_Vigilance': [q2, q10, q15, q17, q24, q29, q37, q51, q61, q68, q84]
             }
         }
 
