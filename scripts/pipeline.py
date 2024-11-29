@@ -9,29 +9,29 @@ from sklearn.metrics.pairwise import cosine_similarity
 from transformers import AutoTokenizer, AutoModel
 
 
-@st.cache_resource
-def load_model():
-    """Load BERT tokenizer and model."""
-    tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
-    model = AutoModel.from_pretrained('bert-base-uncased', torch_dtype=torch.float32).to('cpu')
-    return tokenizer, model
+# @st.cache_resource
+# def load_model():
+#     """Load BERT tokenizer and model."""
+#     tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
+#     model = AutoModel.from_pretrained('bert-base-uncased', torch_dtype=torch.float32).to('cpu')
+#     return tokenizer, model
 
 
-# Use the cached resources within your functions when needed.
-tokenizer, model = load_model()
+# # Use the cached resources within your functions when needed.
+# tokenizer, model = load_model()
 
 
-def get_embedding(text):
-    """
-    Get the BERT-based embedding for a given text.
-    """
-    tokens = tokenizer(text, return_tensors='pt')
-    with torch.no_grad():
-        output = model(**tokens)
-
-    # Use the [CLS] token as the sentence embedding
-    embedding = output.last_hidden_state[:, 0, :].cpu().numpy().flatten()
-    return embedding
+# def get_embedding(text):
+#     """
+#     Get the BERT-based embedding for a given text.
+#     """
+#     tokens = tokenizer(text, return_tensors='pt')
+#     with torch.no_grad():
+#         output = model(**tokens)
+#
+#     # Use the [CLS] token as the sentence embedding
+#     embedding = output.last_hidden_state[:, 0, :].cpu().numpy().flatten()
+#     return embedding
 
 
 # def handle_missing_values(df):
@@ -142,19 +142,19 @@ def determine_category_order(col_values):
             return sorted(col_values,
                           key=lambda x: best_match.index(x.lower()) if x.lower() in best_match else float('inf'))
 
-    else:
-        print("[WARN] No predefined match found. Using semantic similarity.")
-        embeddings = {val: get_embedding(val) for val in col_values}
-        ref_min = get_embedding("least")
-        ref_max = get_embedding("most")
-
-        scores = {val: cosine_similarity([embedding], [ref_max])[0][0] -
-                       cosine_similarity([embedding], [ref_min])[0][0]
-                  for val, embedding in embeddings.items()}
-
-        print("\n[DEBUG] Function: determine_category_order Completed")
-
-        return sorted(col_values, key=lambda x: scores[x])
+    # else:
+    #     print("[WARN] No predefined match found. Using semantic similarity.")
+    #     embeddings = {val: get_embedding(val) for val in col_values}
+    #     ref_min = get_embedding("least")
+    #     ref_max = get_embedding("most")
+    #
+    #     scores = {val: cosine_similarity([embedding], [ref_max])[0][0] -
+    #                    cosine_similarity([embedding], [ref_min])[0][0]
+    #               for val, embedding in embeddings.items()}
+    #
+    #     print("\n[DEBUG] Function: determine_category_order Completed")
+    #
+    #     return sorted(col_values, key=lambda x: scores[x])
 
 
 def encode_columns(df, column_types):
