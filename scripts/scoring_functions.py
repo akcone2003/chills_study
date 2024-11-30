@@ -830,12 +830,12 @@ class ScaleScorer:
 
         # Create a DataFrame with all subscale and total scores
         scores_df = pd.DataFrame({
-            'Observing': observing,
-            'Describing': describing,
-            'Acting_with_Awareness': acting_with_awareness,
-            'Nonjudging': nonjudging,
-            'Nonreactivity': nonreactivity,
-            'Total_FFMQ_Score': total_score
+            'ffmq_observing': observing,
+            'ffmq_describing': describing,
+            'ffmq_acting_with_awareness': acting_with_awareness,
+            'ffmq_nonjudging': nonjudging,
+            'ffmq_nonreactivity': nonreactivity,
+            'total_ffmq_score': total_score
         })
 
         return scores_df
