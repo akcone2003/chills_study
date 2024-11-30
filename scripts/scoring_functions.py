@@ -806,42 +806,24 @@ class ScaleScorer:
         if len(columns) != 39:
             raise ValueError(f"Expected 39 columns, but got {len(columns)}")
 
-        # Unpack all 39 questions directly
-        (
-            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
-            q11, q12, q13, q14, q15, q16, q17, q18, q19, q20,
-            q21, q22, q23, q24, q25, q26, q27, q28, q29, q30,
-            q31, q32, q33, q34, q35, q36, q37, q38, q39
-        ) = columns
-
-        # Define helper for reverse scoring
+        # Define reverse scoring
         def reverse(q):
             return 6 - self.df[q]
 
+        # Define subscale items
+        observing_items = [columns[i - 1] for i in [1, 6, 11, 15, 20, 26, 31, 36]]
+        describing_items = [columns[i - 1] for i in [2, 7, 27, 32, 37]]
+        describing_reversed = [columns[i - 1] for i in [12, 16, 22]]
+        acting_awareness_reversed = [columns[i - 1] for i in [5, 8, 13, 18, 23, 28, 34, 38]]
+        nonjudging_reversed = [columns[i - 1] for i in [3, 10, 14, 17, 25, 30, 35, 39]]
+        nonreactivity_items = [columns[i - 1] for i in [4, 9, 19, 21, 24, 29, 33]]
+
         # Calculate subscale scores
-        # Observing Score
-        observing = self.df[[q1, q6, q11, q15, q20, q26, q31, q36]].sum(axis=1)
-
-        # Describing Score
-        describing = (
-                self.df[[q2, q7, q27, q32, q37]]  # Regular scores
-                + reverse(q12) + reverse(q16) + reverse(q22)  # Reverse-scored
-        ).sum(axis=1)
-
-        # Acting With Awareness Score
-        acting_with_awareness = (
-                reverse(q5) + reverse(q8) + reverse(q13) + reverse(q18) +
-                reverse(q23) + reverse(q28) + reverse(q34) + reverse(q38)
-        ).sum(axis=1)
-
-        # Non-judging Score
-        nonjudging = (
-                reverse(q3) + reverse(q10) + reverse(q14) + reverse(q17) +
-                reverse(q25) + reverse(q30) + reverse(q35) + reverse(q39)
-        ).sum(axis=1)
-
-        # Non-reactivity score
-        nonreactivity = self.df[[q4, q9, q19, q21, q24, q29, q33]].sum(axis=1)
+        observing = self.df[observing_items].sum(axis=1)
+        describing = self.df[describing_items].sum(axis=1) + reverse(describing_reversed).sum(axis=1)
+        acting_with_awareness = reverse(acting_awareness_reversed).sum(axis=1)
+        nonjudging = reverse(nonjudging_reversed).sum(axis=1)
+        nonreactivity = self.df[nonreactivity_items].sum(axis=1)
 
         # Calculate the total FFMQ score
         total_score = observing + describing + acting_with_awareness + nonjudging + nonreactivity
