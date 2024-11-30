@@ -873,9 +873,9 @@ class ScaleScorer:
 
         # Create a DataFrame with all subscale and total scores
         scores_df = pd.DataFrame({
-            'PANAS_Positive': positive,
-            'PANAS_Negative': negative,
-            'PANAS_Total': total_panas
+            'panas_positive': positive,
+            'panas_negative': negative,
+            'panas_total': total_panas
         })
 
         return scores_df
@@ -935,19 +935,19 @@ class ScaleScorer:
 
         # Store scale definitions in a dictionary
         scales = {
-            'Positive Affect': positive_affect,
-            'Negative Affect': negative_affect,
-            'Fear': fear,
-            'Hostility': hostility,
-            'Guilt': guilt,
-            'Sadness': sadness,
-            'Joviality': joviality,
-            'Self-Assurance': self_assurance,
-            'Attentiveness': attentiveness,
-            'Shyness': shyness,
-            'Fatigue': fatigue,
-            'Serenity': serenity,
-            'Surprise': surprise
+            'panasx_positive_affect': positive_affect,
+            'panasx_negative_affect': negative_affect,
+            'panasx_fear': fear,
+            'panasx_hostility': hostility,
+            'panasx_guilt': guilt,
+            'panasx_sadness': sadness,
+            'panasx_joviality': joviality,
+            'panasx_self-assurance': self_assurance,
+            'panasx_attentiveness': attentiveness,
+            'panasx_shyness': shyness,
+            'panasx_fatigue': fatigue,
+            'panasx_serenity': serenity,
+            'panasx_surprise': surprise
         }
 
         # Calculate scores for each scale
@@ -1152,15 +1152,15 @@ class ScaleScorer:
 
         # Create a DataFrame with all scores
         scores_df = pd.DataFrame({
-            'Consumer_Suggestibility': consumer,
-            'Persuadability': persuadability,
-            'Physiological_Suggestibility': physiological,
-            'Physiological_Reactivity': physiological_reactivity,
-            'Peer_Conformity': peer_conformity,
-            'Mental_Control': mental_control,
-            'Unpersuadability': unpersuadability,
-            'Short_Suggestibility_Scale_(SSS)': sss,
-            'Total_Suggestibility': total_suggestibility
+            'miss_consumer_suggestibility': consumer,
+            'miss_persuadability': persuadability,
+            'miss_physiological_suggestibility': physiological,
+            'miss_physiological_reactivity': physiological_reactivity,
+            'miss_peer_conformity': peer_conformity,
+            'miss_mental_control': mental_control,
+            'miss_unpersuadability': unpersuadability,
+            'miss_short_suggestibility_scale_(SSS)': sss,
+            'miss_total_suggestibility': total_suggestibility
         })
 
         return scores_df
@@ -1250,9 +1250,9 @@ class ScaleScorer:
         total = curiosity + decentering
 
         scores_df = pd.DataFrame({
-            'Curiosity': curiosity,
-            'De-Centering': decentering,
-            'Toronto_Mindfulness_Scale_Total': total
+            'tms_curiosity': curiosity,
+            'tms_de-centering': decentering,
+            'toronto_mindfulness_scale_total': total
         })
 
         return scores_df
@@ -1288,9 +1288,9 @@ class ScaleScorer:
 
         # Define subscale columns
         subscales = {
-            'Personal_Burnout': self.df[[q1, q2, q3, q4, q5, q6]],
-            'Work_Related_Burnout': self.df[[q7, q8, q9, q10, q13, q14, q15]],
-            'Client_Related_Burnout': self.df[[q11, q12, q16, q17, q18, q19]]
+            'cbi_personal_burnout': self.df[[q1, q2, q3, q4, q5, q6]],
+            'cbi_work_related_burnout': self.df[[q7, q8, q9, q10, q13, q14, q15]],
+            'cbi_client_related_burnout': self.df[[q11, q12, q16, q17, q18, q19]]
         }
 
         # Calculate scores
@@ -1302,7 +1302,7 @@ class ScaleScorer:
             scored_subscales[subscale] = scores.mean(axis=1)
 
         # Calculate total average
-        scored_subscales['CBI_Total'] = pd.DataFrame(scored_subscales).mean(axis=1)
+        scored_subscales['cbi_total'] = pd.DataFrame(scored_subscales).mean(axis=1)
 
         return pd.DataFrame(scored_subscales)
 
@@ -1366,10 +1366,10 @@ class ScaleScorer:
 
         # Return as DataFrame for each subscale and total
         return pd.DataFrame({
-            'HARDY_Communication': [hardy_comm],
-            'HARDY_Challenge': [hardy_chal],
-            'HARDY_Control': [hardy_cont],
-            'HARDY_Total': [hardy_tot]
+            'hardy_communication': [hardy_comm],
+            'hardy_challenge': [hardy_chal],
+            'hardy_control': [hardy_cont],
+            'hardy_total': [hardy_tot]
         })
 
     def score_madrs(self, columns):
@@ -1409,7 +1409,7 @@ class ScaleScorer:
 
         # Create a DataFrame to hold the score
         scores_df = pd.DataFrame({
-            'MADRS_Total_Score': total_score
+            'madrs_total_score': total_score
         })
 
         return scores_df
