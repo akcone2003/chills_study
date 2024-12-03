@@ -14,15 +14,16 @@ def rebuild_qa_report():
     """Rebuild the QA report with the current flagged rows."""
     qa_report = "Quality Assurance Report\n\n"
     qa_report += f"Missing Values: {st.session_state.get('missing_values', {})}\n\n"
+    qa_report += f"Outliers: {st.session_state.get('outliers', {})}\n\n"
 
     flagged_info = "Flagged Rows Information:\n\n"
-    for idx, value in processed_df[col].items():
-        with st.expander(f"Row {idx + 1}: {str(value)[:50]}..."):
-            st.write(f"Full Response: {value}")
-            flag = st.checkbox(f"Flag this row in '{col}'", key=f"{col}_{idx}")
-            if flag:
-                reason = st.text_input(f"Reason for flagging row {idx + 1}:", key=f"reason_{col}_{idx}")
-                flag_list.append((idx, reason))
+    for col, flags in st.session_state.flagged_rows.items():
+        flagged_info += f"Column: {col}\n"
+        for idx, reason in flags:
+            flagged_info += f" - Row {idx + 1}: {reason if reason else 'No reason provided'}\n"
+
+    qa_report += flagged_info
+    st.session_state.qa_report = qa_report  # Rebuild the QA report from scratch
 
     qa_report += flagged_info
     st.session_state.qa_report = qa_report  # Rebuild the QA report from scratch
