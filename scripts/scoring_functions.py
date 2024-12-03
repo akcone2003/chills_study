@@ -1,3 +1,5 @@
+from pandas.conftest import skipna
+
 from scripts.utils import normalize_column_name, get_score_from_mapping, ORDERED_KEYWORD_SET
 import pandas as pd
 import numpy as np
@@ -806,54 +808,36 @@ class ScaleScorer:
         if len(columns) != 39:
             raise ValueError(f"Expected 39 columns, but got {len(columns)}")
 
-        # Unpack all 39 questions directly
-        (
-            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
-            q11, q12, q13, q14, q15, q16, q17, q18, q19, q20,
-            q21, q22, q23, q24, q25, q26, q27, q28, q29, q30,
-            q31, q32, q33, q34, q35, q36, q37, q38, q39
-        ) = columns
-
-        # Define helper for reverse scoring
+        # Define reverse scoring
         def reverse(q):
             return 6 - self.df[q]
 
+        # Define subscale items
+        observing_items = [columns[i - 1] for i in [1, 6, 11, 15, 20, 26, 31, 36]]
+        describing_items = [columns[i - 1] for i in [2, 7, 27, 32, 37]]
+        describing_reversed = [columns[i - 1] for i in [12, 16, 22]]
+        acting_awareness_reversed = [columns[i - 1] for i in [5, 8, 13, 18, 23, 28, 34, 38]]
+        nonjudging_reversed = [columns[i - 1] for i in [3, 10, 14, 17, 25, 30, 35, 39]]
+        nonreactivity_items = [columns[i - 1] for i in [4, 9, 19, 21, 24, 29, 33]]
+
         # Calculate subscale scores
-        # Observing Score
-        observing = self.df[[q1, q6, q11, q15, q20, q26, q31, q36]].sum(axis=1)
-
-        # Describing Score
-        describing = (
-                self.df[[q2, q7, q27, q32, q37]]  # Regular scores
-                + reverse(q12) + reverse(q16) + reverse(q22)  # Reverse-scored
-        ).sum(axis=1)
-
-        # Acting With Awareness Score
-        acting_with_awareness = (
-                reverse(q5) + reverse(q8) + reverse(q13) + reverse(q18) +
-                reverse(q23) + reverse(q28) + reverse(q34) + reverse(q38)
-        ).sum(axis=1)
-
-        # Non-judging Score
-        nonjudging = (
-                reverse(q3) + reverse(q10) + reverse(q14) + reverse(q17) +
-                reverse(q25) + reverse(q30) + reverse(q35) + reverse(q39)
-        ).sum(axis=1)
-
-        # Non-reactivity score
-        nonreactivity = self.df[[q4, q9, q19, q21, q24, q29, q33]].sum(axis=1)
+        observing = self.df[observing_items].sum(axis=1)
+        describing = self.df[describing_items].sum(axis=1) + reverse(describing_reversed).sum(axis=1)
+        acting_with_awareness = reverse(acting_awareness_reversed).sum(axis=1)
+        nonjudging = reverse(nonjudging_reversed).sum(axis=1)
+        nonreactivity = self.df[nonreactivity_items].sum(axis=1)
 
         # Calculate the total FFMQ score
         total_score = observing + describing + acting_with_awareness + nonjudging + nonreactivity
 
         # Create a DataFrame with all subscale and total scores
         scores_df = pd.DataFrame({
-            'Observing': observing,
-            'Describing': describing,
-            'Acting_with_Awareness': acting_with_awareness,
-            'Nonjudging': nonjudging,
-            'Nonreactivity': nonreactivity,
-            'Total_FFMQ_Score': total_score
+            'ffmq_observing': observing,
+            'ffmq_describing': describing,
+            'ffmq_acting_with_awareness': acting_with_awareness,
+            'ffmq_nonjudging': nonjudging,
+            'ffmq_nonreactivity': nonreactivity,
+            'total_ffmq_score': total_score
         })
 
         return scores_df
@@ -891,9 +875,9 @@ class ScaleScorer:
 
         # Create a DataFrame with all subscale and total scores
         scores_df = pd.DataFrame({
-            'PANAS_Positive': positive,
-            'PANAS_Negative': negative,
-            'PANAS_Total': total_panas
+            'panas_positive': positive,
+            'panas_negative': negative,
+            'panas_total': total_panas
         })
 
         return scores_df
@@ -953,19 +937,19 @@ class ScaleScorer:
 
         # Store scale definitions in a dictionary
         scales = {
-            'Positive Affect': positive_affect,
-            'Negative Affect': negative_affect,
-            'Fear': fear,
-            'Hostility': hostility,
-            'Guilt': guilt,
-            'Sadness': sadness,
-            'Joviality': joviality,
-            'Self-Assurance': self_assurance,
-            'Attentiveness': attentiveness,
-            'Shyness': shyness,
-            'Fatigue': fatigue,
-            'Serenity': serenity,
-            'Surprise': surprise
+            'panasx_positive_affect': positive_affect,
+            'panasx_negative_affect': negative_affect,
+            'panasx_fear': fear,
+            'panasx_hostility': hostility,
+            'panasx_guilt': guilt,
+            'panasx_sadness': sadness,
+            'panasx_joviality': joviality,
+            'panasx_self-assurance': self_assurance,
+            'panasx_attentiveness': attentiveness,
+            'panasx_shyness': shyness,
+            'panasx_fatigue': fatigue,
+            'panasx_serenity': serenity,
+            'panasx_surprise': surprise
         }
 
         # Calculate scores for each scale
@@ -1170,15 +1154,15 @@ class ScaleScorer:
 
         # Create a DataFrame with all scores
         scores_df = pd.DataFrame({
-            'Consumer_Suggestibility': consumer,
-            'Persuadability': persuadability,
-            'Physiological_Suggestibility': physiological,
-            'Physiological_Reactivity': physiological_reactivity,
-            'Peer_Conformity': peer_conformity,
-            'Mental_Control': mental_control,
-            'Unpersuadability': unpersuadability,
-            'Short_Suggestibility_Scale_(SSS)': sss,
-            'Total_Suggestibility': total_suggestibility
+            'miss_consumer_suggestibility': consumer,
+            'miss_persuadability': persuadability,
+            'miss_physiological_suggestibility': physiological,
+            'miss_physiological_reactivity': physiological_reactivity,
+            'miss_peer_conformity': peer_conformity,
+            'miss_mental_control': mental_control,
+            'miss_unpersuadability': unpersuadability,
+            'miss_short_suggestibility_scale_(SSS)': sss,
+            'miss_total_suggestibility': total_suggestibility
         })
 
         return scores_df
@@ -1268,9 +1252,9 @@ class ScaleScorer:
         total = curiosity + decentering
 
         scores_df = pd.DataFrame({
-            'Curiosity': curiosity,
-            'De-Centering': decentering,
-            'Toronto_Mindfulness_Scale_Total': total
+            'tms_curiosity': curiosity,
+            'tms_de-centering': decentering,
+            'toronto_mindfulness_scale_total': total
         })
 
         return scores_df
@@ -1306,9 +1290,9 @@ class ScaleScorer:
 
         # Define subscale columns
         subscales = {
-            'Personal_Burnout': self.df[[q1, q2, q3, q4, q5, q6]],
-            'Work_Related_Burnout': self.df[[q7, q8, q9, q10, q13, q14, q15]],
-            'Client_Related_Burnout': self.df[[q11, q12, q16, q17, q18, q19]]
+            'cbi_personal_burnout': self.df[[q1, q2, q3, q4, q5, q6]],
+            'cbi_work_related_burnout': self.df[[q7, q8, q9, q10, q13, q14, q15]],
+            'cbi_client_related_burnout': self.df[[q11, q12, q16, q17, q18, q19]]
         }
 
         # Calculate scores
@@ -1317,10 +1301,10 @@ class ScaleScorer:
             # Use the inferred scale for the first column in each subscale
             scale_key = infer_scale_mapping(cols[0])
             scores = self.df[cols].applymap(lambda x: get_score_from_mapping(x, scale_key))
-            scored_subscales[subscale] = scores.mean(axis=1)
+            scored_subscales[subscale] = scores.mean(axis=1, skipna=True)
 
         # Calculate total average
-        scored_subscales['CBI_Total'] = pd.DataFrame(scored_subscales).mean(axis=1)
+        scored_subscales['cbi_total'] = pd.DataFrame(scored_subscales).mean(axis=1, skipna=True)
 
         return pd.DataFrame(scored_subscales)
 
@@ -1384,10 +1368,10 @@ class ScaleScorer:
 
         # Return as DataFrame for each subscale and total
         return pd.DataFrame({
-            'HARDY_Communication': [hardy_comm],
-            'HARDY_Challenge': [hardy_chal],
-            'HARDY_Control': [hardy_cont],
-            'HARDY_Total': [hardy_tot]
+            'hardy_communication': [hardy_comm],
+            'hardy_challenge': [hardy_chal],
+            'hardy_control': [hardy_cont],
+            'hardy_total': [hardy_tot]
         })
 
     def score_madrs(self, columns):
@@ -1408,26 +1392,12 @@ class ScaleScorer:
         if len(columns) != 10:
             raise ValueError(f"Expected 10 columns, but got {len(columns)}")
 
-        # Unpack the column names directly as q1, q2, ..., q10
-        (
-            q1,  # Apparent Sadness
-            q2,  # Reported Sadness
-            q3,  # Inner Tension
-            q4,  # Reduced Sleep
-            q5,  # Reduced Appetite
-            q6,  # Concentration Difficulties
-            q7,  # Lassitude
-            q8,  # Inability to Feel
-            q9,  # Pessimistic Thoughts
-            q10  # Suicidal Thoughts
-        ) = columns
-
         # Calculate the total score as the sum of all items
-        total_score = self.df[[q1, q2, q3, q4, q5, q6, q7, q8, q9, q10]].sum(axis=1)
+        total_score = self.df[columns].sum(axis=1, skipna=True)
 
         # Create a DataFrame to hold the score
         scores_df = pd.DataFrame({
-            'MADRS_Total_Score': total_score
+            'madrs_total_score': total_score
         })
 
         return scores_df
@@ -1450,26 +1420,8 @@ class ScaleScorer:
         if len(columns) != 14:
             raise ValueError(f"Expected 14 columns, but got {len(columns)}")
 
-        # Unpack the column names directly as q1, q2, ..., q14
-        (
-            q1,  # Anxious mood
-            q2,  # Tension
-            q3,  # Fears
-            q4,  # Insomnia
-            q5,  # Intellectual
-            q6,  # Depressed mood
-            q7,  # Somatic complaints (muscular)
-            q8,  # Somatic (sensory)
-            q9,  # Cardiovascular symptoms
-            q10,  # Respiratory symptoms
-            q11,  # Gastrointestinal symptoms
-            q12,  # Genitourinary symptoms
-            q13,  # Autonomic symptoms
-            q14  # Behavior at interview
-        ) = columns
-
         # Calculate the total score as the sum of all items
-        total_score = self.df[[q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12, q13, q14]].sum(axis=1)
+        total_score = self.df[columns].sum(axis=1, skipna=True)
 
         conditions = [
             total_score < 17,
@@ -1482,8 +1434,8 @@ class ScaleScorer:
 
         # Create a DataFrame to hold the total score and severity classification
         scores_df = pd.DataFrame({
-            'HAM-A_Total_Score': total_score,
-            'HAM-A_Severity': severity
+            'hama_total_score': total_score,
+            'hama_severity': severity
         })
 
         return scores_df
