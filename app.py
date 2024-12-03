@@ -11,23 +11,17 @@ def save_dataframe_to_csv(df):
 
 
 def rebuild_qa_report():
-    """Rebuild the QA report with the current flagged rows."""
     qa_report = "Quality Assurance Report\n\n"
     qa_report += f"Missing Values: {st.session_state.get('missing_values', {})}\n\n"
+    qa_report += "Flagged Rows Information:\n\n"
 
-    flagged_info = "Flagged Rows Information:\n\n"
-    for idx, value in processed_df[col].items():
-        # Handle non-string and NaN values gracefully
-        display_value = str(value)[:50] if pd.notna(value) else "No Value"
-        with st.expander(f"Row {idx + 1}: {display_value}..."):
-            st.write(f"Full Response: {value}")
-            flag = st.checkbox(f"Flag this row in '{col}'", key=f"{col}_{idx}")
-            if flag:
-                reason = st.text_input(f"Reason for flagging row {idx + 1}:", key=f"reason_{col}_{idx}")
-                flag_list.append((idx, reason))
+    if 'flagged_rows' in st.session_state and st.session_state.flagged_rows:
+        for col, flags in st.session_state.flagged_rows.items():
+            qa_report += f"Column: {col}\n"
+            for idx, reason in flags:
+                qa_report += f" - Row {idx + 1}: {reason if reason else 'No reason provided'}\n"
 
-    qa_report += flagged_info
-    st.session_state.qa_report = qa_report  # Rebuild the QA report from scratch
+    st.session_state.qa_report = qa_report
 
 
 
@@ -248,11 +242,12 @@ if st.session_state.processed_df is not None:
 
     # Step 11: Let the user select columns for review and flagging
     st.write("### Select Text Columns for Review and Flagging")
+    # Display text columns for review
     text_columns = processed_df.select_dtypes(include='object').columns.tolist()
 
     if text_columns:
         selected_columns = st.multiselect(
-            "Select text columns to review (choose one or more):",
+            "Select text columns to review:",
             options=text_columns,
             default=[]
         )
@@ -261,14 +256,22 @@ if st.session_state.processed_df is not None:
             st.write("### Review and Flag Text Responses")
             for col in selected_columns:
                 st.write(f"**Column**: `{col}`")
-
                 flag_list = []
-                for idx, value in processed_df[col].items():
-                    with st.expander(f"Row {idx + 1}: {value[:50]}..."):
+
+                # Get column data
+                column_data = processed_df[col].fillna("No Value")
+                safe_col = ''.join(e for e in col if e.isalnum())
+
+                # Display rows
+                for idx in range(len(column_data)):
+                    value = column_data.iloc[idx]
+                    display_value = str(value)[:50] + "..." if len(str(value)) > 50 else str(value)
+
+                    with st.expander(f"Row {idx + 1}: {display_value}"):
                         st.write(f"Full Response: {value}")
-                        flag = st.checkbox(f"Flag this row in '{col}'", key=f"{col}_{idx}")
+                        flag = st.checkbox(f"Flag row", key=f"flag_{safe_col}_{idx}")
                         if flag:
-                            reason = st.text_input(f"Reason for flagging row {idx + 1}:", key=f"reason_{col}_{idx}")
+                            reason = st.text_input("Reason:", key=f"reason_{safe_col}_{idx}")
                             flag_list.append((idx, reason))
 
                 if flag_list:
