@@ -1,3 +1,5 @@
+from pandas.conftest import skipna
+
 from scripts.utils import normalize_column_name, get_score_from_mapping, ORDERED_KEYWORD_SET
 import pandas as pd
 import numpy as np
@@ -1299,10 +1301,10 @@ class ScaleScorer:
             # Use the inferred scale for the first column in each subscale
             scale_key = infer_scale_mapping(cols[0])
             scores = self.df[cols].applymap(lambda x: get_score_from_mapping(x, scale_key))
-            scored_subscales[subscale] = scores.mean(axis=1)
+            scored_subscales[subscale] = scores.mean(axis=1, skipna=True)
 
         # Calculate total average
-        scored_subscales['cbi_total'] = pd.DataFrame(scored_subscales).mean(axis=1)
+        scored_subscales['cbi_total'] = pd.DataFrame(scored_subscales).mean(axis=1, skipna=True)
 
         return pd.DataFrame(scored_subscales)
 
@@ -1390,22 +1392,8 @@ class ScaleScorer:
         if len(columns) != 10:
             raise ValueError(f"Expected 10 columns, but got {len(columns)}")
 
-        # Unpack the column names directly as q1, q2, ..., q10
-        (
-            q1,  # Apparent Sadness
-            q2,  # Reported Sadness
-            q3,  # Inner Tension
-            q4,  # Reduced Sleep
-            q5,  # Reduced Appetite
-            q6,  # Concentration Difficulties
-            q7,  # Lassitude
-            q8,  # Inability to Feel
-            q9,  # Pessimistic Thoughts
-            q10  # Suicidal Thoughts
-        ) = columns
-
         # Calculate the total score as the sum of all items
-        total_score = self.df[[q1, q2, q3, q4, q5, q6, q7, q8, q9, q10]].sum(axis=1)
+        total_score = self.df[columns].sum(axis=1, skipna=True)
 
         # Create a DataFrame to hold the score
         scores_df = pd.DataFrame({
@@ -1432,26 +1420,8 @@ class ScaleScorer:
         if len(columns) != 14:
             raise ValueError(f"Expected 14 columns, but got {len(columns)}")
 
-        # Unpack the column names directly as q1, q2, ..., q14
-        (
-            q1,  # Anxious mood
-            q2,  # Tension
-            q3,  # Fears
-            q4,  # Insomnia
-            q5,  # Intellectual
-            q6,  # Depressed mood
-            q7,  # Somatic complaints (muscular)
-            q8,  # Somatic (sensory)
-            q9,  # Cardiovascular symptoms
-            q10,  # Respiratory symptoms
-            q11,  # Gastrointestinal symptoms
-            q12,  # Genitourinary symptoms
-            q13,  # Autonomic symptoms
-            q14  # Behavior at interview
-        ) = columns
-
         # Calculate the total score as the sum of all items
-        total_score = self.df[[q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12, q13, q14]].sum(axis=1)
+        total_score = self.df[columns].sum(axis=1, skipna=True)
 
         conditions = [
             total_score < 17,
@@ -1464,8 +1434,8 @@ class ScaleScorer:
 
         # Create a DataFrame to hold the total score and severity classification
         scores_df = pd.DataFrame({
-            'HAM-A_Total_Score': total_score,
-            'HAM-A_Severity': severity
+            'hama_total_score': total_score,
+            'hama_severity': severity
         })
 
         return scores_df
