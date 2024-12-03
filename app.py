@@ -14,7 +14,6 @@ def rebuild_qa_report():
     """Rebuild the QA report with the current flagged rows."""
     qa_report = "Quality Assurance Report\n\n"
     qa_report += f"Missing Values: {st.session_state.get('missing_values', {})}\n\n"
-    qa_report += f"Outliers: {st.session_state.get('outliers', {})}\n\n"
 
     flagged_info = "Flagged Rows Information:\n\n"
     for col, flags in st.session_state.flagged_rows.items():
