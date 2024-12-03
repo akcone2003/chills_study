@@ -251,6 +251,9 @@ def generate_qa_report(df):
 
     report = {'missing_values': df.isnull().sum().to_dict()}
 
+    outliers_report = {}
+    report['outliers'] = outliers_report
+
     rows_with_many_missing = df[df.isnull().sum(axis=1) >= 3]
     report['rows_with_3_or_more_missing_values'] = {
         'count': len(rows_with_many_missing),
