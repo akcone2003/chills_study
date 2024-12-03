@@ -1,5 +1,3 @@
-from pandas.conftest import skipna
-
 from scripts.utils import normalize_column_name, get_score_from_mapping, ORDERED_KEYWORD_SET
 import pandas as pd
 import numpy as np
