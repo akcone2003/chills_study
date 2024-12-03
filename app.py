@@ -254,25 +254,26 @@ if st.session_state.processed_df is not None:
 
         if selected_columns:
             st.write("### Review and Flag Text Responses")
+            if 'flagged_rows' not in st.session_state:
+                st.session_state.flagged_rows = {}
+
             for col in selected_columns:
                 st.write(f"**Column**: `{col}`")
                 flag_list = []
 
-                # Get column data
                 column_data = processed_df[col].fillna("No Value")
                 safe_col = ''.join(e for e in col if e.isalnum())
 
-                # Display rows
                 for idx in range(len(column_data)):
                     value = column_data.iloc[idx]
                     display_value = str(value)[:50] + "..." if len(str(value)) > 50 else str(value)
 
                     with st.expander(f"Row {idx + 1}: {display_value}"):
                         st.write(f"Full Response: {value}")
-                        flag = st.checkbox(f"Flag row", key=f"flag_{safe_col}_{idx}")
-                        if flag:
-                            reason = st.text_input("Reason:", key=f"reason_{safe_col}_{idx}")
-                            flag_list.append((idx, reason))
+                        if st.checkbox("Flag this row", key=f"flag_{safe_col}_{idx}"):
+                            reason = st.text_input("Reason for flagging:", key=f"reason_{safe_col}_{idx}")
+                            if reason:  # Only add to flag_list if there's a reason
+                                flag_list.append((idx, reason))
 
                 if flag_list:
                     st.session_state.flagged_rows[col] = flag_list
