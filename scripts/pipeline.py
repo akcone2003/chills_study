@@ -249,16 +249,6 @@ def generate_qa_report(df):
             - 'row_indices': List of indices of these rows.
     """
 
-    report = {'missing_values': df.isnull().sum().to_dict()}
-
-    outliers_report = {}
-    num_cols = df.select_dtypes(include=np.number)
-    # for col in num_cols:
-    #     outliers_count = detect_outliers(df, col)
-    #     if outliers_count > 0:
-    #         outliers_report[col] = outliers_count
-    # report['outliers'] = outliers_report
-
     rows_with_many_missing = df[df.isnull().sum(axis=1) >= 3]
     report['rows_with_3_or_more_missing_values'] = {
         'count': len(rows_with_many_missing),
