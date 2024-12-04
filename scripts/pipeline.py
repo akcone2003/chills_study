@@ -187,7 +187,7 @@ def sanity_check_chills(df, chills_column, chills_intensity_column, threshold=0)
         A copy of the input DataFrame with an additional column 'Sanity_Flag'.
         This column contains 1 for inconsistent rows and 0 for consistent ones.
     """
-    inconsistent_rows = (df[chills_column] == 0) & (df[chills_intensity_column] > threshold)
+    inconsistent_rows = (df[chills_column] == 0) & (df[chills_intensity_column] >= threshold)
     df['Sanity_Flag'] = inconsistent_rows.astype(int)
 
     print("\n[DEBUG] Function: sanity_check_chills Completed")

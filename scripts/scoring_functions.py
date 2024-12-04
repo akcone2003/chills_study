@@ -300,7 +300,6 @@ class ScaleScorer:
         return self.score_maia(columns)
 
 
-
     def score_ego_dissolution(self, columns):
         """
         Calculate the Ego Dissolution score.
