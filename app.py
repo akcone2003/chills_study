@@ -173,7 +173,7 @@ if input_file is not None:
                 min_value=0,
                 max_value=10,
                 value=0,
-                help="Rows where the Chills Response is 0 but the intensity is above this value will be flagged or dropped."
+                help="Rows where the Chills Response is 0 but the intensity is greater than or equal to (inclusive) this value will be flagged or dropped."
             )
 
             mode = st.radio(
