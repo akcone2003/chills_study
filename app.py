@@ -236,7 +236,8 @@ if st.session_state.processed_df is not None:
         if chills_columns:
             flagged_rows = processed_df[processed_df['Sanity_Flag'] == True]
             st.write("### Chills Response Sanity Check")
-            st.write("Below are the rows where chills responses may be inconsistent:")
+            st.write("Below are the rows where chills responses may be inconsistent. "
+                     "Double click on the cell containing the response to expand it for viewing.")
 
             # Initialize checkbox states in session state if they don't exist
             if 'checkbox_states' not in st.session_state:
