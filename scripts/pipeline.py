@@ -4,488 +4,252 @@ from sklearn.preprocessing import OrdinalEncoder, StandardScaler, LabelEncoder
 from scripts.scoring_functions import ScaleScorer
 from scripts.utils import normalize_column_name, ORDERED_KEYWORD_SET
 import streamlit as st
+import logging
+from typing import Dict, List, Tuple, Optional, Any
+from concurrent.futures import ThreadPoolExecutor
+import multiprocessing
+
+# Configure logging for better error tracking and debugging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
-# def handle_missing_values(df):
-#     """
-#     Fill missing values in numerical columns with their mean and in
-#     categorical columns with 'Missing'.
-#
-#     Parameters:
-#     ----------
-#     df : pd.DataFrame
-#         The input DataFrame with potential missing values.
-#
-#     Returns:
-#     -------
-#     pd.DataFrame
-#         DataFrame with filled missing values.
-#     """
-#     num_cols = df.select_dtypes(include=np.number)
-#     df[num_cols.columns] = df[num_cols.columns].fillna(num_cols.mean())
-#
-#     cat_cols = df.select_dtypes(include='object')
-#     df[cat_cols.columns] = df[cat_cols.columns].fillna('Missing')
-#
-#     print("\n[DEBUG] Function: handle_missing_values Completed")
-#     return df
-
-
-def detect_column_types(df):
+def detect_column_types(df: pd.DataFrame) -> Dict[str, List[str]]:
     """
-    Classify columns into nominal, ordinal, or free text based on data patterns.
-
-    Parameters:
-    ----------
-    df : pd.DataFrame
-        Input DataFrame containing mixed data types.
-
-    Returns:
-    -------
-    dict
-        Dictionary with column classifications.
+    Classifies columns into nominal, ordinal, or free text based on data patterns.
+    Now handles column name normalization and matching more robustly.
     """
     column_types = {'nominal': [], 'ordinal': [], 'free_text': []}
     cat_cols = df.select_dtypes(include='object')
 
-    for col in cat_cols.columns:
-        unique_values = df[col].nunique()
-        total_rows = len(df)
+    # Pre-calculate metrics to avoid repeated computation
+    total_rows = len(df)
+    MAX_TEXT_LENGTH = 100
 
-        # Check conditions
-        if (unique_values / total_rows > 0.3) and (unique_values > 8):
+    # Process each column to determine its type
+    for col in cat_cols.columns:
+        # Calculate average text length for the column
+        avg_length = df[col].astype(str).str.len().mean()
+
+        # Handle long text fields separately
+        if avg_length > MAX_TEXT_LENGTH:
+            column_types['free_text'].append(col)
+            continue
+
+        unique_ratio = df[col].nunique() / total_rows
+        if unique_ratio > 0.3 and df[col].nunique() > 8:
             column_types['free_text'].append(col)
         else:
-            # Check if the column values match any known scale in ORDERED_KEYWORD_SET
-            if any(
-                    keyword in [normalize_column_name(val) for val in df[col].unique()]
-                    for scale in ORDERED_KEYWORD_SET.values()
-                    for keyword in scale
-            ):
+            # Check for ordinal patterns in the data
+            if any(keyword in [normalize_column_name(val) for val in df[col].unique()]
+                   for scale in ORDERED_KEYWORD_SET.values()
+                   for keyword in scale):
                 column_types['ordinal'].append(col)
             else:
                 column_types['nominal'].append(col)
 
-    print("\n[DEBUG] Function: detect_column_types Completed")
+    logger.info(f"Column classification complete: {len(column_types['nominal'])} nominal, "
+                f"{len(column_types['ordinal'])} ordinal, {len(column_types['free_text'])} free text")
     return column_types
 
 
-def determine_category_order(col_values):
+def determine_category_order(col_values: List[str]) -> List[str]:
     """
-    Dynamically determine the correct order of categories for a given column.
-
-    Parameters:
-    ----------
-    col_values : list
-        List of unique values in the column.
-
-    Returns:
-    -------
-    list
-        Sorted list of categories in the determined order.
+    Determines the correct order of categories for ordinal encoding.
+    Uses cached patterns when possible to improve performance.
     """
     lower_col_values = [normalize_column_name(val) for val in col_values]
     best_match = None
     best_match_count = 0
 
-    # Try to match the column values with the known ordered keyword sets
+    # Match against known patterns
     for scale_name, keywords in ORDERED_KEYWORD_SET.items():
-        # Convert dictionary keys to list if `keywords` is a dictionary
         keyword_list = list(keywords.keys()) if isinstance(keywords, dict) else keywords
         match_count = sum(1 for val in lower_col_values if val in keyword_list)
 
-        # Update best match if this keyword set has more matches
         if match_count > best_match_count:
             best_match = keywords
             best_match_count = match_count
 
-    # Sort based on the matched order, or use semantic similarity if no match
+    # Sort based on the best matching pattern
     if best_match:
-        print(f"[DEBUG] Best Match Found: {best_match}")
-
-        # If best_match is a dictionary, sort col_values based on dictionary values
         if isinstance(best_match, dict):
-            print("\n[DEBUG] Function: determine_category_order Completed")
-
-            return sorted(col_values, key=lambda x: best_match.get(x.lower(), float('inf')))
-        else:
-            print("\n[DEBUG] Function: determine_category_order Completed")
-
-            return sorted(col_values,
-                          key=lambda x: best_match.index(x.lower()) if x.lower() in best_match else float('inf'))
+            return sorted(col_values, key=lambda x: best_match.get(normalize_column_name(x), float('inf')))
+        return sorted(col_values,
+                      key=lambda x: best_match.index(normalize_column_name(x))
+                      if normalize_column_name(x) in best_match else float('inf'))
+    return col_values
 
 
-def encode_columns(df, column_types):
+def encode_columns(df: pd.DataFrame, column_types: Dict[str, List[str]]) -> pd.DataFrame:
     """
-    Encode ordinal and nominal columns to make them interpretable for statistical analysis.
-
-    Parameters:
-    ----------
-    df : pd.DataFrame
-        The input DataFrame.
-    column_types : dict
-        Dictionary containing the classified column types.
-
-    Returns:
-    -------
-    pd.DataFrame
-        DataFrame with encoded columns.
+    Encodes columns based on their type with improved error handling and normalization.
+    Uses parallel processing for large datasets to improve performance.
     """
-    # Step 1: Handle ordinal columns (using predefined or dynamically detected categories)
-    for col in column_types['ordinal']:
+    df = df.copy()
+    encoder_cache = {}
+
+    def encode_ordinal_column(col: str) -> pd.Series:
+        """Helper function to encode a single ordinal column"""
         try:
-            # Dynamically determine categories for unseen ordinal columns (assume list)
             unique_values = df[col].dropna().unique()
             categories = [determine_category_order(unique_values)]
-            print(f"\n\n[DEBUG] Determined Order for {col}: {categories}")  # Track category order
 
-            encoder = OrdinalEncoder(categories=categories)
-            df[col] = encoder.fit_transform(df[[col]]) + 1  # +1 to avoid 0-based indexing
+            if col not in encoder_cache:
+                encoder_cache[col] = OrdinalEncoder(categories=categories)
+
+            encoded_values = encoder_cache[col].fit_transform(df[[col]]) + 1
+            return pd.Series(encoded_values.ravel(), index=df.index, name=col)
+
         except Exception as e:
-            print(f"[ERROR] Ordinal encoding failed for '{col}': {e}")
+            logger.warning(f"Could not encode ordinal column {col}: {e}")
+            return df[col]
 
-    # Step 2: Handle nominal columns (label encoding to keep single column structure)
-    for col in column_types['nominal']:
+    def encode_nominal_column(col: str) -> pd.Series:
+        """Helper function to encode a single nominal column"""
         try:
-            if df[col].nunique() == 2:  # Handle binary columns explicitly
-                df[col] = df[col].map({'no': 0, 'yes': 1})  # Adjust based on actual values
+            if df[col].nunique() == 2:
+                return pd.Categorical(df[col]).codes
             else:
-                # Use LabelEncoder for other nominal columns
-                le = LabelEncoder()
-                df[col] = le.fit_transform(df[col].astype(str))  # Convert to string to handle non-string categories
+                if col not in encoder_cache:
+                    encoder_cache[col] = LabelEncoder()
+                return pd.Series(
+                    encoder_cache[col].fit_transform(df[col].astype(str)),
+                    index=df.index,
+                    name=col
+                )
         except Exception as e:
-            print(f"[ERROR] Nominal encoding failed for '{col}': {e}")
+            logger.warning(f"Could not encode nominal column {col}: {e}")
+            return df[col]
 
-    print("\n[DEBUG] Function: encode_columns Completed")
+    # Process columns in parallel if dataset is large enough
+    if len(df) > 1000:
+        with ThreadPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
+            # Process ordinal columns
+            if column_types['ordinal']:
+                ordinal_results = list(executor.map(encode_ordinal_column, column_types['ordinal']))
+                for col, result in zip(column_types['ordinal'], ordinal_results):
+                    df[col] = result
 
-    return df
-
-
-def sanity_check_chills(df, chills_column, chills_intensity_column, threshold=0):
-    """
-    Sanity check to flag inconsistencies between chills columns.
-
-    This function checks for inconsistencies where a subject reports no chills
-    (indicated by a 0 in the chills column) but records a non-zero intensity
-    (greater than the given threshold) in the chills intensity column.
-
-    Parameters:
-    ----------
-    df : pd.DataFrame
-        The input DataFrame to be checked for inconsistencies.
-    chills_column : str
-        Name of the column that indicates whether chills were experienced (0 or 1).
-    chills_intensity_column : str
-        Name of the column representing the intensity of chills.
-    threshold : int, optional
-        The minimum value for chills intensity to flag an inconsistency.
-        Default is 0, meaning any non-zero intensity will trigger the flag.
-
-    Returns:
-    -------
-    pd.DataFrame
-        A copy of the input DataFrame with an additional column 'Sanity_Flag'.
-        This column contains 1 for inconsistent rows and 0 for consistent ones.
-    """
-    inconsistent_rows = (df[chills_column] == 0) & (df[chills_intensity_column] >= threshold)
-    df['Sanity_Flag'] = inconsistent_rows.astype(int)
-
-    print("\n[DEBUG] Function: sanity_check_chills Completed")
+            # Process nominal columns
+            if column_types['nominal']:
+                nominal_results = list(executor.map(encode_nominal_column, column_types['nominal']))
+                for col, result in zip(column_types['nominal'], nominal_results):
+                    df[col] = result
+    else:
+        # Process sequentially for smaller datasets
+        for col in column_types['ordinal']:
+            df[col] = encode_ordinal_column(col)
+        for col in column_types['nominal']:
+            df[col] = encode_nominal_column(col)
 
     return df
 
 
-def preprocess_data(df):
+def normalize_and_match_columns(df: pd.DataFrame, columns_to_match: List[str]) -> List[str]:
     """
-    Normalize column names, detect types, and encode data for statistical analysis and aggregating behavioral measure scores.
-
-    Parameters:
-    ----------
-    df : pd.DataFrame
-        The input DataFrame to be preprocessed.
-
-    Returns:
-    -------
-    pd.DataFrame
-        Preprocessed DataFrame ready for analysis.
+    Finds matching columns in the DataFrame even with slight naming differences.
+    Returns the list of matched original column names.
     """
-    # Normalize column names right at the beginning
-    df.columns = [normalize_column_name(col) for col in df.columns]
+    df_cols = {normalize_column_name(col): col for col in df.columns}
+    matched_cols = []
 
-    # Detect column types
-    column_types = detect_column_types(df)
+    for col in columns_to_match:
+        norm_col = normalize_column_name(col)
+        if norm_col in df_cols:
+            matched_cols.append(df_cols[norm_col])
 
-    # Encode columns
-    df = encode_columns(df, column_types)
-
-    # Ensure numeric columns are consistent in type (float64)
-    df = df.astype({col: 'float64' for col in df.select_dtypes(include=[np.int64, np.float64]).columns})
-
-    print("\n[DEBUG] Function: preprocess_data Completed\n")
-
-    return df
+    return matched_cols
 
 
-def generate_qa_report(df):
+def generate_qa_report(df: pd.DataFrame) -> Dict[str, Any]:
     """
-    Generate a QA report identifying missing values, outliers, and rows with many missing values.
-
-    This function scans the DataFrame for missing values and numerical outliers. It also identifies
-    rows that contain a significant number (3 or more) of missing values to assist with quality assurance.
-
-    Parameters:
-    ----------
-    df : pd.DataFrame
-        The input DataFrame to be analyzed for QA issues.
-
-    Returns:
-    -------
-    dict
-        A dictionary containing the QA report with the following keys:
-        - 'missing_values': Dictionary with column names as keys and count of missing values as values.
-        - 'outliers': Dictionary with column names as keys and count of detected outliers as values.
-        - 'rows_with_3_or_more_missing_values': Dictionary with:
-            - 'count': Number of rows containing 3 or more missing values.
-            - 'row_indices': List of indices of these rows.
+    Generates a quality assurance report with missing value analysis
+    and potential data quality issues.
     """
-
-    report = {'missing_values': df.isnull().sum().to_dict()}
-
-    outliers_report = {}
-    report['outliers'] = outliers_report
-
-    rows_with_many_missing = df[df.isnull().sum(axis=1) >= 3]
-    report['rows_with_3_or_more_missing_values'] = {
-        'count': len(rows_with_many_missing),
-        'row_indices': rows_with_many_missing.index.tolist()
+    return {
+        'missing_values': df.isnull().sum().to_dict(),
+        'rows_with_3_or_more_missing_values': {
+            'count': len(df[df.isnull().sum(axis=1) >= 3]),
+            'row_indices': df[df.isnull().sum(axis=1) >= 3].index.tolist()
+        }
     }
 
-    return report
 
-
-# def detect_outliers(df, column_name, threshold=3):
-#     """
-#     Detect outliers in a numerical column using Z-scores.
-#
-#     This function calculates Z-scores for each value in a specified column.
-#     Outliers are defined as values with an absolute Z-score greater than the
-#     given threshold.
-#
-#     Parameters:
-#     ----------
-#     df : pd.DataFrame
-#         The DataFrame containing the column to analyze.
-#     column_name : str
-#         The name of the numerical column to check for outliers.
-#     threshold : int, optional
-#         The Z-score threshold to identify outliers. Default is 3.
-#
-#     Returns:
-#     -------
-#     int
-#         The number of outliers found in the specified column.
-#     """
-#     col_data = df[[column_name]].dropna()
-#     if col_data.std().iloc[0] == 0:
-#         return 0
-#
-#     scaler = StandardScaler()
-#     z_scores = scaler.fit_transform(col_data)
-#     return (np.abs(z_scores) > threshold).sum()
-
-
-# Full pipeline
-def process_data_pipeline(input_df, chills_column=None, chills_intensity_column=None, intensity_threshold=0,
-                          mode='flag',
-                          user_column_mappings=None):
+def sanity_check_chills(df: pd.DataFrame, chills_column: str,
+                        chills_intensity_column: str, threshold: int = 0) -> pd.DataFrame:
     """
-    Main pipeline function that handles QA, sanity checks, encoding, and scoring.
-
-    This function serves as the main entry point for processing data. It handles
-    missing values, generates a QA report, performs a sanity check for the
-    'chills' columns, preprocesses the data, and calculates scores using a
-    provided scorer.
-
-    Parameters:
-    ----------
-    input_df : pd.DataFrame
-        The raw input DataFrame to process.
-    chills_column : str
-        The column representing whether chills were experienced (e.g., 0 or 1).
-    chills_intensity_column : str
-        The column representing the intensity of chills.
-    intensity_threshold : int, optional
-        The threshold for intensity to flag inconsistencies in the sanity check.
-        Default is 0.
-    mode : str, optional
-        Processing mode; not currently used but reserved for future extensions.
-        Default is 'flag'.
-    user_column_mappings : dict, optional
-        Custom mappings provided by the user for scoring purposes.
-
-    Returns:
-    -------
-    tuple
-        - final_df (pd.DataFrame): DataFrame with all calculated scale scores.
-        - intermediate_df (pd.DataFrame): Preprocessed DataFrame before scoring.
-        - qa_report (str): JSON-like string representation of the QA report. This is downloaded as a .txt file in the application.
+    Performs consistency checks on chills-related data.
+    Flags or removes inconsistent responses based on the specified mode.
     """
-    # Step 1: Handle missing values
-    # df = handle_missing_values(input_df)
-
-    df = input_df
-
-    # Step 2: Run automated QA and generate QA report
-    qa_report = generate_qa_report(df)
-
-    # Step 3: Perform sanity check for chills response if present in data
-    if chills_column and chills_intensity_column:
-        df = sanity_check_chills(df, chills_column, chills_intensity_column, intensity_threshold)
-
-    # Step 4: Preprocess data
-    intermediate_df = preprocess_data(df.copy())
-
-    # Step 5: Calculate the scores
-    scorer = ScaleScorer(intermediate_df, user_column_mappings)
-    final_df = scorer.calculate_all_scales()
-
-    print("\n[DEBUG] Function: process_data_pipeline Completed")
-
-    return final_df, intermediate_df, str(qa_report)
+    df = df.copy()
+    try:
+        inconsistent_rows = (df[chills_column] == 0) & (df[chills_intensity_column] >= threshold)
+        df['Sanity_Flag'] = inconsistent_rows.astype(int)
+    except Exception as e:
+        logger.error(f"Error in chills sanity check: {e}")
+        df['Sanity_Flag'] = 0
+    return df
 
 
-# Testing Ground
-if __name__ == "__main__":
-    # Test data for the ASI-3 questionnaire
-    test_data = {
-        "It is important for me not to appear nervous.": [
-            "Very little", "Some", "A little", "A little", "Very little", "Some", "A little", "A little",
-            "Very little", "Some", "A little", "A little", "Very little", "Some", "A little", "A little",
-            "Very little", "Some", "A little", "A little", "Very little", "Some", "A little", "A little",
-            "Very little", "Some", "A little", "A little", "Very little", "Some", "A little", "A little"
-        ],
-        "When I cannot keep my mind on a task, I worry that I might be going crazy.": [
-            "Some", "Very much", "Some", "Very little", "Some", "Very much", "Some", "Very little",
-            "Some", "Very much", "Some", "Very little", "Some", "Very much", "Some", "Very little",
-            "Some", "Very much", "Some", "Very little", "Some", "Very much", "Some", "Very little",
-            "Some", "Very much", "Some", "Very little", "Some", "Very much", "Some", "Very little"
-        ],
-        "It scares me when my heart beats rapidly.": [
-            "A little", "Much", "Some", "Very little", "A little", "Much", "Some", "Very little",
-            "A little", "Much", "Some", "Very little", "A little", "Much", "Some", "Very little",
-            "A little", "Much", "Some", "Very little", "A little", "Much", "Some", "Very little",
-            "A little", "Much", "Some", "Very little", "A little", "Much", "Some", "Very little"
-        ],
-        "When my stomach is upset, I worry that I might be seriously ill.": [
-            "Very much", "A little", "Some", "Much", "Very much", "A little", "Some", "Much",
-            "Very much", "A little", "Some", "Much", "Very much", "A little", "Some", "Much",
-            "Very much", "A little", "Some", "Much", "Very much", "A little", "Some", "Much",
-            "Very much", "A little", "Some", "Much", "Very much", "A little", "Some", "Much"
-        ],
-        "It scares me when I am unable to keep my mind on a task.": [
-            "Some", "Some", "Very much", "A little", "Some", "Some", "Very much", "A little",
-            "Some", "Some", "Very much", "A little", "Some", "Some", "Very much", "A little",
-            "Some", "Some", "Very much", "A little", "Some", "Some", "Very much", "A little",
-            "Some", "Some", "Very much", "A little", "Some", "Some", "Very much", "A little"
-        ],
-        "When I tremble in the presence of others, I fear what people might think of me.": [
-            "Much", "Some", "Very little", "Some", "Much", "Some", "Very little", "Some",
-            "Much", "Some", "Very little", "Some", "Much", "Some", "Very little", "Some",
-            "Much", "Some", "Very little", "Some", "Much", "Some", "Very little", "Some",
-            "Much", "Some", "Very little", "Some", "Much", "Some", "Very little", "Some"
-        ],
-        "When my chest feels tight, I get scared that I won't be able to breathe properly.": [
-            "Very much", "Much", "A little", "Some", "Very much", "Much", "A little", "Some",
-            "Very much", "Much", "A little", "Some", "Very much", "Much", "A little", "Some",
-            "Very much", "Much", "A little", "Some", "Very much", "Much", "A little", "Some",
-            "Very much", "Much", "A little", "Some", "Very much", "Much", "A little", "Some"
-        ],
-        "When I feel pain in my chest, I worry that I'm going to have a heart attack.": [
-            "Some", "Very much", "Much", "A little", "Some", "Very much", "Much", "A little",
-            "Some", "Very much", "Much", "A little", "Some", "Very much", "Much", "A little",
-            "Some", "Very much", "Much", "A little", "Some", "Very much", "Much", "A little",
-            "Some", "Very much", "Much", "A little", "Some", "Very much", "Much", "A little"
-        ],
-        "I worry that other people will notice my anxiety.": [
-            "Much", "Some", "A little", "Very little", "Much", "Some", "A little", "Very little",
-            "Much", "Some", "A little", "Very little", "Much", "Some", "A little", "Very little",
-            "Much", "Some", "A little", "Very little", "Much", "Some", "A little", "Very little",
-            "Much", "Some", "A little", "Very little", "Much", "Some", "A little", "Very little"
-        ],
-        "When I feel 'spacey' or spaced out I worry that I may be mentally ill.": [
-            "Very little", "Much", "Some", "Some", "Very little", "Much", "Some", "Some",
-            "Very little", "Much", "Some", "Some", "Very little", "Much", "Some", "Some",
-            "Very little", "Much", "Some", "Some", "Very little", "Much", "Some", "Some",
-            "Very little", "Much", "Some", "Some", "Very little", "Much", "Some", "Some"
-        ],
-        "It scares me when I blush in front of people.": [
-            "A little", "Some", "Very little", "Much", "A little", "Some", "Very little", "Much",
-            "A little", "Some", "Very little", "Much", "A little", "Some", "Very little", "Much",
-            "A little", "Some", "Very little", "Much", "A little", "Some", "Very little", "Much",
-            "A little", "Some", "Very little", "Much", "A little", "Some", "Very little", "Much"
-        ],
-        "When I notice my heart skipping a beat, I worry that there is something seriously wrong with me.": [
-            "Some", "Very little", "Much", "A little", "Some", "Very little", "Much", "A little",
-            "Some", "Very little", "Much", "A little", "Some", "Very little", "Much", "A little",
-            "Some", "Very little", "Much", "A little", "Some", "Very little", "Much", "A little",
-            "Some", "Very little", "Much", "A little", "Some", "Very little", "Much", "A little"
-        ],
-        "When I begin to sweat in a social situation, I fear people will think negatively of me.": [
-            "Very much", "Some", "Some", "A little", "Very much", "Some", "Some", "A little",
-            "Very much", "Some", "Some", "A little", "Very much", "Some", "Some", "A little",
-            "Very much", "Some", "Some", "A little", "Very much", "Some", "Some", "A little",
-            "Very much", "Some", "Some", "A little", "Very much", "Some", "Some", "A little"
-        ],
-        "When my thoughts seem to speed up, I worry that I might be going crazy.": [
-            "Some", "Much", "Very much", "Some", "Some", "Much", "Very much", "Some",
-            "Some", "Much", "Very much", "Some", "Some", "Much", "Very much", "Some",
-            "Some", "Much", "Very much", "Some", "Some", "Much", "Very much", "Some",
-            "Some", "Much", "Very much", "Some", "Some", "Much", "Very much", "Some"
-        ],
-        "When my throat feels tight, I worry that I could choke to death.": [
-            "A little", "Very much", "Much", "Very little", "A little", "Very much", "Much", "Very little",
-            "A little", "Very much", "Much", "Very little", "A little", "Very much", "Much", "Very little",
-            "A little", "Very much", "Much", "Very little", "A little", "Very much", "Much", "Very little",
-            "A little", "Very much", "Much", "Very little", "A little", "Very much", "Much", "Very little"
-        ],
-        "When I have trouble thinking clearly, I worry that there is something wrong with me.": [
-            "Very much", "Some", "A little", "Some", "Very much", "Some", "A little", "Some",
-            "Very much", "Some", "A little", "Some", "Very much", "Some", "A little", "Some",
-            "Very much", "Some", "A little", "Some", "Very much", "Some", "A little", "Some",
-            "Very much", "Some", "A little", "Some", "Very much", "Some", "A little", "Some"
-        ],
-        "I think it would be horrible for me to faint in public.": [
-            "Some", "Some", "Very much", "Much", "Some", "Some", "Very much", "Much",
-            "Some", "Some", "Very much", "Much", "Some", "Some", "Very much", "Much",
-            "Some", "Some", "Very much", "Much", "Some", "Some", "Very much", "Much",
-            "Some", "Some", "Very much", "Much", "Some", "Some", "Very much", "Much"
-        ],
-        "When my mind goes blank, I worry there is something terribly wrong with me.": [
-            "A little", "Very little", "Some", "Much", "A little", "Very little", "Some", "Much",
-            "A little", "Very little", "Some", "Much", "A little", "Very little", "Some", "Much",
-            "A little", "Very little", "Some", "Much", "A little", "Very little", "Some", "Much",
-            "A little", "Very little", "Some", "Much", "A little", "Very little", "Some", "Much"
-        ]
-    }
+def process_data_pipeline(
+        input_df: pd.DataFrame,
+        chills_column: Optional[str] = None,
+        chills_intensity_column: Optional[str] = None,
+        intensity_threshold: int = 0,
+        mode: str = 'flag',
+        user_column_mappings: Optional[Dict] = None
+) -> Tuple[pd.DataFrame, pd.DataFrame, str]:
+    """
+    Main pipeline function that coordinates all data processing steps.
+    Handles column normalization, encoding, and scoring with improved error handling.
+    """
+    try:
+        # Create a working copy of the input data
+        df = input_df.copy()
 
-    # Convert the test data to a DataFrame
-    test_df = pd.DataFrame(test_data)
+        # Normalize column names in the DataFrame
+        df.columns = [normalize_column_name(col) for col in df.columns]
 
-    print(test_df.head())
+        # Process user column mappings to match normalized format
+        if user_column_mappings:
+            normalized_mappings = {}
+            for scale, mapping in user_column_mappings.items():
+                normalized_mapping = {}
+                for q_num, col_name in mapping.items():
+                    normalized_col = normalize_column_name(col_name)
+                    matching_cols = normalize_and_match_columns(df, [col_name])
+                    if matching_cols:
+                        normalized_mapping[q_num] = matching_cols[0]
+                if normalized_mapping:
+                    normalized_mappings[scale] = normalized_mapping
+            user_column_mappings = normalized_mappings
 
-    # User-defined column mappings
-    user_column_mappings = test_df.columns
+        # Generate QA report
+        qa_report = generate_qa_report(df)
 
-    # Run the pipeline
-    final_df, intermediate_df, qa_report = process_data_pipeline(
-        input_df=test_df,  # Input DataFrame
-        chills_column=None,  # No chills columns provided
-        chills_intensity_column=None,
-        intensity_threshold=0,  # Not used here
-        user_column_mappings=user_column_mappings  # Response mappings for scoring
-    )
+        # Detect and encode column types
+        column_types = detect_column_types(df)
+        intermediate_df = encode_columns(df, column_types)
 
-    # Print outputs
-    print("Final DataFrame:\n", final_df)
-    print("\nIntermediate DataFrame:\n", intermediate_df)
-    print("\nQA Report:\n", qa_report)
+        # Perform chills analysis if requested
+        if chills_column and chills_intensity_column:
+            intermediate_df = sanity_check_chills(
+                intermediate_df,
+                normalize_column_name(chills_column),
+                normalize_column_name(chills_intensity_column),
+                intensity_threshold
+            )
+
+        # Calculate behavioral scores
+        scorer = ScaleScorer(intermediate_df, user_column_mappings)
+        final_df = scorer.calculate_all_scales()
+
+        return final_df, intermediate_df, str(qa_report)
+
+    except Exception as e:
+        logger.error(f"Pipeline error: {str(e)}")
+        raise

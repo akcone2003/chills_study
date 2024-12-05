@@ -1,4 +1,5 @@
 import pandas as pd
+import streamlit as st
 
 
 def normalize_column_name(df_or_name):
@@ -98,6 +99,18 @@ def get_score_from_mapping(value, scale_type):
             return None
     return None
 
+
+def handle_checkbox_change(idx):
+    """Handle checkbox state changes"""
+    checkbox_key = f"sanity_drop_{idx}"
+    new_state = st.session_state[checkbox_key]
+    st.session_state.checkbox_states[checkbox_key] = new_state
+
+    if new_state:
+        st.session_state.sanity_check_drops.add(idx)
+    else:
+        st.session_state.sanity_check_drops.discard(idx)
+
 # Define multiple ordered keyword lists for different types of scales
 ORDERED_KEYWORD_SET = {
     # Recency Scales
@@ -156,3 +169,5 @@ ORDERED_KEYWORD_SET = {
 }
 
 # TODO - add more scales as you encounter them
+
+
