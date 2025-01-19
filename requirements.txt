@@ -2,6 +2,4 @@ pandas~=2.2.3
 numpy~=2.0.2
 streamlit~=1.39.0
 scikit-learn~=1.5.2
-torch~=2.5.0
-transformers~=4.46.0
 scipy~=1.14.1
