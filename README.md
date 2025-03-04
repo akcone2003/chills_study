@@ -145,8 +145,8 @@ The Streamlit app (`app.py`) provides a step-by-step interface for users to inte
 3. **Customizable Encoding Options**:
    - Provide more options for encoding nominal and ordinal variables based on user-defined rules.
 
-4. **Interactive Review of Text Responses**:
-   - Implement a more interactive interface for reviewing and categorizing open-ended survey responses.
+4. **Visualization of Data**
+   - Implement dynamic charts and tables, allowing researchers to explore data interactively and visualize trends without needing external tools.
 
 ### Adding New Functionalities
 If you'd like to add your own functionalities to this web app, you can easily do so by following these steps:
