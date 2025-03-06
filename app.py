@@ -104,7 +104,8 @@ if input_file is not None:
                             "Anxiety_Sensitivity_Index-3_(ASI-3_ASI-R)",
                             "Karolinska_Sleepiness_Scale_(KSS)", "Wong-Baker_Pain_Scale",
                             "Overall_Anxiety_Severity_and_Impairment_Scale_(OASIS)",
-                            "PHQ-9", "Sheehan_Disability_Scale_(SDS)", "Brief_Symptom_Inventory-18_(BSI-18)"]
+                            "PHQ-9", "Sheehan_Disability_Scale_(SDS)", "Brief_Symptom_Inventory-18_(BSI-18)", 
+                            "Dispositional_Hope_Scale_(DHS)",]
 
         selected_scales = st.multiselect(
             "Select scales to analyze:",

@@ -52,6 +52,7 @@ class ScaleScorer:
             'Montgomery-Åsberg_Depression_Rating_Scale_(MADRS)': self.score_madrs,
             'Hamilton_Anxiety_Rating_Scale_(HAM-A)': self.score_ham_a,
             'State-Trait_Anxiety_Inventory_(STAI-State_Form)': self.score_stai,
+            'Dispositional_Hope_Scale_(DHS)': self.score_dhs,
             # Measuring Experience-Drive Trait Changes
             'DPES-Joy': self.score_dpes_joy,
             'DPES-Love': self.score_dpes_love,
@@ -1826,6 +1827,46 @@ class ScaleScorer:
         ace_score = self.df[columns].sum(axis=1)
 
         return ace_score
+    
+    def score_dhs(self, columns):
+        """
+        Score the Dispositional Hope Scale (DHS).
+
+        Parameters:
+        ----------
+        columns : list
+            List of 12 column names corresponding to the DHS questionnaire items.
+
+        Returns:
+        -------
+        pd.DataFrame
+            DataFrame containing the DHS total score.
+       """
+        # Ensure the correct number of columns
+        if len(columns) != 12:
+            raise ValueError(f"Expected 12 columns, but got {len(columns)}")
+        
+        # Unpack responses into individual question variables
+        (
+            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
+            q11, q12
+        ) = columns
+
+        # Score subscales
+        pathways_score = self.df[[q1, q4, q6, q8]].sum(axis=1)
+        agency_score = self.df[[q2, q9, q10, q12]].sum(axis=1)
+
+        # Calculate total DHS
+        total_dhs = pathways_score + agency_score
+
+        # Create a DataFrame with all scores
+        scores_df = pd.DataFrame({
+            'DHS_Pathways_Score': pathways_score,
+            'DHS_Agency_Score': agency_score,
+            'DHS_Total_Hope_Score': total_dhs
+        })
+
+        return scores_df
 
 # TODO - add multi dimensional health locus, POMS
 # TODO - add burnout study behavioral surveys
