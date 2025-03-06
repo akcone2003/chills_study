@@ -127,6 +127,7 @@ ORDERED_KEYWORD_SET = {
                      'very often or always true'],
     'frequency_06': ['none of the time', 'rarely', 'some of the time', 'often', 'all of the time'],
     'frequency_07': ['rarely/not at all', 'sometimes', 'often', 'almost always'],
+    'frequency_08': ['not true at all', 'rarely true', 'sometimes true', 'often true', 'true nearly all the time'],
     # Dictionaries for Burnout Scales
     'frequency_08': {'always': 100, 'often': 75, 'sometimes': 50, 'seldom': 25, 'never/almost never': 0},
     'frequency_09': {'to a very high degree': 100, 'to a high degree': 75,
@@ -145,12 +146,14 @@ ORDERED_KEYWORD_SET = {
     'agreement_06': {'not true at all': 0, 'a little true': 1, 'quite true': 2, 'completely true': 3},
     'agreement_07': ['not at all', 'somewhat', 'moderately so', 'very much so'],
     'agreement_08': {'very little': 0, 'a little': 1, 'some': 2, 'much': 3, 'very much': 4},
+
     # Intensity Scales
     'intensity_01': ['not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
     'intensity_02': ['not at all', 'somewhat', 'extremely'],
     'intensity_03': ['very slightly or not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
     'intensity_04': ['not at all', 'a little', 'somewhat', 'very much'],
     'intensity_05': {'not present': 0, 'mild': 1, 'moderate': 2, 'severe': 3, 'very severe': 4},
+    'intensity_06': ['not at all', 'a little', 'moderately', 'quite a lot', 'extremely'],
     # Mood Scales
     'positivity': ['poor', 'fair', 'good', 'very good', 'excellent'],
     # Specialty scales

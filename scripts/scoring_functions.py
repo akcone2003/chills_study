@@ -53,6 +53,8 @@ class ScaleScorer:
             'Hamilton_Anxiety_Rating_Scale_(HAM-A)': self.score_ham_a,
             'State-Trait_Anxiety_Inventory_(STAI-State_Form)': self.score_stai,
             'Dispositional_Hope_Scale_(DHS)': self.score_dhs,
+            'General_Self-Efficacy_Scale_(GSES)': self.score_gses,
+            'Connor-Davidson_Resilience_Scale_(CD-RISC-10)': self.score_cd_risc_10,
             # Measuring Experience-Drive Trait Changes
             'DPES-Joy': self.score_dpes_joy,
             'DPES-Love': self.score_dpes_love,
@@ -1867,6 +1869,158 @@ class ScaleScorer:
         })
 
         return scores_df
+    
+    def score_gses(self, columns):
+        """
+        Calculate the General Self-Efficacy Scale (GSES) score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names corresponding to the GSES questions.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated GSES total scores.
+        """
+        # Ensure the correct number of columns
+        if len(columns) != 10:
+            raise ValueError(f"Expected 10 columns, but got {len(columns)}")
+
+        # Calculate total GSES score by summing all items
+        gses_total_score = self.df[columns].sum(axis=1)
+
+        return gses_total_score
+    
+    def score_cd_risc_10(self, columns):
+        """
+        Calculate the Connor-Davidson Resilience Scale (CD-RISC-10) score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names corresponding to the CD-RISC-10 questions.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated CD-RISC-10 total scores.
+        """
+        # Ensure the correct number of columns
+        if len(columns) != 10:
+            raise ValueError(f"Expected 10 columns, but got {len(columns)}")
+
+        # Calculate total CD-RISC-10 score by summing all items
+        cd_risc_10_total_score = self.df[columns].sum(axis=1)
+
+        return cd_risc_10_total_score
+    
+    def score_poms(self, columns):
+        """
+        Calculate the Profile of Mood States (POMS) scores.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names corresponding to the POMS questions.
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing subscale scores and Total Mood Disturbance (TMD).
+        """
+        # Ensure the correct number of columns
+        if len(columns) != 30:
+            raise ValueError(f"Expected 30 columns, but got {len(columns)}")
+
+        # Create the mapping of items to subscales
+        tension_items = ['Tense', 'Shaky', 'On Edge', 'Panicky', 'Uneasy', 
+                        'Restless', 'Nervous', 'Anxious']
+        reverse_tension_items = ['Relaxed']
+        
+        depression_items = ['Unhappy', 'Sorry for Things Done', 'Sad', 'Blue', 'Hopeless', 
+                            'Unworthy', 'Discouraged', 'Lonely', 'Miserable', 'Gloomy', 
+                            'Desperate', 'Helpless', 'Worthless', 'Terrified', 'Guilty']
+        
+        anger_items = ['Angry', 'Peeved', 'Grouchy', 'Spiteful', 'Annoyed', 'Resentful', 
+                    'Bitter', 'Ready to Fight', 'Rebellious', 'Deceived', 'Furious', 
+                    'Bad-tempered']
+        
+        fatigue_items = ['Worn out', 'Listless', 'Fatigued', 'Exhausted', 'Sluggish', 
+                        'Weary', 'Bushed']
+        
+        confusion_items = ['Confused', 'Unable to Concentrate', 'Muddled', 'Bewildered', 
+                        'Forgetful', 'Uncertain About Things']
+        reverse_confusion_items = ['Efficient']
+        
+        vigor_items = ['Lively', 'Active', 'Energetic', 'Cheerful', 'Alert', 'Full of pep', 
+                    'Carefree', 'Vigorous']
+        
+        # Map columns to their respective subscales
+        tension_cols = []
+        reverse_tension_cols = []
+        depression_cols = []
+        anger_cols = []
+        fatigue_cols = []
+        confusion_cols = []
+        reverse_confusion_cols = []
+        vigor_cols = []
+        
+        for col in columns:
+            col_lower = col.lower()
+            # Check which subscale this item belongs to
+            if any(item.lower() in col_lower for item in tension_items):
+                tension_cols.append(col)
+            elif any(item.lower() in col_lower for item in reverse_tension_items):
+                reverse_tension_cols.append(col)
+            elif any(item.lower() in col_lower for item in depression_items):
+                depression_cols.append(col)
+            elif any(item.lower() in col_lower for item in anger_items):
+                anger_cols.append(col)
+            elif any(item.lower() in col_lower for item in fatigue_items):
+                fatigue_cols.append(col)
+            elif any(item.lower() in col_lower for item in confusion_items):
+                confusion_cols.append(col)
+            elif any(item.lower() in col_lower for item in reverse_confusion_items):
+                reverse_confusion_cols.append(col)
+            elif any(item.lower() in col_lower for item in vigor_items):
+                vigor_cols.append(col)
+        
+        # Calculate subscale scores
+        tension_sum = self.df[tension_cols].sum(axis=1)
+        # Add reversed items
+        if reverse_tension_cols:
+            tension_sum += (4 - self.df[reverse_tension_cols]).sum(axis=1)
+        
+        depression_sum = self.df[depression_cols].sum(axis=1)
+        
+        anger_sum = self.df[anger_cols].sum(axis=1)
+        
+        fatigue_sum = self.df[fatigue_cols].sum(axis=1)
+        
+        confusion_sum = self.df[confusion_cols].sum(axis=1)
+        # Add reversed items
+        if reverse_confusion_cols:
+            confusion_sum += (4 - self.df[reverse_confusion_cols]).sum(axis=1)
+        
+        vigor_sum = self.df[vigor_cols].sum(axis=1)
+        
+        # Calculate TMD
+        tmd = tension_sum + depression_sum + anger_sum + fatigue_sum + confusion_sum - vigor_sum
+        
+        # Create output dataframe
+        results = pd.DataFrame({
+            'POMS_Tension': tension_sum,
+            'POMS_Depression': depression_sum,
+            'POMS_Anger': anger_sum,
+            'POMS_Fatigue': fatigue_sum,
+            'POMS_Confusion': confusion_sum,
+            'POMS_Vigor': vigor_sum,
+            'POMS_Total_Mood_Disturbance': tmd
+        })
+        
+        return results
 
 # TODO - add multi dimensional health locus, POMS
 # TODO - add burnout study behavioral surveys
