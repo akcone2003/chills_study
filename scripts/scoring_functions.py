@@ -70,6 +70,10 @@ class ScaleScorer:
             'PANAS_X': self.score_panas_x,
             '5-Dimensional_Altered States_of_Consciousness_Questionnaire_(5DASC)': self.score_5dasc,
             'Anxiety_Sensitivity_Index-3_(ASI-3_ASI-R)': self.score_asi3,
+            'Subjective_Vitality_Scale(SVS)': self.score_svs,
+            'Flow_State_Scale_(FFS)_(short-version)': self.score_fss_short,
+            'Purpose_In_Life_Test_(PIL)': self.score_pil,
+            'Perceived_Stress_Scale_(PSS)': self.score_pss,
             # Outcome Measures
             'Toronto_Mindfulness_Scale': self.score_toronto_mind_scale,
             # Resilience, Flexibility, Burnout
@@ -2021,6 +2025,156 @@ class ScaleScorer:
         })
         
         return results
+    
+    def score_svs(self, columns):
+        """
+        Calculate the Subjective Vitality Scale (SVS) score.
 
-# TODO - add multi dimensional health locus, POMS
-# TODO - add burnout study behavioral surveys
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names corresponding to the SVS questions.
+
+        Returns:
+        --------
+        pd.Series
+            A series containing the calculated SVS mean scores.
+        """
+        # Ensure the correct number of columns
+        if len(columns) != 6:
+            raise ValueError(f"Expected 6 columns, but got {len(columns)}")
+
+        # Calculate SVS score by averaging all items
+        svs_score = self.df[columns].mean(axis=1)
+
+        return svs_score
+    
+    def score_fss_short(self, columns):
+        """
+        Calculate the Flow State Scale (FSS) short version scores.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names corresponding to the FSS questions.
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing the ABA factor score, FP factor score, and total flow score.
+        """
+        # Ensure the correct number of columns
+        if len(columns) != 9:
+            raise ValueError(f"Expected 9 columns, but got {len(columns)}")
+
+        # Define which items belong to which factor
+        aba_items = [columns[0], columns[2], columns[5]]  # items 1, 3, 6
+        fp_items = [columns[1], columns[3], columns[4], columns[6], columns[7], columns[8]]  # items 2, 4, 5, 7, 8, 9
+
+        # Calculate factor scores
+        aba_score = self.df[aba_items].sum(axis=1)
+        fp_score = self.df[fp_items].sum(axis=1)
+        
+        # Calculate total flow score (sum of all items)
+        total_flow_score = self.df[columns].sum(axis=1)
+
+        # Create results DataFrame
+        results = pd.DataFrame({
+            'FSS_Absorption_by_Activity': aba_score,
+            'FSS_Fluency_of_Performance': fp_score,
+            'FSS_Total_Flow_Score': total_flow_score
+        })
+
+        return results
+    
+    def score_pil(self, columns):
+        """
+        Calculate the Purpose in Life Test (PIL) score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names corresponding to the PIL questions.
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing the total PIL score and classification.
+        """
+        # Ensure the correct number of columns
+        if len(columns) != 20:
+            raise ValueError(f"Expected 20 columns, but got {len(columns)}")
+
+        # Calculate the total PIL score by summing all items
+        total_score = self.df[columns].sum(axis=1)
+        
+        # Classify PIL scores based on typical interpretation ranges
+        # (Note: Adjust these ranges if different classification criteria are used)
+        def classify_pil(score):
+            if score <= 91:
+                return "Low Purpose"
+            elif score <= 112:
+                return "Moderate Purpose"
+            else:
+                return "High Purpose"
+        
+        classification = total_score.apply(classify_pil)
+        
+        # Create results DataFrame
+        results = pd.DataFrame({
+            'PIL_Total_Score': total_score,
+            'PIL_Classification': classification
+        })
+
+        return results
+    
+    def score_pss(self, columns):
+        """
+        Calculate the Perceived Stress Scale (PSS) score.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names corresponding to the PSS questions.
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing the PSS total score and stress level classification.
+        """
+        # Ensure the correct number of columns
+        if len(columns) != 10:
+            raise ValueError(f"Expected 10 columns, but got {len(columns)}")
+
+        # Unpack the 10 questions directly
+        (q1, q2, q3, q4, q5, q6, q7, q8, q9, q10) = columns
+        
+        # Calculate regular scores (items 1, 2, 3, 6, 9, 10)
+        regular_items = [q1, q2, q3, q6, q9, q10]
+        regular_score = self.df[regular_items].sum(axis=1)
+        
+        # Calculate reversed scores (items 4, 5, 7, 8)
+        reversed_items = [q4, q5, q7, q8]
+        reversed_score = (4 - self.df[reversed_items]).sum(axis=1)
+        
+        # Calculate total PSS score
+        total_score = regular_score + reversed_score
+        
+        # Classify stress levels
+        def classify_stress(score):
+            if score <= 13:
+                return "Low Stress"
+            elif score <= 26:
+                return "Moderate Stress"
+            else:
+                return "High Stress"
+        
+        stress_classification = total_score.apply(classify_stress)
+        
+        # Create results DataFrame
+        results = pd.DataFrame({
+            'PSS_Total_Score': total_score,
+            'PSS_Stress_Level': stress_classification
+        })
+        
+        return results
