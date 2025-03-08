@@ -55,6 +55,7 @@ class ScaleScorer:
             'Dispositional_Hope_Scale_(DHS)': self.score_dhs,
             'General_Self-Efficacy_Scale_(GSES)': self.score_gses,
             'Connor-Davidson_Resilience_Scale_(CD-RISC-10)': self.score_cd_risc_10,
+            'Multidimensional_Health_Locus_of_Control_(MHLC)': self.score_mhlc,
             # Measuring Experience-Drive Trait Changes
             'DPES-Joy': self.score_dpes_joy,
             'DPES-Love': self.score_dpes_love,
@@ -2175,6 +2176,59 @@ class ScaleScorer:
         results = pd.DataFrame({
             'PSS_Total_Score': total_score,
             'PSS_Stress_Level': stress_classification
+        })
+        
+        return results
+    
+    def score_mhlc(self, columns):
+        """
+        Calculate the Multidimensional Health Locus of Control (MHLC) scores
+        for both Form A and Form B.
+
+        Parameters:
+        -----------
+        columns : list
+            A list with the column names corresponding to the MHLC questions
+            (36 total - Form A followed by Form B).
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing subscale scores for both Form A and Form B:
+            Internality, Powerful Others Externality, and Chance Externality for each form.
+        """
+        # Ensure the correct number of columns
+        if len(columns) != 36:
+            raise ValueError(f"Expected 36 columns, but got {len(columns)}")
+
+        # Unpack the 36 questions - first 18 for Form A, last 18 for Form B
+        (
+            # Form A questions (1-18)
+            a1, a2, a3, a4, a5, a6, a7, a8, a9, a10,
+            a11, a12, a13, a14, a15, a16, a17, a18,
+            # Form B questions (19-36)
+            b1, b2, b3, b4, b5, b6, b7, b8, b9, b10,
+            b11, b12, b13, b14, b15, b16, b17, b18
+        ) = columns
+        
+        # Calculate Form A subscale scores
+        a_internality_score = self.df[[a1, a6, a8, a12, a13, a17]].sum(axis=1)
+        a_powerful_others_score = self.df[[a3, a5, a7, a10, a14, a18]].sum(axis=1)
+        a_chance_score = self.df[[a2, a4, a9, a11, a15, a16]].sum(axis=1)
+        
+        # Calculate Form B subscale scores
+        b_internality_score = self.df[[b1, b6, b8, b12, b13, b17]].sum(axis=1)
+        b_powerful_others_score = self.df[[b3, b5, b7, b10, b14, b18]].sum(axis=1)
+        b_chance_score = self.df[[b2, b4, b9, b11, b15, b16]].sum(axis=1)
+        
+        # Create results DataFrame with separate scores for each form
+        results = pd.DataFrame({
+            'MHLC_FormA_Internality': a_internality_score,
+            'MHLC_FormA_Powerful_Others': a_powerful_others_score,
+            'MHLC_FormA_Chance': a_chance_score,
+            'MHLC_FormB_Internality': b_internality_score,
+            'MHLC_FormB_Powerful_Others': b_powerful_others_score,
+            'MHLC_FormB_Chance': b_chance_score
         })
         
         return results
