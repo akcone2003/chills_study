@@ -16,33 +16,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def handle_missing_values(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Handles empty cells and common missing value representations in the dataframe.
-    
-    Args:
-        df: Input DataFrame potentially containing empty cells
-        
-    Returns:
-        DataFrame with consistent NaN representation for missing values
-    """
-    # Make a copy to avoid modifying the input
-    df = df.copy()
-    
-    # When pandas reads a CSV, empty cells are typically already converted to NaN
-    # But we'll handle additional cases that might be interpreted as strings
-    
-    # Common missing value indicators in surveys
-    na_values = ['nan', 'NaN', 'NA', 'N/A', '', 'None']
-    
-    # Replace these values with np.nan
-    df = df.replace(na_values, np.nan)
-    
-    # Log how many missing values we found
-    missing_count = df.isna().sum().sum()
-    logger.info(f"Identified {missing_count} missing values across all columns")
-    
-    return df
 
 def detect_column_types(df: pd.DataFrame) -> Dict[str, List[str]]:
     """
@@ -113,115 +86,66 @@ def determine_category_order(col_values: List[str]) -> List[str]:
 
 def encode_columns(df: pd.DataFrame, column_types: Dict[str, List[str]]) -> pd.DataFrame:
     """
-    Encodes columns based on their type, using the predefined scales in ORDERED_KEYWORD_SET.
-    Completely ignores NaN values without attempting to process them.
+    Encodes columns based on their type with improved error handling and normalization.
+    Uses parallel processing for large datasets to improve performance.
     """
     df = df.copy()
+    encoder_cache = {}
 
     def encode_ordinal_column(col: str) -> pd.Series:
-        """Helper function to encode a single ordinal column using ORDERED_KEYWORD_SET"""
+        """Helper function to encode a single ordinal column"""
         try:
-            # Create a copy of the column
-            result = df[col].copy()
-            
-            if pd.api.types.is_numeric_dtype(df[col]):
-                logger.info(f"Column '{col}' is already numeric, skipping encoding")
-                return df[col]
-                
-            # Try to match with a predefined scale
-            norm_values = [normalize_column_name(str(val)) for val in result.dropna().unique()]
-            
-            best_scale = None
-            best_match_count = 0
-            
-            for scale_name, scale in ORDERED_KEYWORD_SET.items():
-                scale_keywords = list(scale.keys()) if isinstance(scale, dict) else scale
-                match_count = sum(1 for val in norm_values if val in scale_keywords)
-                
-                if match_count > best_match_count:
-                    best_scale = scale_name
-                    best_match_count = match_count
-            
-            # If we found a matching scale, use it to encode
-            if best_scale and best_match_count >= 1:
-                logger.info(f"Encoding column '{col}' using scale '{best_scale}'")
-                scale = ORDERED_KEYWORD_SET[best_scale]
-                
-                # Only encode non-NaN values
-                for idx in result.dropna().index:
-                    val = result.loc[idx]
-                    norm_val = normalize_column_name(str(val))
-                    
-                    if isinstance(scale, dict):
-                        # Dictionary scale
-                        encoded_val = scale.get(norm_val)
-                        if encoded_val is not None:
-                            result.loc[idx] = encoded_val
-                    else:
-                        # List scale
-                        try:
-                            encoded_val = scale.index(norm_val)
-                            result.loc[idx] = encoded_val
-                        except ValueError:
-                            # Keep original value if not in scale
-                            pass
-            else:
-                # No matching scale found, use fallback
-                logger.warning(f"Column '{col}' had insufficient matches with scales. Best match: {best_scale} with {best_match_count} matches. Values: {norm_values}")
-                
-            return result
-                
+            unique_values = df[col].dropna().unique()
+            categories = [determine_category_order(unique_values)]
+
+            if col not in encoder_cache:
+                encoder_cache[col] = OrdinalEncoder(categories=categories)
+
+            encoded_values = encoder_cache[col].fit_transform(df[[col]]) + 1
+            return pd.Series(encoded_values.ravel(), index=df.index, name=col)
+
         except Exception as e:
-            logger.warning(f"Could not encode ordinal column {col}: {str(e)}")
-            return df[col]  # Return original column on error
+            logger.warning(f"Could not encode ordinal column {col}: {e}")
+            return df[col]
 
     def encode_nominal_column(col: str) -> pd.Series:
         """Helper function to encode a single nominal column"""
         try:
-            # Create a copy of the column
-            result = df[col].copy()
-            
-            # Skip if all values are NaN
-            if result.isna().all():
-                return result
-            
-            # Get non-NaN indices
-            non_na_idx = result.dropna().index
-            
-            # For binary columns (only 2 unique non-NaN values)
-            if result.dropna().nunique() == 2:
-                unique_vals = result.dropna().unique()
-                mapping = {unique_vals[0]: 0, unique_vals[1]: 1}
-                
-                # Only transform non-NaN values
-                for idx in non_na_idx:
-                    result.loc[idx] = mapping.get(result.loc[idx], result.loc[idx])
+            if df[col].nunique() == 2:
+                return pd.Categorical(df[col]).codes
             else:
-                # For multi-class columns
-                try:
-                    # Get unique values and assign sequential codes
-                    unique_vals = result.dropna().unique()
-                    mapping = {val: i for i, val in enumerate(unique_vals)}
-                    
-                    # Only transform non-NaN values
-                    for idx in non_na_idx:
-                        result.loc[idx] = mapping.get(result.loc[idx], result.loc[idx])
-                except Exception as e:
-                    logger.warning(f"Error encoding multi-class column {col}: {str(e)}")
-            
-            return result
-            
+                if col not in encoder_cache:
+                    encoder_cache[col] = LabelEncoder()
+                return pd.Series(
+                    encoder_cache[col].fit_transform(df[col].astype(str)),
+                    index=df.index,
+                    name=col
+                )
         except Exception as e:
-            logger.warning(f"Could not encode nominal column {col}: {str(e)}")
-            return df[col]  # Return original column on error
+            logger.warning(f"Could not encode nominal column {col}: {e}")
+            return df[col]
 
-    # Process each column
-    for col in column_types['ordinal']:
-        df[col] = encode_ordinal_column(col)
-        
-    for col in column_types['nominal']:
-        df[col] = encode_nominal_column(col)
-    
+    # Process columns in parallel if dataset is large enough
+    if len(df) > 1000:
+        with ThreadPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
+            # Process ordinal columns
+            if column_types['ordinal']:
+                ordinal_results = list(executor.map(encode_ordinal_column, column_types['ordinal']))
+                for col, result in zip(column_types['ordinal'], ordinal_results):
+                    df[col] = result
+
+            # Process nominal columns
+            if column_types['nominal']:
+                nominal_results = list(executor.map(encode_nominal_column, column_types['nominal']))
+                for col, result in zip(column_types['nominal'], nominal_results):
+                    df[col] = result
+    else:
+        # Process sequentially for smaller datasets
+        for col in column_types['ordinal']:
+            df[col] = encode_ordinal_column(col)
+        for col in column_types['nominal']:
+            df[col] = encode_nominal_column(col)
+
     return df
 
 
@@ -270,64 +194,6 @@ def sanity_check_chills(df: pd.DataFrame, chills_column: str,
         df['Sanity_Flag'] = 0
     return df
 
-def preprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Comprehensive preprocessing function that:
-    1. Handles missing values (empty cells)
-    2. Converts string numbers to actual numeric types
-    3. Preserves NaN values appropriately
-    
-    Args:
-        df: Input DataFrame with potential missing values and string numerics
-        
-    Returns:
-        DataFrame with standardized data types and missing values
-    """
-    # Make a copy to avoid modifying the input
-    df = df.copy()
-    
-    # First, identify columns that should be numeric
-    potentially_numeric_cols = []
-    for col in df.columns:
-        # Skip columns that are clearly not numeric or scale items
-        if col.lower() in ['subj id', 'unnamed: 0'] or 'record id' in col.lower():
-            continue
-            
-        # Check if column contains values that look like numbers
-        sample_vals = df[col].dropna().head(10).astype(str)
-        numeric_pattern = r'^[-+]?[0-9]*\.?[0-9]+$'
-        if any(sample_vals.str.match(numeric_pattern)):
-            potentially_numeric_cols.append(col)
-    
-    # Process each column
-    for col in df.columns:
-        # Skip columns that are definitely non-numeric
-        if col not in potentially_numeric_cols:
-            continue
-            
-        # Try to convert to numeric, keeping NaN values intact
-        try:
-            # Convert to numeric with coercion (strings that don't look like numbers become NaN)
-            df[col] = pd.to_numeric(df[col], errors='coerce')
-            
-            # Log successful conversion
-            unique_vals = df[col].dropna().unique()
-            if len(unique_vals) > 0:
-                logger.info(f"Converted column '{col}' to numeric with values: {sorted(unique_vals)}")
-        except Exception as e:
-            logger.warning(f"Could not convert column '{col}' to numeric: {str(e)}")
-    
-    # Handle empty cells and other missing value indicators
-    na_values = ['nan', 'NaN', 'NA', 'N/A', '', None]
-    df = df.replace(na_values, np.nan)
-    
-    # Log missing value counts
-    missing_counts = df.isna().sum()
-    cols_with_missing = missing_counts[missing_counts > 0]
-    if not cols_with_missing.empty:
-        logger.info(f"Columns with missing values: {cols_with_missing.to_dict()}")
-    
-    return df
 
 def process_data_pipeline(
         input_df: pd.DataFrame,
@@ -344,9 +210,6 @@ def process_data_pipeline(
     try:
         # Create a working copy of the input data
         df = input_df.copy()
-        
-        # Preprocess the dataframe - handle missing values and convert data types
-        df = preprocess_dataframe(df)
 
         # Normalize column names in the DataFrame
         df.columns = [normalize_column_name(col) for col in df.columns]
