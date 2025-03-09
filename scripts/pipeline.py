@@ -247,9 +247,53 @@ def process_data_pipeline(
         # Calculate behavioral scores
         scorer = ScaleScorer(intermediate_df, user_column_mappings)
         final_df = scorer.calculate_all_scales()
+        
+        # Clean up duplicate columns in final dataframe
+        final_df = clean_duplicate_columns(final_df)
 
         return final_df, intermediate_df, str(qa_report)
 
     except Exception as e:
         logger.error(f"Pipeline error: {str(e)}")
         raise
+
+def clean_duplicate_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Remove duplicate columns with suffixes like '.1', '.2', etc.
+    Keeps the column without suffix if possible, otherwise keeps the
+    numeric version if available.
+    """
+    df = df.copy()
+    # Group columns by base name (without suffixes)
+    base_names = {}
+    for col in df.columns:
+        # Extract base name (part before the first .1, .2, etc.)
+        parts = col.split('..')
+        base_name = parts[0]
+        if base_name not in base_names:
+            base_names[base_name] = []
+        base_names[base_name].append(col)
+    
+    # Process columns with duplicates
+    for base_name, cols in base_names.items():
+        if len(cols) > 1:
+            logger.info(f"Found duplicate columns for base name '{base_name}': {cols}")
+            
+            # Prefer a column without suffix
+            if base_name in cols:
+                keep_col = base_name
+            else:
+                # If no column without suffix, prefer numeric column
+                numeric_cols = [col for col in cols if pd.api.types.is_numeric_dtype(df[col])]
+                if numeric_cols:
+                    keep_col = numeric_cols[0]
+                else:
+                    # If no numeric column, keep the first one
+                    keep_col = cols[0]
+            
+            # Drop all columns except the one to keep
+            drop_cols = [col for col in cols if col != keep_col]
+            logger.info(f"Keeping '{keep_col}', dropping {drop_cols}")
+            df = df.drop(columns=drop_cols)
+    
+    return df

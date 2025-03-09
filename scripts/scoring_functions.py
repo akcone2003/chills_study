@@ -129,7 +129,13 @@ class ScaleScorer:
                 score_result = scoring_fn(matching_columns)
 
                 if isinstance(score_result, pd.DataFrame):
-                    # Add to results list for later concatenation
+                    # Drop duplicate columns if they already exist
+                    overlapping_columns = set(self.df.columns) & set(score_result.columns)
+                    if overlapping_columns:
+                        print(f"[INFO] Dropping overlapping columns: {overlapping_columns}")
+                        self.df = self.df.drop(columns=list(overlapping_columns), errors='ignore')
+
+                    # Append the new scores DataFrame
                     results.append(score_result)
                     self.question_columns_to_drop.extend(matching_columns)
                 else:
@@ -147,25 +153,13 @@ class ScaleScorer:
         # Concatenate any DataFrames returned by the scoring functions
         if results:
             scores_df = pd.concat(results, axis=1)
-            
-            # Handle duplicate columns explicitly before concatenation
-            duplicate_cols = set(scores_df.columns) & set(self.df.columns)
-            if duplicate_cols:
-                print(f"[INFO] Found duplicate columns during concatenation: {duplicate_cols}")
-                
-                # Drop duplicates from original dataframe to avoid append with ".1" suffix
-                self.df = self.df.drop(columns=list(duplicate_cols), errors='ignore')
-            
-            # Now concatenate with clean column names
             self.df = pd.concat([self.df, scores_df], axis=1)
 
-        # Remove question columns if not in mid-processing
+        print(f"[INFO] Dropping columns: {self.question_columns_to_drop}")
+
         if not mid_processing:
-            # Get list of columns that actually exist in the dataframe
-            cols_to_drop = [col for col in self.question_columns_to_drop if col in self.df.columns]
-            if cols_to_drop:
-                print(f"[INFO] Dropping {len(cols_to_drop)} question columns")
-                self.df = self.df.drop(columns=cols_to_drop, errors='ignore')
+            # Drop question columns from the DataFrame unless mid-processing is active
+            self.df = self.df.drop(columns=self.question_columns_to_drop, errors='ignore')
 
         print("\n[DEBUG] Function: calculate_all_scales completed\n")
 
