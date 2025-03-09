@@ -124,9 +124,9 @@ def encode_columns(df: pd.DataFrame, column_types: Dict[str, List[str]]) -> pd.D
             # Create a copy of the column
             result = df[col].copy()
             
-            # Skip if all values are NaN
-            if result.isna().all():
-                return result
+            if pd.api.types.is_numeric_dtype(df[col]):
+                logger.info(f"Column '{col}' is already numeric, skipping encoding")
+                return df[col]
                 
             # Try to match with a predefined scale
             norm_values = [normalize_column_name(str(val)) for val in result.dropna().unique()]
@@ -143,7 +143,7 @@ def encode_columns(df: pd.DataFrame, column_types: Dict[str, List[str]]) -> pd.D
                     best_match_count = match_count
             
             # If we found a matching scale, use it to encode
-            if best_scale and best_match_count >= 2:
+            if best_scale and best_match_count >= 1:
                 logger.info(f"Encoding column '{col}' using scale '{best_scale}'")
                 scale = ORDERED_KEYWORD_SET[best_scale]
                 
@@ -167,7 +167,7 @@ def encode_columns(df: pd.DataFrame, column_types: Dict[str, List[str]]) -> pd.D
                             pass
             else:
                 # No matching scale found, use fallback
-                logger.warning(f"No appropriate scale found for '{col}'")
+                logger.warning(f"Column '{col}' had insufficient matches with scales. Best match: {best_scale} with {best_match_count} matches. Values: {norm_values}")
                 
             return result
                 
