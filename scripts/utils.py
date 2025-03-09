@@ -127,11 +127,12 @@ ORDERED_KEYWORD_SET = {
                      'very often or always true'],
     'frequency_06': ['none of the time', 'rarely', 'some of the time', 'often', 'all of the time'],
     'frequency_07': ['rarely/not at all', 'sometimes', 'often', 'almost always'],
-    'frequency_08': ['not true at all', 'rarely true', 'sometimes true', 'often true', 'true nearly all the time'],
+    'frequency_08': {'not true at all': 0, 'rarely true': 1, 'sometimes true': 2, 'often true': 3, 'true nearly all the time': 4},
     # Dictionaries for Burnout Scales
     'frequency_08': {'always': 100, 'often': 75, 'sometimes': 50, 'seldom': 25, 'never/almost never': 0},
     'frequency_09': {'to a very high degree': 100, 'to a high degree': 75,
                      'somewhat': 50, 'to a low degree': 25, 'to a very low degree': 0},
+    'frequency_10': {'never': 0, 'almost never': 1, 'sometimes': 2, 'fairly often': 3, 'very often': 4},
     # Agreement Scales
     'agreement_01': ['strongly disagree', 'disagree', 'neither agree nor disagree', 'agree', 'strongly agree'],
     'agreement_02': ['strongly disagree', 'disagree', 'somewhat disagree', 'neutral', 'somewhat agree', 'agree',
@@ -146,15 +147,21 @@ ORDERED_KEYWORD_SET = {
     'agreement_06': {'not true at all': 0, 'a little true': 1, 'quite true': 2, 'completely true': 3},
     'agreement_07': ['not at all', 'somewhat', 'moderately so', 'very much so'],
     'agreement_08': {'very little': 0, 'a little': 1, 'some': 2, 'much': 3, 'very much': 4},
+    'agreement_09': ['strongly disagree', 'moderately disagree', 'slightly disagree', 
+                     'slightly agree', 'moderately agree','strongly agree'],
+    'agreement_10': ['definitely false', 'mostly false', 'mostly true', 'definitely true'],
+    'agreement_11': ['disagree strongly', 'disagree moderately', 'disagree a little', 'neither agree nor disagree',
+                     'agree a little ', 'agree moderately' 'agree strongly'],
 
     # Intensity Scales
-    'intensity_01': ['not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
+    'intensity_01': {'not at all': 0, 'a little': 1, 'moderately': 2, 'quite a bit': 3, 'extremely': 4},
     'intensity_02': ['not at all', 'somewhat', 'extremely'],
     'intensity_03': ['very slightly or not at all', 'a little', 'moderately', 'quite a bit', 'extremely'],
     'intensity_04': ['not at all', 'a little', 'somewhat', 'very much'],
     'intensity_05': {'not present': 0, 'mild': 1, 'moderate': 2, 'severe': 3, 'very severe': 4},
     'intensity_06': ['not at all', 'a little', 'moderately', 'quite a lot', 'extremely'],
     'intensity_07': ['not at all true', 'hardly true', 'moderately true', 'exactly true'],
+    'intensity_08': {'not at all': 0, 'a little': 1, 'moderately': 2, 'quite a bit': 3, 'very much': 4},
     # Mood Scales
     'positivity': ['poor', 'fair', 'good', 'very good', 'excellent'],
     # Specialty scales
