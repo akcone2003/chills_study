@@ -75,6 +75,7 @@ class ScaleScorer:
             'Flow_State_Scale_(FFS)_(short-version)': self.score_fss_short,
             'Purpose_In_Life_Test_(PIL)': self.score_pil,
             'Perceived_Stress_Scale_(PSS)': self.score_pss,
+            'Profile_of_Mood_States_(POMS)': self.score_poms,
             # Outcome Measures
             'Toronto_Mindfulness_Scale': self.score_toronto_mind_scale,
             # Resilience, Flexibility, Burnout
