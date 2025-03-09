@@ -107,7 +107,7 @@ if input_file is not None:
                             "PHQ-9", "Sheehan_Disability_Scale_(SDS)", "Brief_Symptom_Inventory-18_(BSI-18)", 
                             "Dispositional_Hope_Scale_(DHS)", "General_Self-Efficacy_Scale_(GSES)", "Subjective_Vitality_Scale_(SVS)",
                             "Flow_State_Scale_(FFS)_(short-version)", "Purpose_In_Life_(PSS)", "Perceived_Stress_Scale_(PSS)",
-                            "Multidimensional_Health_Locus_of_Control_(MHLC)"]
+                            "Multidimensional_Health_Locus_of_Control_(MHLC)", "Connor-Davidson_Resilience_Scale_(CD-RISC-10)"]
 
         selected_scales = st.multiselect(
             "Select scales to analyze:",
