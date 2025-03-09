@@ -114,98 +114,111 @@ def determine_category_order(col_values: List[str]) -> List[str]:
 def encode_columns(df: pd.DataFrame, column_types: Dict[str, List[str]]) -> pd.DataFrame:
     """
     Encodes columns based on their type with improved error handling and normalization.
-    Uses parallel processing for large datasets to improve performance.
+    Uses the predefined scales in ORDERED_KEYWORD_SET from utils.py for encoding.
     """
     df = df.copy()
-    encoder_cache = {}
 
     def encode_ordinal_column(col: str) -> pd.Series:
-        """Helper function to encode a single ordinal column with proper NaN handling"""
+        """Helper function to encode a single ordinal column using ORDERED_KEYWORD_SET"""
         try:
-            # Get non-NaN values for category determination
-            non_na_values = df[col].dropna().unique()
-            if len(non_na_values) == 0:
+            # Get non-NaN values
+            non_na_mask = ~df[col].isna()
+            if not non_na_mask.any():
                 logger.warning(f"Column {col} has all missing values, skipping encoding")
-                return df[col]  # Return original column if all values are NaN
+                return df[col]
+            
+            # Create a result series to store encoded values
+            result = pd.Series(np.nan, index=df.index, name=col)
+            
+            # Get all unique normalized values
+            unique_values = [normalize_column_name(str(val)) for val in df[col].dropna().unique()]
+            
+            # Find the best matching scale
+            best_scale = None
+            best_match_count = 0
+            
+            for scale_name, scale in ORDERED_KEYWORD_SET.items():
+                if isinstance(scale, dict):
+                    keywords = list(scale.keys())
+                else:
+                    keywords = scale
                 
-            # Determine the category order using only non-NaN values
-            categories = [determine_category_order(non_na_values)]
+                match_count = sum(1 for val in unique_values if val in keywords)
+                if match_count > best_match_count:
+                    best_scale = scale_name
+                    best_match_count = match_count
             
-            # Create a temporary column for encoding
-            temp_df = pd.DataFrame({col: df[col]})
-            
-            # Remember which rows had NaN values
-            na_mask = temp_df[col].isna()
-            
-            # Only encode non-NaN values
-            encoder = OrdinalEncoder(categories=categories)
-            if (~na_mask).any():  # Only proceed if there are non-NaN values
-                temp_df.loc[~na_mask, col] = encoder.fit_transform(temp_df.loc[~na_mask, [col]]) + 1
-            
-            return temp_df[col]
-            
-        except Exception as e:
-            logger.warning(f"Could not encode ordinal column {col}: {str(e)}")
-            return df[col]  # Return original column on error
-
-    def encode_nominal_column(col: str) -> pd.Series:
-        """Helper function to encode a single nominal column with proper NaN handling"""
-        try:
-            # Create a result series
-            result = pd.Series(df[col].values, index=df.index)
-            
-            # Skip if all values are NaN
-            if result.isna().all():
-                logger.warning(f"Column {col} has all missing values, skipping encoding")
-                return result
+            # If we found a matching scale, use it to encode
+            if best_scale:
+                logger.info(f"Encoding column '{col}' using scale '{best_scale}'")
+                scale = ORDERED_KEYWORD_SET[best_scale]
                 
-            # Create a mask for NaN values
-            na_mask = result.isna()
-            
-            # For binary columns (2 unique non-NaN values)
-            if df[col].dropna().nunique() == 2:
-                # Get unique non-NaN values
+                # Apply encoding
+                for idx, val in enumerate(df.loc[non_na_mask, col]):
+                    norm_val = normalize_column_name(str(val))
+                    if isinstance(scale, dict):
+                        # Use dictionary mapping
+                        encoded_val = scale.get(norm_val)
+                        if encoded_val is not None:
+                            result.iloc[df.index.get_indexer([df.index[non_na_mask].tolist()[idx]])[0]] = encoded_val
+                    else:
+                        # Use list ordering
+                        try:
+                            encoded_val = scale.index(norm_val)
+                            result.iloc[df.index.get_indexer([df.index[non_na_mask].tolist()[idx]])[0]] = encoded_val
+                        except ValueError:
+                            pass
+            else:
+                # If no matching scale, just use OrdinalEncoder as fallback
+                logger.warning(f"No matching scale found for column '{col}', using fallback encoding")
                 unique_vals = df[col].dropna().unique()
-                # Simple mapping of first value to 0, second to 1
-                result.loc[~na_mask] = result.loc[~na_mask].map({unique_vals[0]: 0, unique_vals[1]: 1})
-                return result
-                
-            # For multi-class columns
-            encoder = LabelEncoder()
-            # Get non-NaN values as strings
-            non_na_values = df[col].dropna().astype(str).values
-            # Fit encoder
-            encoder.fit(non_na_values)
-            # Transform only non-NaN values
-            result.loc[~na_mask] = encoder.transform(df.loc[~na_mask, col].astype(str).values)
+                categories = [determine_category_order(unique_vals)]
+                encoder = OrdinalEncoder(categories=categories)
+                encoded_vals = encoder.fit_transform(df.loc[non_na_mask, [col]]) + 1
+                result.loc[non_na_mask] = encoded_vals.ravel()
             
             return result
+                
+        except Exception as e:
+            logger.warning(f"Could not encode ordinal column {col}: {str(e)}")
+            import traceback
+            logger.warning(f"Traceback: {traceback.format_exc()}")
+            return df[col]
+
+    def encode_nominal_column(col: str) -> pd.Series:
+        """Helper function to encode a single nominal column"""
+        try:
+            # Skip completely empty columns
+            if df[col].isna().all():
+                return df[col]
+                
+            # Create a copy for the result
+            result = pd.Series(np.nan, index=df.index, name=col)
+            non_na_mask = ~df[col].isna()
             
+            # For binary columns, use 0 and 1
+            if df[col].dropna().nunique() == 2:
+                unique_vals = df[col].dropna().unique()
+                mapping = {unique_vals[0]: 0, unique_vals[1]: 1}
+                result.loc[non_na_mask] = df.loc[non_na_mask, col].map(mapping)
+            else:
+                # For multi-value columns, use LabelEncoder
+                encoder = LabelEncoder()
+                encoder.fit(df.loc[non_na_mask, col].astype(str))
+                result.loc[non_na_mask] = encoder.transform(df.loc[non_na_mask, col].astype(str))
+                
+            return result
         except Exception as e:
             logger.warning(f"Could not encode nominal column {col}: {str(e)}")
-            return df[col]  # Return original column on error
+            return df[col]
 
-    # Process columns in parallel if dataset is large enough
-    if len(df) > 1000:
-        with ThreadPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
-            # Process ordinal columns
-            if column_types['ordinal']:
-                ordinal_results = list(executor.map(encode_ordinal_column, column_types['ordinal']))
-                for col, result in zip(column_types['ordinal'], ordinal_results):
-                    df[col] = result
-
-            # Process nominal columns
-            if column_types['nominal']:
-                nominal_results = list(executor.map(encode_nominal_column, column_types['nominal']))
-                for col, result in zip(column_types['nominal'], nominal_results):
-                    df[col] = result
-    else:
-        # Process sequentially for smaller datasets
-        for col in column_types['ordinal']:
-            df[col] = encode_ordinal_column(col)
-        for col in column_types['nominal']:
-            df[col] = encode_nominal_column(col)
-
+    # Process each column
+    for col in column_types['ordinal']:
+        df[col] = encode_ordinal_column(col)
+        
+    for col in column_types['nominal']:
+        df[col] = encode_nominal_column(col)
+    
     return df
 
 
