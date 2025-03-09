@@ -72,7 +72,7 @@ class ScaleScorer:
             '5-Dimensional_Altered States_of_Consciousness_Questionnaire_(5DASC)': self.score_5dasc,
             'Anxiety_Sensitivity_Index-3_(ASI-3_ASI-R)': self.score_asi3,
             'Subjective_Vitality_Scale(SVS)': self.score_svs,
-            'Flow_State_Scale_(FFS)_(short-version)': self.score_fss_short,
+            'Flow_State_Scale_(FSS)_(short-version)': self.score_fss_short,
             'Purpose_In_Life_Test_(PIL)': self.score_pil,
             'Perceived_Stress_Scale_(PSS)': self.score_pss,
             'Profile_of_Mood_States_(POMS)': self.score_poms,
