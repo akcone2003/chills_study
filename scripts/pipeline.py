@@ -254,6 +254,64 @@ def sanity_check_chills(df: pd.DataFrame, chills_column: str,
         df['Sanity_Flag'] = 0
     return df
 
+def preprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Comprehensive preprocessing function that:
+    1. Handles missing values (empty cells)
+    2. Converts string numbers to actual numeric types
+    3. Preserves NaN values appropriately
+    
+    Args:
+        df: Input DataFrame with potential missing values and string numerics
+        
+    Returns:
+        DataFrame with standardized data types and missing values
+    """
+    # Make a copy to avoid modifying the input
+    df = df.copy()
+    
+    # First, identify columns that should be numeric
+    potentially_numeric_cols = []
+    for col in df.columns:
+        # Skip columns that are clearly not numeric or scale items
+        if col.lower() in ['subj id', 'unnamed: 0'] or 'record id' in col.lower():
+            continue
+            
+        # Check if column contains values that look like numbers
+        sample_vals = df[col].dropna().head(10).astype(str)
+        numeric_pattern = r'^[-+]?[0-9]*\.?[0-9]+$'
+        if any(sample_vals.str.match(numeric_pattern)):
+            potentially_numeric_cols.append(col)
+    
+    # Process each column
+    for col in df.columns:
+        # Skip columns that are definitely non-numeric
+        if col not in potentially_numeric_cols:
+            continue
+            
+        # Try to convert to numeric, keeping NaN values intact
+        try:
+            # Convert to numeric with coercion (strings that don't look like numbers become NaN)
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+            
+            # Log successful conversion
+            unique_vals = df[col].dropna().unique()
+            if len(unique_vals) > 0:
+                logger.info(f"Converted column '{col}' to numeric with values: {sorted(unique_vals)}")
+        except Exception as e:
+            logger.warning(f"Could not convert column '{col}' to numeric: {str(e)}")
+    
+    # Handle empty cells and other missing value indicators
+    na_values = ['nan', 'NaN', 'NA', 'N/A', '', None]
+    df = df.replace(na_values, np.nan)
+    
+    # Log missing value counts
+    missing_counts = df.isna().sum()
+    cols_with_missing = missing_counts[missing_counts > 0]
+    if not cols_with_missing.empty:
+        logger.info(f"Columns with missing values: {cols_with_missing.to_dict()}")
+    
+    return df
 
 def process_data_pipeline(
         input_df: pd.DataFrame,
@@ -271,8 +329,8 @@ def process_data_pipeline(
         # Create a working copy of the input data
         df = input_df.copy()
         
-        # Handle missing values first - convert to proper NaN format
-        df = handle_missing_values(df)
+        # Preprocess the dataframe - handle missing values and convert data types
+        df = preprocess_dataframe(df)
 
         # Normalize column names in the DataFrame
         df.columns = [normalize_column_name(col) for col in df.columns]
