@@ -872,7 +872,7 @@ class ScaleScorer:
         ) = columns
 
         # Calculating sub scores
-        positive = self.df[q1, q3, q5, q10, q12, q14, q16, q17, q19].sum(axis=1)
+        positive = self.df[q1, q3, q5, q9, q10, q12, q14, q16, q17, q19].sum(axis=1)
 
         negative = self.df[q2, q4, q6, q7, q8, q11, q13, q15, q18, q20].sum(axis=1)
 
