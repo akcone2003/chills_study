@@ -18,42 +18,30 @@ logger = logging.getLogger(__name__)
 
 def handle_missing_values(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Identifies and converts various forms of missing values to proper NaN.
-    This ensures missing values are consistently handled throughout the pipeline.
+    Handles empty cells and common missing value representations in the dataframe.
     
     Args:
-        df: Input DataFrame with potential missing values
+        df: Input DataFrame potentially containing empty cells
         
     Returns:
-        DataFrame with standardized missing value representation
+        DataFrame with consistent NaN representation for missing values
     """
+    # Make a copy to avoid modifying the input
     df = df.copy()
     
-    # Common text representations of missing values
-    missing_values = ['nan', 'NaN', 'N/A', 'n/a', 'NA', 'na', 'missing', 
-                     'MISSING', 'None', 'none', '', ' ', 'nil', 'NULL', 'null']
+    # When pandas reads a CSV, empty cells are typically already converted to NaN
+    # But we'll handle additional cases that might be interpreted as strings
     
-    # Replace string representations with proper NaN
-    df = df.replace(missing_values, np.nan)
+    # Common missing value indicators in surveys
+    na_values = ['nan', 'NaN', 'NA', 'N/A', '', 'None']
     
-    # Handle whitespace-only strings as missing
-    for col in df.select_dtypes(include='object').columns:
-        df[col] = df[col].apply(lambda x: np.nan if isinstance(x, str) and x.strip() == '' else x)
+    # Replace these values with np.nan
+    df = df.replace(na_values, np.nan)
     
-    # Convert numeric columns with improper missing values
-    for col in df.columns:
-        try:
-            # Attempt to convert to numeric, forcing non-numeric to NaN
-            df[col] = pd.to_numeric(df[col], errors='coerce')
-        except:
-            # If conversion fails, keep the column as is
-            pass
+    # Log how many missing values we found
+    missing_count = df.isna().sum().sum()
+    logger.info(f"Identified {missing_count} missing values across all columns")
     
-    # Log information about detected missing values
-    missing_counts = df.isna().sum()
-    if missing_counts.any():
-        logger.info(f"Detected and standardized missing values: {missing_counts[missing_counts > 0].to_dict()}")
-        
     return df
 
 def detect_column_types(df: pd.DataFrame) -> Dict[str, List[str]]:
@@ -132,79 +120,70 @@ def encode_columns(df: pd.DataFrame, column_types: Dict[str, List[str]]) -> pd.D
     encoder_cache = {}
 
     def encode_ordinal_column(col: str) -> pd.Series:
-        """Helper function to encode a single ordinal column"""
+        """Helper function to encode a single ordinal column with proper NaN handling"""
         try:
-            # Only use non-missing values for determining categories
-            unique_values = df[col].dropna().unique()
-            categories = [determine_category_order(unique_values)]
-
-            if col not in encoder_cache:
-                encoder_cache[col] = OrdinalEncoder(categories=categories, 
-                                                   handle_unknown='use_encoded_value',
-                                                   unknown_value=np.nan)
-
-            # Keep track of NaN positions
-            nan_mask = df[col].isna()
+            # Get non-NaN values for category determination
+            non_na_values = df[col].dropna().unique()
+            if len(non_na_values) == 0:
+                logger.warning(f"Column {col} has all missing values, skipping encoding")
+                return df[col]  # Return original column if all values are NaN
+                
+            # Determine the category order using only non-NaN values
+            categories = [determine_category_order(non_na_values)]
             
-            # Only transform non-NaN values
-            if nan_mask.all():
-                return pd.Series(np.nan, index=df.index, name=col)
+            # Create a temporary column for encoding
+            temp_df = pd.DataFrame({col: df[col]})
             
-            encoded_values = encoder_cache[col].fit_transform(df.loc[~nan_mask, [col]]) + 1
+            # Remember which rows had NaN values
+            na_mask = temp_df[col].isna()
             
-            # Create result series with NaNs in the right places
-            result = pd.Series(np.nan, index=df.index, name=col)
-            result.loc[~nan_mask] = encoded_values.ravel()
+            # Only encode non-NaN values
+            encoder = OrdinalEncoder(categories=categories)
+            if (~na_mask).any():  # Only proceed if there are non-NaN values
+                temp_df.loc[~na_mask, col] = encoder.fit_transform(temp_df.loc[~na_mask, [col]]) + 1
             
-            return result
-
+            return temp_df[col]
+            
         except Exception as e:
-            logger.warning(f"Could not encode ordinal column {col}: {e}")
-            return df[col]
+            logger.warning(f"Could not encode ordinal column {col}: {str(e)}")
+            return df[col]  # Return original column on error
 
     def encode_nominal_column(col: str) -> pd.Series:
-        """Helper function to encode a single nominal column"""
+        """Helper function to encode a single nominal column with proper NaN handling"""
         try:
-            # Handle missing values
-            nan_mask = df[col].isna()
+            # Create a result series
+            result = pd.Series(df[col].values, index=df.index)
             
-            # If all values are missing, return all NaNs
-            if nan_mask.all():
-                return pd.Series(np.nan, index=df.index, name=col)
+            # Skip if all values are NaN
+            if result.isna().all():
+                logger.warning(f"Column {col} has all missing values, skipping encoding")
+                return result
+                
+            # Create a mask for NaN values
+            na_mask = result.isna()
             
-            if df[col].nunique() == 2:
-                # For binary columns, use categorical encoding
-                encoded = pd.Categorical(df[col]).codes
-                # Convert -1 (missing) to NaN
-                encoded = pd.Series(encoded, index=df.index)
-                encoded[encoded == -1] = np.nan
-                return encoded
-            else:
-                if col not in encoder_cache:
-                    encoder_cache[col] = LabelEncoder()
+            # For binary columns (2 unique non-NaN values)
+            if df[col].dropna().nunique() == 2:
+                # Get unique non-NaN values
+                unique_vals = df[col].dropna().unique()
+                # Simple mapping of first value to 0, second to 1
+                result.loc[~na_mask] = result.loc[~na_mask].map({unique_vals[0]: 0, unique_vals[1]: 1})
+                return result
                 
-                # Create a temporary series for encoding
-                temp_series = df[col].copy()
-                # Mark missing values with a placeholder
-                if nan_mask.any():
-                    temp_series.loc[nan_mask] = '__MISSING__'
-                
-                # Encode non-missing values
-                encoded = pd.Series(
-                    encoder_cache[col].fit_transform(temp_series.astype(str)),
-                    index=df.index,
-                    name=col
-                )
-                
-                # Convert the missing value placeholder back to NaN
-                if nan_mask.any():
-                    missing_code = encoder_cache[col].transform(['__MISSING__'])[0]
-                    encoded[encoded == missing_code] = np.nan
-                
-                return encoded
+            # For multi-class columns
+            encoder = LabelEncoder()
+            # Get non-NaN values as strings
+            non_na_values = df[col].dropna().astype(str).values
+            # Fit encoder
+            encoder.fit(non_na_values)
+            # Transform only non-NaN values
+            result.loc[~na_mask] = encoder.transform(df.loc[~na_mask, col].astype(str).values)
+            
+            return result
+            
         except Exception as e:
-            logger.warning(f"Could not encode nominal column {col}: {e}")
-            return df[col]
+            logger.warning(f"Could not encode nominal column {col}: {str(e)}")
+            return df[col]  # Return original column on error
 
     # Process columns in parallel if dataset is large enough
     if len(df) > 1000:
