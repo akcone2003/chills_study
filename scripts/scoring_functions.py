@@ -850,7 +850,7 @@ class ScaleScorer:
 
     def score_panas(self, columns):
         """
-        Calculate subcategory and total PANAS (Positive Negative Affect Schedule) scores.
+        Calculate the Positive and Negative Affect Schedule (PANAS) scores.
 
         Parameters:
         -----------
@@ -860,33 +860,57 @@ class ScaleScorer:
         Returns:
         --------
         pd.DataFrame
-            DataFrame containing all subcategory scores and the total PANAS score.
+            DataFrame containing positive and negative affect scores.
         """
-        # Ensure the correct number of columns (39 questions expected)
-        if len(columns) != 20:
-            raise ValueError(f"Expected 20 columns, but got {len(columns)}")
-
-        # Unpack all 20 questions directly
-        (
-            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
-            q11, q12, q13, q14, q15, q16, q17, q18, q19, q20,
-        ) = columns
-
-        # Calculating sub scores
-        positive = self.df[q1, q3, q5, q9, q10, q12, q14, q16, q17, q19].sum(axis=1)
-
-        negative = self.df[q2, q4, q6, q7, q8, q11, q13, q15, q18, q20].sum(axis=1)
-
-        total_panas = positive + negative
-
-        # Create a DataFrame with all subscale and total scores
-        scores_df = pd.DataFrame({
-            'panas_positive': positive,
-            'panas_negative': negative,
-            'panas_total': total_panas
+        # Debug the incoming columns
+        print(f"[DEBUG] PANAS columns: {columns}")
+        
+        # Instead of direct unpacking, use a more flexible approach
+        # Find the columns by matching partial names
+        positive_affect_cols = []
+        negative_affect_cols = []
+        
+        # Positive affect items
+        positive_items = ["interested", "excited", "strong", "enthusiastic", "proud", 
+                        "alert", "inspired", "determined", "attentive", "active"]
+        
+        # Negative affect items
+        negative_items = ["distressed", "upset", "guilty", "scared", "hostile", 
+                        "irritable", "ashamed", "nervous", "jittery", "afraid"]
+        
+        # Find matching columns
+        for col in columns:
+            col_lower = col.lower()
+            
+            # Check if it matches a positive affect item
+            if any(item in col_lower for item in positive_items):
+                positive_affect_cols.append(col)
+                
+            # Check if it matches a negative affect item
+            if any(item in col_lower for item in negative_items):
+                negative_affect_cols.append(col)
+        
+        print(f"[DEBUG] Positive affect columns found: {positive_affect_cols}")
+        print(f"[DEBUG] Negative affect columns found: {negative_affect_cols}")
+        
+        # Calculate subscale scores
+        if positive_affect_cols:
+            positive_affect = self.df[positive_affect_cols].sum(axis=1)
+        else:
+            positive_affect = pd.Series(np.nan, index=self.df.index)
+            
+        if negative_affect_cols:
+            negative_affect = self.df[negative_affect_cols].sum(axis=1)
+        else:
+            negative_affect = pd.Series(np.nan, index=self.df.index)
+        
+        # Create output dataframe
+        results = pd.DataFrame({
+            'PANAS_Positive_Affect': positive_affect,
+            'PANAS_Negative_Affect': negative_affect
         })
-
-        return scores_df
+        
+        return results
 
     def score_panas_x(self, columns):
         """
