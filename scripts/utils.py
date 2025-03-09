@@ -163,6 +163,7 @@ ORDERED_KEYWORD_SET = {
             'neither alert nor sleepy', 'some signs of sleepiness', 'sleepy, but no effort to keep awake',
             'sleepy, but some great effort to keep awake', 'very sleepy, great effort to keep awake, fighting sleep',
             'extremely sleepy, can\'t keep awake'],
+    'PANAS': {'very slightly or not at all': 1, 'a little': 2, 'moderately': 3, 'quite a bit': 4, 'extremely': 5},
     # OASIS Scales
     'OASIS': {'never': 0, 'rarely': 1, 'occasionally': 2, 'frequently': 3, 'constantly': 4,
               'none': 0, 'mild': 1, 'moderate': 2, 'severe': 3, 'extreme': 4,
