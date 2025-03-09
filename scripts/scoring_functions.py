@@ -1350,33 +1350,31 @@ class ScaleScorer:
         cont_forward = [q2, q13, q19, q22, q42]
         cont_reverse = [q3, q4, q10, q11, q14, q26, q28, q29, q34, q43]
 
-        # Reverse scoring function
+        # Reverse scoring function - only takes one parameter
         def reverse_score(items):
-            # Assuming range [1,4], use 5 - item; for [0,3], use 3 - item
-            max_val = 4 if max(items) == 4 else 3
-            min_val = 1 if max(items) == 4 else 0
-            return max_val + min_val - pd.Series(items)
+            # For scale 0-3
+            return 3 - self.df[items]
 
-            # Compute subscale scores
+        # Compute subscale scores
         hardy_comm = (
-                self.df[comm_forward].sum(axis=1) + reverse_score(comm_reverse, self.df).sum(axis=1) - 15
+                self.df[comm_forward].sum(axis=1) + reverse_score(comm_reverse).sum(axis=1)
         )
         hardy_chal = (
-                self.df[chal_forward].sum(axis=1) + reverse_score(chal_reverse, self.df).sum(axis=1) - 15
+                self.df[chal_forward].sum(axis=1) + reverse_score(chal_reverse).sum(axis=1)
         )
         hardy_cont = (
-                self.df[cont_forward].sum(axis=1) + reverse_score(cont_reverse, self.df).sum(axis=1) - 15
+                self.df[cont_forward].sum(axis=1) + reverse_score(cont_reverse).sum(axis=1)
         )
 
-        # Compute total score with separate correction factor for total score
-        hardy_tot = hardy_comm + hardy_chal + hardy_cont - 45
+        # Compute total score
+        hardy_tot = hardy_comm + hardy_chal + hardy_cont
 
         # Return as DataFrame for each subscale and total
         return pd.DataFrame({
-            'hardy_communication': [hardy_comm],
-            'hardy_challenge': [hardy_chal],
-            'hardy_control': [hardy_cont],
-            'hardy_total': [hardy_tot]
+            'HARDY_Communication_Score': hardy_comm,
+            'HARDY_Challenge_Score': hardy_chal,
+            'HARDY_Control_Score': hardy_cont,
+            'HARDY_Total_Score': hardy_tot
         })
 
     def score_madrs(self, columns):
