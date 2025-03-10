@@ -177,7 +177,9 @@ ORDERED_KEYWORD_SET = {
               'none': 0, 'mild': 1, 'moderate': 2, 'severe': 3, 'extreme': 4,
               'not at all': 0, 'some': 1, 'moderate amount': 2, 'a lot': 3, 'extreme amount': 4},
     'PHQ-9': {'not at all': 0, 'several days': 1, 'more than half the days': 2, 'nearly every day': 3},
-    'BSI-18': {'not at all': 0, 'a little bit': 1, 'moderately': 2, 'quite a bit': 3, 'extremely': 4}
+    'BSI-18': {'not at all': 0, 'a little bit': 1, 'moderately': 2, 'quite a bit': 3, 'extremely': 4},
+    'cd_risc_10': {'not true at all': 0, 'rarely true': 1, 'sometimes true': 2, 'often true': 3, 'true nearly all the time': 4},
+
 }
 
 # TODO - add more scales as you encounter them

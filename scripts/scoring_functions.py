@@ -1954,8 +1954,19 @@ class ScaleScorer:
         if len(columns) != 10:
             raise ValueError(f"Expected 10 columns, but got {len(columns)}")
 
+        # Create a working copy of the data
+        work_df = self.df[columns].copy()
+        
+        # Convert string responses to numeric scores using the CD-RISC-10 specific mapping
+        for col in columns:
+            if not pd.api.types.is_numeric_dtype(work_df[col]):
+                # Apply the CD-RISC-10 specific mapping
+                work_df[col] = work_df[col].apply(
+                    lambda x: get_score_from_mapping(x, 'cd_risc_10') if isinstance(x, str) else x
+                )
+        
         # Calculate total CD-RISC-10 score by summing all items
-        cd_risc_10_total_score = self.df[columns].sum(axis=1)
+        cd_risc_10_total_score = work_df.sum(axis=1)
 
         return cd_risc_10_total_score
     
