@@ -106,7 +106,7 @@ if input_file is not None:
                             "Overall_Anxiety_Severity_and_Impairment_Scale_(OASIS)",
                             "PHQ-9", "Sheehan_Disability_Scale_(SDS)", "Brief_Symptom_Inventory-18_(BSI-18)", 
                             "Dispositional_Hope_Scale_(DHS)", "General_Self-Efficacy_Scale_(GSES)", "Subjective_Vitality_Scale(SVS)",
-                            "Flow_State_Scale_(FSS)_(short-version)", "Purpose_In_Life_(PIL)", "Perceived_Stress_Scale_(PSS)",
+                            "Flow_State_Scale_(FSS)_(short-version)", "Purpose_In_Life_Test_(PIL)", "Perceived_Stress_Scale_(PSS)",
                             "Multidimensional_Health_Locus_of_Control_(MHLC)", "Connor-Davidson_Resilience_Scale_(CD-RISC-10)",
                             "Profile_of_Mood_States_(POMS)"]
 
