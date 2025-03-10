@@ -91,17 +91,39 @@ def encode_columns(df: pd.DataFrame, column_types: Dict[str, List[str]]) -> pd.D
     """
     df = df.copy()
     encoder_cache = {}
+    
+    # Define scales that start at 0 instead of 1
+    scales_start_at_zero = [
+        'frequency_08', 'frequency_10', 'agreement_06', 'agreement_08',
+        'intensity_01', 'intensity_08', 'maia', 
+        'OASIS', 'PHQ-9', 'BSI-18'
+    ]
 
     def encode_ordinal_column(col: str) -> pd.Series:
         """Helper function to encode a single ordinal column"""
         try:
             unique_values = df[col].dropna().unique()
             categories = [determine_category_order(unique_values)]
-
+            
+            # Determine which scale is being used
+            scale_name = None
+            for scale, keywords in ORDERED_KEYWORD_SET.items():
+                keyword_list = list(keywords.keys()) if isinstance(keywords, dict) else keywords
+                match_count = sum(1 for val in [normalize_column_name(val) for val in unique_values] if val in keyword_list)
+                if match_count > len(unique_values) / 2:  # More than half match
+                    scale_name = scale
+                    break
+            
             if col not in encoder_cache:
                 encoder_cache[col] = OrdinalEncoder(categories=categories)
-
-            encoded_values = encoder_cache[col].fit_transform(df[[col]]) + 1
+            
+            # Apply transformation
+            encoded_values = encoder_cache[col].fit_transform(df[[col]])
+            
+            # Only add 1 if the scale doesn't start at 0
+            if scale_name not in scales_start_at_zero:
+                encoded_values = encoded_values + 1
+                
             return pd.Series(encoded_values.ravel(), index=df.index, name=col)
 
         except Exception as e:
