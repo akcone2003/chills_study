@@ -228,21 +228,33 @@ def encode_columns(df: pd.DataFrame, column_types: Dict[str, List[str]]) -> pd.D
     def encode_nominal_column(col: str) -> pd.Series:
         """Helper function to encode a single nominal column"""
         try:
-            if df[col].nunique() == 2:
-                return pd.Categorical(df[col]).codes
-            else:
-                # Use a simple mapping approach
-                unique_vals = df[col].dropna().unique()
-                mapping = {val: i for i, val in enumerate(sorted(unique_vals))}
+            # Skip if all values are NaN
+            if df[col].isna().all():
+                return df[col]
                 
-                # Apply mapping but keep NaN values as NaN
+            if df[col].nunique() == 2:
+                # For binary columns, use a simple mapping
+                unique_vals = sorted(df[col].dropna().unique())
+                mapping = {unique_vals[0]: 0, unique_vals[1]: 1}
+                
                 result = df[col].copy()
                 non_na_mask = ~result.isna()
                 result.loc[non_na_mask] = result.loc[non_na_mask].map(mapping)
-                
                 return result
+            else:
+                # For multi-class columns, use a sequential mapping
+                unique_vals = sorted(df[col].dropna().unique())
+                mapping = {val: i for i, val in enumerate(unique_vals)}
+                
+                result = df[col].copy()
+                non_na_mask = ~result.isna()
+                result.loc[non_na_mask] = result.loc[non_na_mask].map(mapping)
+                return result
+                
         except Exception as e:
             logger.warning(f"Could not encode nominal column {col}: {e}")
+            import traceback
+            logger.warning(f"Traceback: {traceback.format_exc()}")
             return df[col]
 
     # Process columns in parallel if dataset is large enough
