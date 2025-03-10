@@ -87,45 +87,70 @@ def determine_category_order(col_values: List[str]) -> List[str]:
 def encode_columns(df: pd.DataFrame, column_types: Dict[str, List[str]]) -> pd.DataFrame:
     """
     Encodes columns based on their type with improved error handling and normalization.
-    Uses parallel processing for large datasets to improve performance.
+    Directly uses scale values defined in ORDERED_KEYWORD_SET.
     """
     df = df.copy()
-    encoder_cache = {}
-    
-    # Define scales that start at 0 instead of 1
-    scales_start_at_zero = [
-        'frequency_08', 'frequency_10', 'agreement_06', 'agreement_08',
-        'intensity_01', 'intensity_08', 'maia', 
-        'OASIS', 'PHQ-9', 'BSI-18'
-    ]
 
     def encode_ordinal_column(col: str) -> pd.Series:
-        """Helper function to encode a single ordinal column"""
+        """Helper function to encode a single ordinal column using the predefined scales"""
         try:
+            # Skip if all values are NaN
+            if df[col].isna().all():
+                return df[col]
+            
+            # Get unique non-NaN values in the column
             unique_values = df[col].dropna().unique()
-            categories = [determine_category_order(unique_values)]
+            normalized_values = [normalize_column_name(str(val)) for val in unique_values]
             
-            # Determine which scale is being used
-            scale_name = None
-            for scale, keywords in ORDERED_KEYWORD_SET.items():
-                keyword_list = list(keywords.keys()) if isinstance(keywords, dict) else keywords
-                match_count = sum(1 for val in [normalize_column_name(val) for val in unique_values] if val in keyword_list)
-                if match_count > len(unique_values) / 2:  # More than half match
-                    scale_name = scale
-                    break
+            # Find the best matching scale
+            best_scale = None
+            best_match_count = 0
             
-            if col not in encoder_cache:
-                encoder_cache[col] = OrdinalEncoder(categories=categories)
-            
-            # Apply transformation
-            encoded_values = encoder_cache[col].fit_transform(df[[col]])
-            
-            # Only add 1 if the scale doesn't start at 0
-            if scale_name not in scales_start_at_zero:
-                encoded_values = encoded_values + 1
+            for scale_name, scale in ORDERED_KEYWORD_SET.items():
+                if isinstance(scale, dict):
+                    keywords = list(scale.keys())
+                else:
+                    keywords = scale
                 
-            return pd.Series(encoded_values.ravel(), index=df.index, name=col)
-
+                match_count = sum(1 for val in normalized_values if val in [normalize_column_name(k) for k in keywords])
+                if match_count > best_match_count:
+                    best_scale = scale_name
+                    best_match_count = match_count
+            
+            # If no scale matches well, use default ordinal encoding
+            if best_scale is None or best_match_count < 2:
+                logger.warning(f"No good scale match for column {col}, using default encoding")
+                return df[col]
+            
+            logger.info(f"Using scale {best_scale} for column {col}")
+            scale = ORDERED_KEYWORD_SET[best_scale]
+            
+            # Create a copy of the column
+            result = df[col].copy()
+            
+            # Apply the scale to encode values
+            for idx in result.dropna().index:
+                val = result.loc[idx]
+                norm_val = normalize_column_name(str(val))
+                
+                if isinstance(scale, dict):
+                    # Dictionary scale: lookup the value directly
+                    for scale_key, scale_value in scale.items():
+                        if normalize_column_name(scale_key) == norm_val:
+                            result.loc[idx] = scale_value
+                            break
+                else:
+                    # List scale: use the index + 1 as the value
+                    try:
+                        norm_scale = [normalize_column_name(k) for k in scale]
+                        if norm_val in norm_scale:
+                            result.loc[idx] = norm_scale.index(norm_val) + 1  # Add 1 for list scales
+                    except:
+                        # Keep original value if no match
+                        pass
+            
+            return result
+            
         except Exception as e:
             logger.warning(f"Could not encode ordinal column {col}: {e}")
             return df[col]
@@ -136,13 +161,16 @@ def encode_columns(df: pd.DataFrame, column_types: Dict[str, List[str]]) -> pd.D
             if df[col].nunique() == 2:
                 return pd.Categorical(df[col]).codes
             else:
-                if col not in encoder_cache:
-                    encoder_cache[col] = LabelEncoder()
-                return pd.Series(
-                    encoder_cache[col].fit_transform(df[col].astype(str)),
-                    index=df.index,
-                    name=col
-                )
+                # Use a simple mapping approach
+                unique_vals = df[col].dropna().unique()
+                mapping = {val: i for i, val in enumerate(sorted(unique_vals))}
+                
+                # Apply mapping but keep NaN values as NaN
+                result = df[col].copy()
+                non_na_mask = ~result.isna()
+                result.loc[non_na_mask] = result.loc[non_na_mask].map(mapping)
+                
+                return result
         except Exception as e:
             logger.warning(f"Could not encode nominal column {col}: {e}")
             return df[col]
