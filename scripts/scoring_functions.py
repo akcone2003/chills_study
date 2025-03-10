@@ -1511,11 +1511,11 @@ class ScaleScorer:
                 state_score = state_score + (5 - work_df[col])
             
             # Add constant
-            state_score = state_score + 50
+            state_score = state_score
             
             # Return DataFrame with only STAI-State score
             scores_df = pd.DataFrame({
-                'STAI_State_Total_Score': state_score
+                'STAI_State': state_score
             })
 
         # If 40 columns are provided, calculate both STAI-State and STAI-Trait scores
@@ -1539,13 +1539,13 @@ class ScaleScorer:
             state_score = work_df[sai_direct_items].sum(axis=1)  # Sum direct items as-is
             for col in sai_reversed_items:
                 state_score = state_score + (5 - work_df[col])
-            state_score = state_score + 50
+            state_score = state_score
             
             # Calculate Trait score
             trait_score = work_df[tai_direct_items].sum(axis=1)  # Sum direct items as-is
             for col in tai_reversed_items:
                 trait_score = trait_score + (5 - work_df[col])
-            trait_score = trait_score + 35
+            trait_score = trait_score
             
             # Return DataFrame with both scores
             scores_df = pd.DataFrame({
