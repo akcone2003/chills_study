@@ -1991,7 +1991,7 @@ class ScaleScorer:
         anger_cols = [angry, grouchy, annoyed, furious, bad_tempered]
         vigor_cols = [lively, active, energetic, good_natured, full_of_pep, vigorous]
         fatigue_cols = [worn_out, fatigued, exhausted, sluggish, weary]
-        confusion_cols = [confused, muddled, bewildered, forgetful]
+        confusion_cols = [confused, muddled, bewildered, forgetful, efficient]
 
         # Calculate subscale scores
         tension_sum = self.df[tension_cols].sum(axis=1)
