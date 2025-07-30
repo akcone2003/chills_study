@@ -1603,6 +1603,7 @@ class ScaleScorer:
         }
 
         # Define main scale subscales
+        # TODO : check to make sure main scales are scored correctly - missing information
         main_scale_subscales = {
             'Oceanic_Boundlessness_(OB)': {
                 'Positive_Derealization': [q1, q9, q18, q34, q57, q71, q87],
