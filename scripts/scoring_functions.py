@@ -1587,7 +1587,7 @@ class ScaleScorer:
             q87, q88, q89, q90, q91, q92, q93, q94
         ) = columns
 
-        # Define subscale items
+        # Define subscale items 
         subscale_items = {
             'Experience_of_Unity': [q18, q34, q41, q42, q52],
             'Spiritual_Experience': [q9, q81, q94],
@@ -1596,49 +1596,45 @@ class ScaleScorer:
             'Disembodiment': [q26, q62, q63],
             'Impaired_Control_and_Cognition': [q8, q27, q38, q47, q64, q67, q78],
             'Anxiety': [q32, q43, q44, q46, q56, q89],
-            'Complex_Imagery': [q39, q72, q82],
+            'Complex_Imagery': [q39, q79, q82],  # Updated: q72 -> q79
             'Elementary_Imagery': [q14, q22, q33],
-            'Audio-Visual_Synesthesiae': [q20, q23, q75],
+            'Audio_Visual_Synesthesia': [q20, q23, q75],  # Updated name
             'Changed_Meaning_of_Percepts': [q28, q31, q54]
         }
 
-        # Define main scale subscales
-        # TODO : check to make sure main scales are scored correctly - missing information
-        main_scale_subscales = {
-            'Oceanic_Boundlessness_(OB)': {
-                'Positive_Derealization': [q1, q9, q18, q34, q57, q71, q87],
-                'Positive_Depersonalization': [q16, q26, q62, q63],
-                'Altered_Perception_of_Time_and_Space': [q36, q41, q52]
-            },
-            'Anxious_Ego_Dissolution_(AED)': {
-                'Negative_Derealization': [q21, q43, q44, q46, q64, q85],
-                'Thought_Disorder': [q27, q38, q67, q88],
-                'Paranoid_Ideation': [q6, q56, q89]
-            },
-            'Visual_Restructuralization_(VR)': {
-                'Simple_Hallucinations': [q14, q22, q33, q83],
-                'Complex_Hallucinations': [q7, q39]
-            },
-            'Auditory_Alterations': {  # Items directly
-                'Auditory_Alterations': [q4, q5, q11, q13, q19, q25, q30, q48, q49, q55, q65, q74, q76, q92, q93]
-            },
-            'Reduction_of_Vigilance': {  # Items directly
-                'Reduction_of_Vigilance': [q2, q10, q15, q17, q24, q29, q37, q51, q61, q68, q84]
-            }
+        # Define main scale items
+        main_scale_items = {
+            'Oceanic_Boundlessness_(OB)': [
+                q1, q3, q9, q12, q16, q18, q26, q34, q35, q36, q40, q41, 
+                q42, q45, q50, q52, q57, q62, q63, q69, q71, q73, 
+                q81, q86, q87, q91, q94
+            ],
+            'Dread_of_Ego_Dissolution_(DED)': [  # Also known as Anxious Ego Dissolution (AED)
+                q6, q8, q21, q27, q32, q38, q43, q44, q46, q47, q53, 
+                q56, q60, q64, q67, q78, q79, q80, q85, q88, q89
+            ],
+            'Visionary_Restructuralization_(VR)': [
+                q7, q14, q20, q22, q23, q28, q31, q33, q39, q54,
+                q58, q70, q72, q75, q77, q82, q83, q90
+            ],
+            'Auditory_Alterations_(AA)': [
+                q4, q5, q11, q13, q19, q25, q30, q48, q49, q55, q65, 
+                q66, q74, q76, q92, q93
+            ],
+            'Vigilance_Reduction_(VR)': [  # Also known as Reduction of Vigilance
+                q2, q10, q15, q17, q24, q29, q37, q51, q59, q61, q68, q84
+            ]
         }
 
-        # Calculate subscale scores row-wise
+        # Calculate subscale scores row-wise (using mean)
         subscale_scores = {}
         for subscale, items in subscale_items.items():
-            subscale_scores[subscale] = self.df[items].mean(axis=1)  # Mean score for each row
+            subscale_scores[subscale] = self.df[items].mean(axis=1)
 
-        # Calculate main scale scores (sum of subscale scores)
+        # Calculate main scale scores row-wise (using mean)
         main_scale_scores = {}
-        for scale, subscales in main_scale_subscales.items():
-            subscale_scores_in_scale = []
-            for subscale_name, items in subscales.items():
-                subscale_scores_in_scale.append(self.df[items].mean(axis=1))  # Mean score for subscale
-            main_scale_scores[scale] = sum(subscale_scores_in_scale)  # Sum of subscale scores for each row
+        for scale, items in main_scale_items.items():
+            main_scale_scores[scale] = self.df[items].mean(axis=1)
 
         # Combine subscale and main scale scores
         result = {**subscale_scores, **main_scale_scores}
